@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from 'react';
+import { Draft } from '../lib/db';
 import db from '../lib/db';
-import { Document } from '../types';
 
 interface UseDocumentOptions {
   autoSave?: boolean;
@@ -9,7 +9,7 @@ interface UseDocumentOptions {
 }
 
 export function useDocument(documentId: string | null, options: UseDocumentOptions = {}) {
-  const [document, setDocument] = useState<Document | null>(null);
+  const [document, setDocument] = useState<Draft | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
@@ -28,7 +28,7 @@ export function useDocument(documentId: string | null, options: UseDocumentOptio
         setLoading(true);
         setError(null);
         
-        const doc = await db.documents.get(documentId);
+        const doc = await db.drafts.get(documentId);
         if (doc) {
           setDocument(doc);
         } else {
@@ -53,7 +53,7 @@ export function useDocument(documentId: string | null, options: UseDocumentOptio
     
     const saveChanges = async () => {
       try {
-        await db.documents.update(document.id, {
+        await db.drafts.update(document.id, {
           ...document,
           updatedAt: new Date()
         });
@@ -73,7 +73,7 @@ export function useDocument(documentId: string | null, options: UseDocumentOptio
   }, [document, autoSave, autoSaveInterval, loading]);
 
   // Save document manually
-  const saveDocument = async (updates?: Partial<Document>) => {
+  const saveDocument = async (updates?: Partial<Draft>) => {
     if (!document) return;
     
     try {
@@ -85,7 +85,7 @@ export function useDocument(documentId: string | null, options: UseDocumentOptio
         updatedAt: new Date()
       };
       
-      await db.documents.update(document.id, updatedDoc);
+      await db.drafts.update(document.id, updatedDoc);
       
       setDocument(updatedDoc);
       setLastSaved(new Date());
@@ -103,6 +103,8 @@ export function useDocument(documentId: string | null, options: UseDocumentOptio
     setDocument(prev => prev ? {
       ...prev,
       content: newContent,
+      // Update the wordCount when content changes
+      wordCount: newContent.trim().split(/\s+/).length
     } : null);
   };
 
