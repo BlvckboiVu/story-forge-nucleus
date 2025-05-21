@@ -1,3 +1,4 @@
+
 import type { Config } from "tailwindcss";
 
 export default {
@@ -61,6 +62,23 @@ export default {
 					'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
+				},
+				// Custom colors for our writing app
+				paper: {
+					DEFAULT: '#FFFDF8', // Light cream color for writing background
+					dark: '#1E1E1E'     // Dark mode writing background
+				},
+				ink: {
+					DEFAULT: '#2D3748', // Default text color
+					light: '#4A5568',   // Light text color
+					dark: '#E2E8F0'     // Dark mode text color
+				},
+				highlight: {
+					yellow: '#FFF9C4',
+					green: '#DCEDC8',
+					blue: '#BBDEFB',
+					pink: '#F8BBD0',
+					purple: '#E1BEE7'
 				}
 			},
 			borderRadius: {
@@ -84,11 +102,34 @@ export default {
 					to: {
 						height: '0'
 					}
+				},
+				'fade-in': {
+					'0%': { opacity: '0' },
+					'100%': { opacity: '1' }
+				},
+				'fade-out': {
+					'0%': { opacity: '1' },
+					'100%': { opacity: '0' }
 				}
 			},
 			animation: {
 				'accordion-down': 'accordion-down 0.2s ease-out',
-				'accordion-up': 'accordion-up 0.2s ease-out'
+				'accordion-up': 'accordion-up 0.2s ease-out',
+				'fade-in': 'fade-in 0.2s ease-out',
+				'fade-out': 'fade-out 0.2s ease-out'
+			},
+			fontFamily: {
+				serif: ['Georgia', 'Cambria', 'Times New Roman', 'serif'],
+				mono: ['Consolas', 'Monaco', 'Andale Mono', 'monospace']
+			},
+			typography: {
+				DEFAULT: {
+					css: {
+						maxWidth: '65ch',
+						color: 'var(--ink)',
+						lineHeight: 1.625
+					}
+				}
 			}
 		}
 	},
