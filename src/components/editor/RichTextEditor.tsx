@@ -1,4 +1,3 @@
-
 import { useEffect, useRef, useState } from 'react';
 import ReactQuill from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
@@ -8,6 +7,8 @@ import { EditorToolbar } from './EditorToolbar';
 import { EditorStatusBar } from './EditorStatusBar';
 import { useAutoSave } from '@/hooks/useAutoSave';
 import { useWordCount } from '@/hooks/useWordCount';
+import { Maximize2, Minimize2 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 interface RichTextEditorProps {
   initialContent?: string;
@@ -60,6 +61,7 @@ const RichTextEditor = ({
   const { toast } = useToast();
   const editorRef = useRef<ReactQuill>(null);
   const { wordCount, currentPage, calculateWordCount } = useWordCount();
+  const [isFocusMode, setIsFocusMode] = useState(false);
 
   useEffect(() => {
     if (initialContent) {
@@ -129,6 +131,15 @@ const RichTextEditor = ({
     });
   };
 
+  const toggleFocusMode = () => {
+    setIsFocusMode(!isFocusMode);
+    toast({
+      title: isFocusMode ? "Focus mode disabled" : "Focus mode enabled",
+      description: isFocusMode ? "Regular editing mode restored" : "Distraction-free writing mode activated",
+      duration: 2000,
+    });
+  };
+
   // Add accessibility labels after component mounts
   useEffect(() => {
     const addTooltips = () => {
@@ -171,13 +182,24 @@ const RichTextEditor = ({
   }, []);
 
   return (
-    <div className="flex flex-col h-full">
-      <EditorToolbar 
-        selectedFont={selectedFont}
-        onFontChange={handleFontChange}
-      />
+    <div className={`flex flex-col h-full ${isFocusMode ? 'focus-mode' : ''}`}>
+      <div className={`transition-opacity duration-300 ${isFocusMode ? 'opacity-0 hover:opacity-100' : 'opacity-100'}`}>
+        <EditorToolbar 
+          selectedFont={selectedFont}
+          onFontChange={handleFontChange}
+        />
+      </div>
 
-      <div className="border border-gray-200 dark:border-gray-700 rounded-md bg-white dark:bg-gray-900 shadow-sm">
+      <div className="relative border border-gray-200 dark:border-gray-700 rounded-md bg-white dark:bg-gray-900 shadow-sm">
+        <Button
+          variant="ghost"
+          size="sm"
+          className="absolute right-2 top-2 z-10 opacity-50 hover:opacity-100"
+          onClick={toggleFocusMode}
+        >
+          {isFocusMode ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
+        </Button>
+
         <ReactQuill
           ref={editorRef}
           theme="snow"
@@ -185,7 +207,9 @@ const RichTextEditor = ({
           onChange={handleChange}
           modules={modules}
           formats={formats}
-          className="h-[500px] mb-12"
+          className={`h-[500px] mb-12 transition-all duration-300 ${
+            isFocusMode ? 'max-w-3xl mx-auto !font-size-120' : ''
+          }`}
           placeholder="Start writing your masterpiece..."
           readOnly={loading}
           style={{ 
@@ -194,14 +218,16 @@ const RichTextEditor = ({
         />
       </div>
       
-      <EditorStatusBar
-        wordCount={wordCount}
-        currentPage={currentPage}
-        hasUnsavedChanges={hasUnsavedChanges}
-        loading={loading}
-        draft={draft}
-        onSave={handleSave}
-      />
+      <div className={`transition-opacity duration-300 ${isFocusMode ? 'opacity-0 hover:opacity-100' : 'opacity-100'}`}>
+        <EditorStatusBar
+          wordCount={wordCount}
+          currentPage={currentPage}
+          hasUnsavedChanges={hasUnsavedChanges}
+          loading={loading}
+          draft={draft}
+          onSave={handleSave}
+        />
+      </div>
     </div>
   );
 };

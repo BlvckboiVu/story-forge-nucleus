@@ -5,71 +5,100 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/components/ui/use-toast';
-import { Check, X, Loader2, Database, Zap, Shield, Globe } from 'lucide-react';
-import { openRouterAPI } from '@/utils/openrouter';
-import { draftService } from '@/services/draftService';
+import { Check, X, Loader2, Database, Zap, Shield, Globe, Wifi, WifiOff } from 'lucide-react';
 import { environment } from '@/config/environment';
 import { supabase } from '@/lib/supabase';
+
+// Import all test files
+import * as llmTests from '@/tests/llm.test';
+import * as insertTests from '@/tests/insert.test';
+import * as draftTests from '@/tests/draft.test';
+import * as editorTests from '@/tests/Editor.test';
 
 interface TestResult {
   name: string;
   status: 'success' | 'failure' | 'pending';
   error?: string;
+  isOfflineCapable: boolean;
+}
+
+interface TestSuite {
+  name: string;
+  tests: TestCase[];
+  isOfflineCapable: boolean;
+}
+
+interface TestCase {
+  name: string;
+  run: () => Promise<void>;
+  isOfflineCapable: boolean;
 }
 
 export default function TestPage() {
   const [results, setResults] = useState<TestResult[]>([]);
   const [isRunning, setIsRunning] = useState(false);
+  const [isOnline, setIsOnline] = useState(navigator.onLine);
   const { toast } = useToast();
   const apiService = ApiService.getInstance();
 
-  const tests = [
+  useEffect(() => {
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
+
+  // Collect all tests from imported test files
+  const testSuites: TestSuite[] = [
     {
-      name: 'API Connectivity',
-      run: async () => {
-        const response = await apiService.get('/api/health');
-        if (!response.ok) throw new Error('API is not responding');
-      }
+      name: 'LLM Tests',
+      tests: Object.entries(llmTests)
+        .filter(([key]) => key.includes('test'))
+        .map(([key, fn]) => ({
+          name: key,
+          run: fn as () => Promise<void>,
+          isOfflineCapable: false
+        })),
+      isOfflineCapable: false
     },
     {
-      name: 'Authentication',
-      run: async () => {
-        // Test login
-        await apiService.post('/api/auth/login', {
-          email: 'test@example.com',
-          password: 'test123'
-        });
-      }
+      name: 'Insert Tests',
+      tests: Object.entries(insertTests)
+        .filter(([key]) => key.includes('test'))
+        .map(([key, fn]) => ({
+          name: key,
+          run: fn as () => Promise<void>,
+          isOfflineCapable: true
+        })),
+      isOfflineCapable: true
     },
     {
-      name: 'Offline Support',
-      run: async () => {
-        // Test offline storage
-        const testData = { id: 1, title: 'Test Story' };
-        localStorage.setItem('test-offline', JSON.stringify(testData));
-        const retrieved = JSON.parse(localStorage.getItem('test-offline') || '');
-        if (!retrieved || retrieved.id !== testData.id) {
-          throw new Error('Offline storage not working');
-        }
-      }
+      name: 'Draft Tests',
+      tests: Object.entries(draftTests)
+        .filter(([key]) => key.includes('test'))
+        .map(([key, fn]) => ({
+          name: key,
+          run: fn as () => Promise<void>,
+          isOfflineCapable: true
+        })),
+      isOfflineCapable: true
     },
     {
-      name: 'Data Sync',
-      run: async () => {
-        // Test sync mechanism
-        const registration = await navigator.serviceWorker.ready;
-        await registration.sync.register('sync-stories');
-      }
-    },
-    {
-      name: 'Story Creation',
-      run: async () => {
-        const story = await apiService.post('/api/stories', {
-          title: 'Test Story',
-          content: 'Test content'
-        });
-        if (!story.id) throw new Error('Story creation failed');
-      }
+      name: 'Editor Tests',
+      tests: Object.entries(editorTests)
+        .filter(([key]) => key.includes('test'))
+        .map(([key, fn]) => ({
+          name: key,
+          run: fn as () => Promise<void>,
+          isOfflineCapable: true
+        })),
+      isOfflineCapable: true
     }
   ];
 
@@ -77,25 +106,49 @@ export default function TestPage() {
     setIsRunning(true);
     setResults([]);
 
-    for (const test of tests) {
-      try {
-        setResults(prev => [...prev, { name: test.name, status: 'pending' }]);
-        await test.run();
-        setResults(prev => 
-          prev.map(r => 
-            r.name === test.name 
-              ? { ...r, status: 'success' } 
-              : r
-          )
-        );
-      } catch (error) {
-        setResults(prev => 
-          prev.map(r => 
-            r.name === test.name 
-              ? { ...r, status: 'failure', error: error.message } 
-              : r
-          )
-        );
+    for (const suite of testSuites) {
+      // Skip online-only tests when offline
+      if (!isOnline && !suite.isOfflineCapable) {
+        continue;
+      }
+
+      for (const test of suite.tests) {
+        // Skip online-only tests when offline
+        if (!isOnline && !test.isOfflineCapable) {
+          setResults(prev => [...prev, {
+            name: `${suite.name}: ${test.name}`,
+            status: 'pending',
+            isOfflineCapable: test.isOfflineCapable,
+            error: 'Test skipped - requires internet connection'
+          }]);
+          continue;
+        }
+
+        try {
+          setResults(prev => [...prev, {
+            name: `${suite.name}: ${test.name}`,
+            status: 'pending',
+            isOfflineCapable: test.isOfflineCapable
+          }]);
+          
+          await test.run();
+          
+          setResults(prev => 
+            prev.map(r => 
+              r.name === `${suite.name}: ${test.name}`
+                ? { ...r, status: 'success' }
+                : r
+            )
+          );
+        } catch (error) {
+          setResults(prev => 
+            prev.map(r => 
+              r.name === `${suite.name}: ${test.name}`
+                ? { ...r, status: 'failure', error: error.message }
+                : r
+            )
+          );
+        }
       }
     }
 
@@ -197,6 +250,25 @@ export default function TestPage() {
             </p>
           </CardContent>
         </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Connection Status</CardTitle>
+            {isOnline ? (
+              <Wifi className="h-4 w-4 text-green-500" />
+            ) : (
+              <WifiOff className="h-4 w-4 text-yellow-500" />
+            )}
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {isOnline ? 'Online' : 'Offline'}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              {isOnline ? 'All tests available' : 'Only offline-capable tests available'}
+            </p>
+          </CardContent>
+        </Card>
       </div>
 
       <Card className="mb-6">
@@ -225,7 +297,14 @@ export default function TestPage() {
               >
                 <div className="flex items-center space-x-3">
                   {getStatusIcon(result.status)}
-                  <span className="font-medium">{result.name}</span>
+                  <div className="flex flex-col">
+                    <span className="font-medium">{result.name}</span>
+                    {!result.isOfflineCapable && (
+                      <span className="text-xs text-yellow-500">
+                        Requires internet connection
+                      </span>
+                    )}
+                  </div>
                 </div>
                 <div className="flex items-center space-x-2">
                   {getStatusBadge(result.status)}
