@@ -14,6 +14,7 @@ interface RichTextEditorProps {
   onSave: (content: string) => void;
   draft?: Draft | null;
   loading?: boolean;
+  onEditorReady?: (editor: ReactQuill | null) => void;
 }
 
 const WORD_LIMIT = 50000;
@@ -35,6 +36,7 @@ const RichTextEditor = ({
   onSave,
   draft,
   loading = false,
+  onEditorReady,
 }: RichTextEditorProps) => {
   const [content, setContent] = useState(initialContent);
   const { toast } = useToast();
@@ -52,6 +54,13 @@ const RichTextEditor = ({
       calculateWordCount(initialContent);
     }
   }, [initialContent]);
+
+  useEffect(() => {
+    // Pass editor reference to parent
+    if (onEditorReady) {
+      onEditorReady(editorRef.current);
+    }
+  }, [onEditorReady]);
 
   // Auto-save functionality
   const autoSave = useCallback(() => {

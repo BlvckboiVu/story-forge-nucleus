@@ -8,6 +8,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/component
 import { ChevronDown, ChevronUp, Save, FilePlus, FolderOpen } from 'lucide-react';
 import RichTextEditor from '@/components/editor/RichTextEditor';
 import OutlinePanel from '@/components/editor/OutlinePanel';
+import LLMPanel from '@/components/LLMPanel';
 import { DraftModal } from '@/components/editor/DraftModal';
 import { DarkModeToggle } from '@/components/ui/DarkModeToggle';
 import { Draft, createDraft, updateDraft, getDraft } from '@/lib/db';
@@ -15,9 +16,11 @@ import { Draft, createDraft, updateDraft, getDraft } from '@/lib/db';
 export default function Editor() {
   const { documentId } = useParams();
   const [isOutlineVisible, setIsOutlineVisible] = useState(true);
+  const [isLLMPanelCollapsed, setIsLLMPanelCollapsed] = useState(false);
   const [draftModalOpen, setDraftModalOpen] = useState(false);
   const [currentDraft, setCurrentDraft] = useState<Draft | null>(null);
   const [loading, setLoading] = useState(false);
+  const [editorRef, setEditorRef] = useState<any>(null);
   const { toast } = useToast();
   
   // Load draft if documentId is provided
@@ -151,6 +154,24 @@ export default function Editor() {
       duration: 2000,
     });
   };
+
+  const handleInsertLLMResponse = (text: string) => {
+    if (editorRef && editorRef.getEditor) {
+      const quill = editorRef.getEditor();
+      const range = quill.getSelection();
+      const index = range ? range.index : quill.getLength();
+      
+      // Insert the text at cursor position
+      quill.insertText(index, text, 'user');
+      
+      // Set cursor position after inserted text
+      quill.setSelection(index + text.length);
+      
+      // Get updated content and save
+      const updatedContent = quill.root.innerHTML;
+      handleSaveDraft(updatedContent);
+    }
+  };
   
   return (
     <div className="h-full flex flex-col">
@@ -213,8 +234,18 @@ export default function Editor() {
               onSave={handleSaveDraft}
               draft={currentDraft}
               loading={loading}
+              onEditorReady={setEditorRef}
             />
           </div>
+        </div>
+
+        {/* LLM Panel */}
+        <div className="hidden lg:block">
+          <LLMPanel
+            isCollapsed={isLLMPanelCollapsed}
+            onToggle={() => setIsLLMPanelCollapsed(!isLLMPanelCollapsed)}
+            onInsertResponse={handleInsertLLMResponse}
+          />
         </div>
       </div>
       
