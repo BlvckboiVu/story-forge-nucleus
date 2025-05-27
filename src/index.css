@@ -115,4 +115,41 @@
   .chapter-content {
     @apply prose prose-lg mx-auto font-serif text-ink dark:text-ink-dark;
   }
+
+  /* Quill editor dark mode styles */
+  .dark .ql-toolbar {
+    @apply border-gray-600 bg-gray-800;
+  }
+
+  .dark .ql-container {
+    @apply border-gray-600 bg-gray-900;
+  }
+
+  .dark .ql-editor {
+    @apply text-gray-100;
+  }
+
+  .dark .ql-editor.ql-blank::before {
+    @apply text-gray-400;
+  }
+
+  .dark .ql-toolbar .ql-stroke {
+    stroke: #e5e7eb;
+  }
+
+  .dark .ql-toolbar .ql-fill {
+    fill: #e5e7eb;
+  }
+
+  .dark .ql-toolbar button:hover .ql-stroke,
+  .dark .ql-toolbar button:focus .ql-stroke,
+  .dark .ql-toolbar button.ql-active .ql-stroke {
+    stroke: #3b82f6;
+  }
+
+  .dark .ql-toolbar button:hover .ql-fill,
+  .dark .ql-toolbar button:focus .ql-fill,
+  .dark .ql-toolbar button.ql-active .ql-fill {
+    fill: #3b82f6;
+  }
 }

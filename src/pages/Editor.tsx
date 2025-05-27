@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -9,6 +8,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/component
 import { ChevronDown, ChevronUp, Save, FilePlus, FolderOpen } from 'lucide-react';
 import RichTextEditor from '@/components/editor/RichTextEditor';
 import { DraftModal } from '@/components/editor/DraftModal';
+import { DarkModeToggle } from '@/components/ui/DarkModeToggle';
 import { Draft, createDraft, updateDraft, getDraft } from '@/lib/db';
 
 export default function Editor() {
@@ -152,15 +152,18 @@ export default function Editor() {
             {currentDraft ? `Last saved ${currentDraft.updatedAt.toLocaleTimeString()}` : "Not saved yet"}
           </p>
         </div>
-        <div className="hidden sm:flex space-x-2">
-          <Button variant="outline" onClick={() => setDraftModalOpen(true)}>
-            <FolderOpen className="mr-2 h-4 w-4" />
-            Open
-          </Button>
-          <Button variant="outline" onClick={() => setCurrentDraft(null)}>
-            <FilePlus className="mr-2 h-4 w-4" />
-            New
-          </Button>
+        <div className="flex items-center space-x-2">
+          <DarkModeToggle />
+          <div className="hidden sm:flex space-x-2">
+            <Button variant="outline" onClick={() => setDraftModalOpen(true)}>
+              <FolderOpen className="mr-2 h-4 w-4" />
+              Open
+            </Button>
+            <Button variant="outline" onClick={() => setCurrentDraft(null)}>
+              <FilePlus className="mr-2 h-4 w-4" />
+              New
+            </Button>
+          </div>
         </div>
       </div>
       
@@ -258,7 +261,7 @@ export default function Editor() {
         onClose={() => setDraftModalOpen(false)}
         onCreateDraft={handleCreateDraft}
         onOpenDraft={handleOpenDraft}
-        projectId="demo-project-id" // Normally would come from auth context or URL
+        projectId="demo-project-id"
       />
     </div>
   );
