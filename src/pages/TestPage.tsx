@@ -1,5 +1,5 @@
-
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { ApiService } from '@/services/api.service';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -13,182 +13,101 @@ import { supabase } from '@/lib/supabase';
 
 interface TestResult {
   name: string;
-  status: 'pending' | 'success' | 'error';
-  message?: string;
-  duration?: number;
+  status: 'success' | 'failure' | 'pending';
+  error?: string;
 }
 
 export default function TestPage() {
-  const [tests, setTests] = useState<TestResult[]>([]);
+  const [results, setResults] = useState<TestResult[]>([]);
   const [isRunning, setIsRunning] = useState(false);
   const { toast } = useToast();
+  const apiService = ApiService.getInstance();
 
-  const updateTest = (name: string, status: TestResult['status'], message?: string, duration?: number) => {
-    setTests(prev => {
-      const existing = prev.find(t => t.name === name);
-      if (existing) {
-        existing.status = status;
-        existing.message = message;
-        existing.duration = duration;
-        return [...prev];
+  const tests = [
+    {
+      name: 'API Connectivity',
+      run: async () => {
+        const response = await apiService.get('/api/health');
+        if (!response.ok) throw new Error('API is not responding');
       }
-      return [...prev, { name, status, message, duration }];
-    });
-  };
-
-  const runTest = async (name: string, testFn: () => Promise<void>) => {
-    const startTime = Date.now();
-    updateTest(name, 'pending');
-    
-    try {
-      await testFn();
-      const duration = Date.now() - startTime;
-      updateTest(name, 'success', 'Passed', duration);
-    } catch (error) {
-      const duration = Date.now() - startTime;
-      updateTest(name, 'error', error instanceof Error ? error.message : 'Unknown error', duration);
+    },
+    {
+      name: 'Authentication',
+      run: async () => {
+        // Test login
+        await apiService.post('/api/auth/login', {
+          email: 'test@example.com',
+          password: 'test123'
+        });
+      }
+    },
+    {
+      name: 'Offline Support',
+      run: async () => {
+        // Test offline storage
+        const testData = { id: 1, title: 'Test Story' };
+        localStorage.setItem('test-offline', JSON.stringify(testData));
+        const retrieved = JSON.parse(localStorage.getItem('test-offline') || '');
+        if (!retrieved || retrieved.id !== testData.id) {
+          throw new Error('Offline storage not working');
+        }
+      }
+    },
+    {
+      name: 'Data Sync',
+      run: async () => {
+        // Test sync mechanism
+        const registration = await navigator.serviceWorker.ready;
+        await registration.sync.register('sync-stories');
+      }
+    },
+    {
+      name: 'Story Creation',
+      run: async () => {
+        const story = await apiService.post('/api/stories', {
+          title: 'Test Story',
+          content: 'Test content'
+        });
+        if (!story.id) throw new Error('Story creation failed');
+      }
     }
-  };
+  ];
 
   const runAllTests = async () => {
     setIsRunning(true);
-    setTests([]);
+    setResults([]);
 
-    // Environment Configuration Tests
-    await runTest('Environment Detection', async () => {
-      if (!environment.isDevelopment && !environment.isProduction) {
-        throw new Error('Environment not properly detected');
-      }
-    });
-
-    await runTest('Supabase Configuration', async () => {
-      if (!environment.supabaseUrl || !environment.supabaseKey) {
-        throw new Error('Supabase configuration missing');
-      }
-      if (!environment.supabaseUrl.startsWith('https://')) {
-        throw new Error('Supabase URL must use HTTPS');
-      }
-    });
-
-    // Database Tests
-    await runTest('Database Connection', async () => {
-      const { data, error } = await supabase.from('profiles').select('count').limit(1);
-      if (error && !error.message.includes('relation "profiles" does not exist')) {
-        throw new Error(`Database connection failed: ${error.message}`);
-      }
-    });
-
-    await runTest('Draft Service - Create', async () => {
-      const testTitle = `Test Draft ${Date.now()}`;
-      const draftId = await draftService.createDraft({
-        title: testTitle,
-        projectId: 'demo-project-id'
-      });
-      if (!draftId) {
-        throw new Error('Failed to create draft');
-      }
-    });
-
-    await runTest('Draft Service - Validation', async () => {
+    for (const test of tests) {
       try {
-        await draftService.createDraft({
-          title: '<script>alert("xss")</script>',
-          projectId: 'demo-project-id'
-        });
-        throw new Error('XSS validation failed');
+        setResults(prev => [...prev, { name: test.name, status: 'pending' }]);
+        await test.run();
+        setResults(prev => 
+          prev.map(r => 
+            r.name === test.name 
+              ? { ...r, status: 'success' } 
+              : r
+          )
+        );
       } catch (error) {
-        if (error instanceof Error && error.message.includes('Invalid characters')) {
-          // Expected error
-          return;
-        }
-        throw error;
+        setResults(prev => 
+          prev.map(r => 
+            r.name === test.name 
+              ? { ...r, status: 'failure', error: error.message } 
+              : r
+          )
+        );
       }
-    });
-
-    // OpenRouter API Tests
-    await runTest('OpenRouter API Key Validation', async () => {
-      try {
-        openRouterAPI.setApiKey('invalid-key');
-        throw new Error('Should have thrown validation error');
-      } catch (error) {
-        if (error instanceof Error && error.message.includes('Invalid OpenRouter API key format')) {
-          // Expected error
-          return;
-        }
-        throw error;
-      }
-    });
-
-    await runTest('OpenRouter Prompt Validation', async () => {
-      const apiKey = openRouterAPI.getApiKey();
-      if (apiKey && apiKey.startsWith('sk-or-')) {
-        try {
-          await openRouterAPI.sendPrompt('<script>alert("xss")</script>');
-          throw new Error('XSS validation failed');
-        } catch (error) {
-          if (error instanceof Error && error.message.includes('Invalid characters')) {
-            // Expected error
-            return;
-          }
-          throw error;
-        }
-      } else {
-        // Skip if no valid API key
-        return;
-      }
-    });
-
-    // Performance Tests
-    await runTest('Local Storage Performance', async () => {
-      const testData = 'x'.repeat(1000);
-      const iterations = 100;
-      
-      const startTime = Date.now();
-      for (let i = 0; i < iterations; i++) {
-        localStorage.setItem(`test_${i}`, testData);
-        localStorage.getItem(`test_${i}`);
-        localStorage.removeItem(`test_${i}`);
-      }
-      const duration = Date.now() - startTime;
-      
-      if (duration > 1000) {
-        throw new Error(`Local storage operations too slow: ${duration}ms`);
-      }
-    });
-
-    await runTest('Memory Usage Check', async () => {
-      if ('memory' in performance) {
-        const memory = (performance as any).memory;
-        if (memory.usedJSHeapSize > 50 * 1024 * 1024) { // 50MB
-          throw new Error(`High memory usage: ${Math.round(memory.usedJSHeapSize / 1024 / 1024)}MB`);
-        }
-      }
-    });
-
-    // Security Tests
-    await runTest('HTTPS Enforcement', async () => {
-      if (environment.isProduction && location.protocol !== 'https:') {
-        throw new Error('HTTPS not enforced in production');
-      }
-    });
-
-    await runTest('Content Security Policy', async () => {
-      const metaCSP = document.querySelector('meta[http-equiv="Content-Security-Policy"]');
-      if (environment.isProduction && !metaCSP) {
-        console.warn('CSP meta tag not found - consider adding for security');
-      }
-    });
+    }
 
     setIsRunning(false);
-    
-    const successCount = tests.filter(t => t.status === 'success').length;
-    const totalCount = tests.length;
-    
-    toast({
-      title: "Test Suite Complete",
-      description: `${successCount}/${totalCount} tests passed`,
-      duration: 3000,
-    });
+  };
+
+  const getStatusColor = (status: TestResult['status']) => {
+    switch (status) {
+      case 'success': return 'text-green-500';
+      case 'failure': return 'text-red-500';
+      default: return 'text-yellow-500';
+    }
   };
 
   const getStatusIcon = (status: TestResult['status']) => {
@@ -197,7 +116,7 @@ export default function TestPage() {
         return <Loader2 className="h-4 w-4 animate-spin text-blue-500" />;
       case 'success':
         return <Check className="h-4 w-4 text-green-500" />;
-      case 'error':
+      case 'failure':
         return <X className="h-4 w-4 text-red-500" />;
     }
   };
@@ -208,7 +127,7 @@ export default function TestPage() {
         return <Badge variant="secondary">Running</Badge>;
       case 'success':
         return <Badge className="bg-green-500">Passed</Badge>;
-      case 'error':
+      case 'failure':
         return <Badge variant="destructive">Failed</Badge>;
     }
   };
@@ -288,46 +207,37 @@ export default function TestPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <Button 
-            onClick={runAllTests} 
-            disabled={isRunning}
-            className="mb-4"
-          >
-            {isRunning ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Running Tests...
-              </>
-            ) : (
-              'Run All Tests'
-            )}
-          </Button>
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-xl font-semibold">Test Suite</h2>
+            <Button 
+              onClick={runAllTests} 
+              disabled={isRunning}
+            >
+              {isRunning ? 'Running Tests...' : 'Run All Tests'}
+            </Button>
+          </div>
 
-          {tests.length > 0 && (
-            <div className="space-y-2">
-              {tests.map((test, index) => (
-                <div key={index} className="flex items-center justify-between p-3 border rounded">
-                  <div className="flex items-center space-x-3">
-                    {getStatusIcon(test.status)}
-                    <span className="font-medium">{test.name}</span>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    {test.duration && (
-                      <span className="text-sm text-muted-foreground">
-                        {test.duration}ms
-                      </span>
-                    )}
-                    {getStatusBadge(test.status)}
-                  </div>
-                  {test.message && test.status === 'error' && (
-                    <div className="text-sm text-red-600 mt-1">
-                      {test.message}
-                    </div>
-                  )}
+          <div className="space-y-4">
+            {results.map((result) => (
+              <div 
+                key={result.name}
+                className="p-4 border rounded-lg flex justify-between items-center"
+              >
+                <div className="flex items-center space-x-3">
+                  {getStatusIcon(result.status)}
+                  <span className="font-medium">{result.name}</span>
                 </div>
-              ))}
-            </div>
-          )}
+                <div className="flex items-center space-x-2">
+                  {getStatusBadge(result.status)}
+                </div>
+                {result.error && (
+                  <div className="text-sm text-red-500 ml-4">
+                    {result.error}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
         </CardContent>
       </Card>
 
