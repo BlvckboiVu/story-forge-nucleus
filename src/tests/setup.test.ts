@@ -1,41 +1,38 @@
 
-import { describe, it, expect, beforeAll, afterAll } from 'vitest';
+import { expect, afterEach, vi } from 'vitest';
 import { cleanup } from '@testing-library/react';
 import '@testing-library/jest-dom';
 
-// Setup and teardown for all tests
-beforeAll(() => {
-  // Setup global test environment
-  Object.defineProperty(window, 'localStorage', {
-    value: {
-      getItem: vi.fn(),
-      setItem: vi.fn(),
-      removeItem: vi.fn(),
-      clear: vi.fn(),
-    },
-    writable: true,
-  });
-
-  // Mock console.error to avoid noise in tests
-  vi.spyOn(console, 'error').mockImplementation(() => {});
-});
-
-afterAll(() => {
+// Cleanup after each test case
+afterEach(() => {
   cleanup();
-  vi.restoreAllMocks();
 });
 
-describe('Test Setup', () => {
-  it('should have testing environment configured', () => {
-    expect(true).toBe(true);
-  });
-
-  it('should have localStorage mocked', () => {
-    expect(window.localStorage).toBeDefined();
-    expect(typeof window.localStorage.getItem).toBe('function');
-  });
-
-  it('should have DOM testing utilities available', () => {
-    expect(cleanup).toBeDefined();
-  });
+// Mock implementations for common browser APIs
+Object.defineProperty(window, 'matchMedia', {
+  writable: true,
+  value: vi.fn().mockImplementation(query => ({
+    matches: false,
+    media: query,
+    onchange: null,
+    addListener: vi.fn(),
+    removeListener: vi.fn(),
+    addEventListener: vi.fn(),
+    removeEventListener: vi.fn(),
+    dispatchEvent: vi.fn(),
+  })),
 });
+
+// Mock IntersectionObserver
+global.IntersectionObserver = vi.fn().mockImplementation(() => ({
+  observe: vi.fn(),
+  unobserve: vi.fn(),
+  disconnect: vi.fn(),
+}));
+
+// Mock ResizeObserver
+global.ResizeObserver = vi.fn().mockImplementation(() => ({
+  observe: vi.fn(),
+  unobserve: vi.fn(),
+  disconnect: vi.fn(),
+}));

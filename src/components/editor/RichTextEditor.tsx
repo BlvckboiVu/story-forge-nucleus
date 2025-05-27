@@ -3,6 +3,8 @@ import { useEffect, useRef, useState, useCallback } from 'react';
 import ReactQuill from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
 import { Button } from '@/components/ui/button';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { Save } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import { Draft } from '@/lib/db';
@@ -17,6 +19,17 @@ interface RichTextEditorProps {
 const WORD_LIMIT = 50000;
 const AUTO_SAVE_INTERVAL = 30000; // 30 seconds
 
+const fonts = [
+  { value: 'Arial', label: 'Arial' },
+  { value: 'Times New Roman', label: 'Times New Roman' },
+  { value: 'Helvetica', label: 'Helvetica' },
+  { value: 'Georgia', label: 'Georgia' },
+  { value: 'Verdana', label: 'Verdana' },
+  { value: 'Courier New', label: 'Courier New' },
+  { value: 'Trebuchet MS', label: 'Trebuchet MS' },
+  { value: 'Palatino', label: 'Palatino' },
+];
+
 const RichTextEditor = ({
   initialContent = '',
   onSave,
@@ -29,6 +42,7 @@ const RichTextEditor = ({
   const [wordCount, setWordCount] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [selectedFont, setSelectedFont] = useState('Arial');
   const averageWordsPerPage = 250;
   const autoSaveTimeoutRef = useRef<NodeJS.Timeout>();
 
@@ -64,37 +78,44 @@ const RichTextEditor = ({
     };
   }, [hasUnsavedChanges, autoSave]);
 
+  const handleFontChange = (fontFamily: string) => {
+    setSelectedFont(fontFamily);
+    const quill = editorRef.current?.getEditor();
+    if (quill) {
+      const range = quill.getSelection();
+      if (range) {
+        quill.format('font', fontFamily);
+      }
+    }
+  };
+
   const modules = {
     toolbar: {
       container: [
         [{ 'header': [1, 2, 3, 4, 5, 6, false] }],
         ['bold', 'italic', 'underline', 'strike'],
-        [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+        [{ 'color': [] }, { 'background': [] }],
         [{ 'script': 'sub'}, { 'script': 'super' }],
+        [{ 'list': 'ordered'}, { 'list': 'bullet' }],
         [{ 'indent': '-1'}, { 'indent': '+1' }],
-        [{ 'size': ['small', false, 'large', 'huge'] }],
         [{ 'align': [] }],
+        ['blockquote', 'code-block'],
+        ['link'],
         ['clean']
       ],
-      handlers: {
-        // Add ARIA labels to toolbar buttons
-        bold: function() {
-          const button = document.querySelector('.ql-bold');
-          if (button) {
-            button.setAttribute('aria-label', 'Bold text');
-          }
-          this.quill.format('bold', !this.quill.getFormat().bold);
-        },
-        italic: function() {
-          const button = document.querySelector('.ql-italic');
-          if (button) {
-            button.setAttribute('aria-label', 'Italic text');
-          }
-          this.quill.format('italic', !this.quill.getFormat().italic);
-        }
-      }
     },
   };
+
+  const formats = [
+    'header', 'font', 'size',
+    'bold', 'italic', 'underline', 'strike',
+    'color', 'background',
+    'script',
+    'list', 'bullet', 'indent',
+    'align',
+    'blockquote', 'code-block',
+    'link'
+  ];
 
   const calculateWordCount = (text: string) => {
     if (!text) return 0;
@@ -147,29 +168,49 @@ const RichTextEditor = ({
     });
   };
 
-  // Add accessibility labels after component mounts
+  // Add accessibility labels and tooltips after component mounts
   useEffect(() => {
-    const addAriaLabels = () => {
-      const toolbarButtons = document.querySelectorAll('.ql-toolbar button, .ql-toolbar select');
+    const addTooltips = () => {
+      const toolbarButtons = document.querySelectorAll('.ql-toolbar button, .ql-toolbar .ql-picker');
+      
       toolbarButtons.forEach((button) => {
         const className = button.className;
-        if (className.includes('ql-bold') && !button.getAttribute('aria-label')) {
-          button.setAttribute('aria-label', 'Bold text');
-        } else if (className.includes('ql-italic') && !button.getAttribute('aria-label')) {
-          button.setAttribute('aria-label', 'Italic text');
-        } else if (className.includes('ql-underline') && !button.getAttribute('aria-label')) {
-          button.setAttribute('aria-label', 'Underline text');
-        } else if (className.includes('ql-list') && !button.getAttribute('aria-label')) {
+        let title = '';
+        
+        if (className.includes('ql-bold')) title = 'Bold (Ctrl+B)';
+        else if (className.includes('ql-italic')) title = 'Italic (Ctrl+I)';
+        else if (className.includes('ql-underline')) title = 'Underline (Ctrl+U)';
+        else if (className.includes('ql-strike')) title = 'Strikethrough';
+        else if (className.includes('ql-header')) title = 'Header';
+        else if (className.includes('ql-list')) {
           const value = button.getAttribute('value');
-          button.setAttribute('aria-label', value === 'ordered' ? 'Numbered list' : 'Bullet list');
-        } else if (className.includes('ql-header') && !button.getAttribute('aria-label')) {
-          button.setAttribute('aria-label', 'Text heading');
+          title = value === 'ordered' ? 'Numbered List' : 'Bullet List';
+        }
+        else if (className.includes('ql-script')) {
+          const value = button.getAttribute('value');
+          title = value === 'sub' ? 'Subscript' : 'Superscript';
+        }
+        else if (className.includes('ql-indent')) {
+          const value = button.getAttribute('value');
+          title = value === '+1' ? 'Increase Indent' : 'Decrease Indent';
+        }
+        else if (className.includes('ql-align')) title = 'Text Align';
+        else if (className.includes('ql-color')) title = 'Text Color';
+        else if (className.includes('ql-background')) title = 'Background Color';
+        else if (className.includes('ql-blockquote')) title = 'Blockquote';
+        else if (className.includes('ql-code-block')) title = 'Code Block';
+        else if (className.includes('ql-link')) title = 'Insert Link';
+        else if (className.includes('ql-clean')) title = 'Clear Formatting';
+        
+        if (title) {
+          button.setAttribute('title', title);
+          button.setAttribute('aria-label', title);
         }
       });
     };
 
-    // Add labels after a short delay to ensure Quill is fully initialized
-    const timeout = setTimeout(addAriaLabels, 100);
+    // Add tooltips after a short delay to ensure Quill is fully initialized
+    const timeout = setTimeout(addTooltips, 100);
     return () => clearTimeout(timeout);
   }, []);
 
@@ -178,6 +219,25 @@ const RichTextEditor = ({
 
   return (
     <div className="flex flex-col h-full">
+      {/* Custom font selector */}
+      <div className="mb-4 flex items-center gap-4">
+        <div className="flex items-center gap-2">
+          <label htmlFor="font-select" className="text-sm font-medium">Font:</label>
+          <Select value={selectedFont} onValueChange={handleFontChange}>
+            <SelectTrigger className="w-[180px]" id="font-select">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {fonts.map((font) => (
+                <SelectItem key={font.value} value={font.value} style={{ fontFamily: font.value }}>
+                  {font.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
       <div className="border border-gray-200 dark:border-gray-700 rounded-md bg-white dark:bg-gray-900 shadow-sm">
         <ReactQuill
           ref={editorRef}
@@ -185,9 +245,13 @@ const RichTextEditor = ({
           value={content}
           onChange={handleChange}
           modules={modules}
+          formats={formats}
           className="h-[500px] mb-12"
           placeholder="Start writing your masterpiece..."
           readOnly={loading}
+          style={{ 
+            fontFamily: selectedFont,
+          }}
         />
       </div>
       
@@ -207,15 +271,22 @@ const RichTextEditor = ({
           )}
         </div>
         
-        <Button 
-          onClick={handleSave}
-          disabled={loading}
-          variant="default"
-          className={hasUnsavedChanges ? 'bg-orange-600 hover:bg-orange-700' : ''}
-        >
-          <Save className="mr-2 h-4 w-4" />
-          Save {draft?.title ? `"${draft.title}"` : 'draft'}
-        </Button>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button 
+              onClick={handleSave}
+              disabled={loading}
+              variant="default"
+              className={hasUnsavedChanges ? 'bg-orange-600 hover:bg-orange-700' : ''}
+            >
+              <Save className="mr-2 h-4 w-4" />
+              Save {draft?.title ? `"${draft.title}"` : 'draft'}
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>Save your current draft (Ctrl+S)</p>
+          </TooltipContent>
+        </Tooltip>
       </div>
     </div>
   );

@@ -6,23 +6,42 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/components/ui/use-toast';
-import { signIn, signInWithGoogle, signUp } from '@/lib/supabase';
+import { signUp, signInWithGoogle } from '@/lib/supabase';
 import { BookOpen } from 'lucide-react';
 
-export default function Login() {
+export default function Signup() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
 
-  const handleEmailSignIn = async (e: React.FormEvent) => {
+  const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!email || !password) {
+    if (!email || !password || !confirmPassword) {
       toast({
         title: "Missing information",
-        description: "Please enter both email and password",
+        description: "Please fill in all fields",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      toast({
+        title: "Passwords don't match",
+        description: "Please make sure both passwords are the same",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (password.length < 6) {
+      toast({
+        title: "Password too short",
+        description: "Password must be at least 6 characters long",
         variant: "destructive",
       });
       return;
@@ -30,16 +49,16 @@ export default function Login() {
     
     try {
       setIsLoading(true);
-      await signIn(email, password);
+      await signUp(email, password);
       toast({
-        title: "Login successful",
-        description: "Welcome back to StoryForge",
+        title: "Account created successfully",
+        description: "Welcome to StoryForge! You can now start writing.",
       });
       navigate('/dashboard');
     } catch (error) {
       toast({
-        title: "Login failed",
-        description: "Invalid email or password",
+        title: "Signup failed",
+        description: error instanceof Error ? error.message : "Failed to create account",
         variant: "destructive",
       });
     } finally {
@@ -47,13 +66,12 @@ export default function Login() {
     }
   };
 
-  const handleGoogleSignIn = async () => {
+  const handleGoogleSignup = async () => {
     try {
       setIsLoading(true);
       await signInWithGoogle();
     } catch (error) {
       navigate('/auth-error');
-      setIsLoading(false);
     }
   };
 
@@ -88,15 +106,15 @@ export default function Login() {
             <BookOpen size={48} className="text-primary" />
           </div>
           <h1 className="text-3xl font-bold mb-1">StoryForge</h1>
-          <p className="text-muted-foreground">Your writing journey begins here</p>
+          <p className="text-muted-foreground">Start your writing journey today</p>
         </div>
       
         <Card>
           <CardHeader>
-            <CardTitle>Sign In</CardTitle>
-            <CardDescription>Enter your credentials to access your account</CardDescription>
+            <CardTitle>Create Account</CardTitle>
+            <CardDescription>Sign up to start writing your stories</CardDescription>
           </CardHeader>
-          <form onSubmit={handleEmailSignIn}>
+          <form onSubmit={handleSignup}>
             <CardContent className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
@@ -110,24 +128,31 @@ export default function Login() {
                 />
               </div>
               <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="password">Password</Label>
-                  <a href="#" className="text-sm text-primary hover:underline">
-                    Forgot password?
-                  </a>
-                </div>
+                <Label htmlFor="password">Password</Label>
                 <Input
                   id="password"
                   type="password"
+                  placeholder="At least 6 characters"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="confirmPassword">Confirm Password</Label>
+                <Input
+                  id="confirmPassword"
+                  type="password"
+                  placeholder="Confirm your password"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
                   required
                 />
               </div>
             </CardContent>
             <CardFooter className="flex flex-col space-y-4">
               <Button type="submit" className="w-full" disabled={isLoading}>
-                {isLoading ? "Signing in..." : "Sign In"}
+                {isLoading ? "Creating account..." : "Create Account"}
               </Button>
               <div className="relative w-full">
                 <div className="absolute inset-0 flex items-center">
@@ -141,7 +166,7 @@ export default function Login() {
                 type="button" 
                 variant="outline" 
                 className="w-full"
-                onClick={handleGoogleSignIn}
+                onClick={handleGoogleSignup}
                 disabled={isLoading}
               >
                 Google
@@ -156,9 +181,9 @@ export default function Login() {
                 Continue as Guest
               </Button>
               <div className="text-center text-sm">
-                Don't have an account?{" "}
-                <Link to="/signup" className="text-primary hover:underline">
-                  Sign up
+                Already have an account?{" "}
+                <Link to="/login" className="text-primary hover:underline">
+                  Sign in
                 </Link>
               </div>
             </CardFooter>

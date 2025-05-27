@@ -1,12 +1,13 @@
+
 import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/components/ui/use-toast';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { ChevronDown, ChevronUp, Save, FilePlus, FolderOpen } from 'lucide-react';
 import RichTextEditor from '@/components/editor/RichTextEditor';
+import OutlinePanel from '@/components/editor/OutlinePanel';
 import { DraftModal } from '@/components/editor/DraftModal';
 import { DarkModeToggle } from '@/components/ui/DarkModeToggle';
 import { Draft, createDraft, updateDraft, getDraft } from '@/lib/db';
@@ -70,10 +71,12 @@ export default function Editor() {
         wordCount: 0,
       };
       
-      await createDraft(newDraft);
+      const draftId = await createDraft(newDraft);
       
-      // Since we don't have the ID yet, we'll reload the draft list
-      // In a real app with authentication, we would fetch all drafts for the current user/project
+      // Load the newly created draft
+      if (typeof draftId === 'string') {
+        await loadDraft(draftId);
+      }
       
       toast({
         title: "Draft created",
@@ -81,7 +84,6 @@ export default function Editor() {
         duration: 3000,
       });
       
-      // Would normally redirect to the new draft
     } catch (error) {
       console.error("Error creating draft:", error);
       toast({
@@ -140,6 +142,15 @@ export default function Editor() {
       duration: 3000,
     });
   };
+
+  const handleNewDraft = () => {
+    setCurrentDraft(null);
+    toast({
+      title: "New draft",
+      description: "Starting a new draft",
+      duration: 2000,
+    });
+  };
   
   return (
     <div className="h-full flex flex-col">
@@ -159,7 +170,7 @@ export default function Editor() {
               <FolderOpen className="mr-2 h-4 w-4" />
               Open
             </Button>
-            <Button variant="outline" onClick={() => setCurrentDraft(null)}>
+            <Button variant="outline" onClick={handleNewDraft}>
               <FilePlus className="mr-2 h-4 w-4" />
               New
             </Button>
@@ -184,54 +195,26 @@ export default function Editor() {
               </Button>
             </CollapsibleTrigger>
             <CollapsibleContent className="mb-4">
-              <Card className="p-4 space-y-2">
-                <p className="font-medium">Chapter Structure</p>
-                <ul className="space-y-1 text-sm">
-                  <li className="pl-2 border-l-2 border-primary">Introduction of main character</li>
-                  <li className="pl-2 border-l-2 border-muted">Setting the scene</li>
-                  <li className="pl-2 border-l-2 border-muted">Initial conflict</li>
-                  <li className="pl-2 border-l-2 border-muted">Character decision</li>
-                </ul>
-              </Card>
+              <OutlinePanel />
             </CollapsibleContent>
           </Collapsible>
         </div>
         
         {/* Desktop outline sidebar */}
         <div className="hidden md:block w-64 flex-shrink-0 overflow-auto">
-          <Card className="p-4 h-full">
-            <h3 className="font-medium mb-4">Chapter Outline</h3>
-            <div className="space-y-4">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground mb-2">Structure</p>
-                <ul className="space-y-2 text-sm">
-                  <li className="pl-2 border-l-2 border-primary">Introduction of main character</li>
-                  <li className="pl-2 border-l-2 border-muted">Setting the scene</li>
-                  <li className="pl-2 border-l-2 border-muted">Initial conflict</li>
-                  <li className="pl-2 border-l-2 border-muted">Character decision</li>
-                </ul>
-              </div>
-              
-              <div>
-                <p className="text-sm font-medium text-muted-foreground mb-2">Notes</p>
-                <div className="text-sm">
-                  Remember to emphasize the character's internal struggle with their past.
-                </div>
-              </div>
-            </div>
-          </Card>
+          <OutlinePanel className="h-full" />
         </div>
         
         {/* Editor area */}
         <div className="flex-1 min-h-0 overflow-auto">
-          <Card className="p-6 h-full bg-paper dark:bg-paper-dark shadow-sm">
+          <div className="p-6 h-full bg-paper dark:bg-paper-dark shadow-sm border border-gray-200 dark:border-gray-700 rounded-md">
             <RichTextEditor 
               initialContent={currentDraft?.content || ''} 
               onSave={handleSaveDraft}
               draft={currentDraft}
               loading={loading}
             />
-          </Card>
+          </div>
         </div>
       </div>
       
@@ -246,7 +229,7 @@ export default function Editor() {
           Open Draft
         </Button>
         <Button 
-          onClick={() => setCurrentDraft(null)}
+          onClick={handleNewDraft}
           className="w-full" 
           variant="outline"
         >
