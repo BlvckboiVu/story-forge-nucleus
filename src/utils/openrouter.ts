@@ -1,3 +1,6 @@
+
+import { environment } from '../config/environment';
+
 interface OpenRouterResponse {
   choices: Array<{
     message: {
@@ -29,22 +32,53 @@ export const MODELS = {
 
 class OpenRouterAPI {
   private apiKey: string = '';
+  private readonly apiUrl: string;
 
   constructor() {
     this.apiKey = localStorage.getItem('openrouter_api_key') || '';
+    this.apiUrl = environment.isProduction 
+      ? 'https://openrouter.ai/api/v1/chat/completions'
+      : 'https://openrouter.ai/api/v1/chat/completions';
   }
 
   setApiKey(key: string) {
-    this.apiKey = key;
-    localStorage.setItem('openrouter_api_key', key);
+    // Validate API key format
+    if (!key || key.trim().length === 0) {
+      throw new Error('API key cannot be empty');
+    }
+    
+    // Basic format validation (OpenRouter keys start with 'sk-or-')
+    if (!key.startsWith('sk-or-')) {
+      throw new Error('Invalid OpenRouter API key format');
+    }
+
+    this.apiKey = key.trim();
+    localStorage.setItem('openrouter_api_key', this.apiKey);
   }
 
   getApiKey(): string {
     return this.apiKey;
   }
 
+  private validatePrompt(prompt: string): void {
+    if (!prompt || prompt.trim().length === 0) {
+      throw new Error('Prompt cannot be empty');
+    }
+    
+    if (prompt.length > 50000) {
+      throw new Error('Prompt is too long (max 50,000 characters)');
+    }
+
+    // Basic XSS prevention
+    if (/<script|javascript:|on\w+=/i.test(prompt)) {
+      throw new Error('Invalid characters in prompt');
+    }
+  }
+
   private getCacheKey(prompt: string, model: string): string {
-    return `${prompt.substring(0, 100)}_${model}`;
+    // Create a hash-like key from prompt and model
+    const key = `${prompt.substring(0, 100)}_${model}`;
+    return btoa(key).substring(0, 32); // Base64 encode and truncate
   }
 
   private getCache(): CachedResponse[] {
@@ -57,7 +91,8 @@ class OpenRouterAPI {
       
       // Filter out expired entries
       return parsed.filter(item => (now - item.timestamp) < CACHE_EXPIRY);
-    } catch {
+    } catch (error) {
+      console.warn('Failed to parse cache:', error);
       return [];
     }
   }
@@ -93,8 +128,9 @@ class OpenRouterAPI {
     };
     
     // Remove existing entry with same prompt/model if exists
+    const cacheKey = this.getCacheKey(prompt, model);
     const filtered = cache.filter(item => 
-      this.getCacheKey(item.prompt, item.model) !== this.getCacheKey(prompt, model)
+      this.getCacheKey(item.prompt, item.model) !== cacheKey
     );
     
     filtered.push(newEntry);
@@ -106,8 +142,11 @@ class OpenRouterAPI {
       throw new Error('OpenRouter API key is required');
     }
 
-    if (!prompt.trim()) {
-      throw new Error('Prompt cannot be empty');
+    this.validatePrompt(prompt);
+
+    // Validate model
+    if (!Object.values(MODELS).includes(model)) {
+      throw new Error('Invalid model specified');
     }
 
     // Check cache first
@@ -117,7 +156,7 @@ class OpenRouterAPI {
     }
 
     try {
-      const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+      const response = await fetch(this.apiUrl, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${this.apiKey}`,

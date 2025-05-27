@@ -1,66 +1,87 @@
 
-import React from "react";
+import { Suspense, lazy } from "react";
 import { Toaster } from "@/components/ui/toaster";
-import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { Sidebar } from "@/components/layout/Sidebar";
+import { AuthProvider } from "@/contexts/AuthContext";
+import { ProjectProvider } from "@/contexts/ProjectContext";
 
-import Login from "./pages/Login";
-import Signup from "./pages/Signup";
-import AuthError from "./pages/AuthError";
-import Dashboard from "./pages/Dashboard";
-import Editor from "./pages/Editor";
-import Settings from "./pages/Settings";
-import Profile from "./pages/Profile";
-import NotFound from "./pages/NotFound";
-import { MainLayout } from "./components/layout/MainLayout";
-import { AuthProvider } from "./contexts/AuthContext";
-import { ProjectProvider } from "./contexts/ProjectContext";
+// Lazy load pages for better performance
+const Index = lazy(() => import("@/pages/Index"));
+const Login = lazy(() => import("@/pages/Login"));
+const Signup = lazy(() => import("@/pages/Signup"));
+const Dashboard = lazy(() => import("@/pages/Dashboard"));
+const Editor = lazy(() => import("@/pages/Editor"));
+const Profile = lazy(() => import("@/pages/Profile"));
+const Settings = lazy(() => import("@/pages/Settings"));
+const TestPage = lazy(() => import("@/pages/TestPage"));
+const NotFound = lazy(() => import("@/pages/NotFound"));
+const AuthError = lazy(() => import("@/pages/AuthError"));
 
-// Create query client with proper configuration
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      retry: 1,
       staleTime: 5 * 60 * 1000, // 5 minutes
+      gcTime: 10 * 60 * 1000, // 10 minutes
     },
   },
 });
 
-const App: React.FC = () => {
+const LoadingSpinner = () => (
+  <div className="flex items-center justify-center min-h-screen">
+    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+  </div>
+);
+
+function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
         <AuthProvider>
           <ProjectProvider>
-            <Toaster />
-            <Sonner />
             <BrowserRouter>
-              <Routes>
-                <Route path="/" element={<Navigate to="/login" replace />} />
-                <Route path="/login" element={<Login />} />
-                <Route path="/signup" element={<Signup />} />
-                <Route path="/auth-error" element={<AuthError />} />
-                
-                {/* Protected routes with MainLayout */}
-                <Route element={<MainLayout />}>
-                  <Route path="/dashboard" element={<Dashboard />} />
-                  <Route path="/editor" element={<Editor />} />
-                  <Route path="/editor/:documentId" element={<Editor />} />
-                  <Route path="/settings" element={<Settings />} />
-                  <Route path="/profile" element={<Profile />} />
-                </Route>
-                
-                {/* Catch-all route */}
-                <Route path="*" element={<NotFound />} />
-              </Routes>
+              <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+                <Suspense fallback={<LoadingSpinner />}>
+                  <Routes>
+                    <Route path="/" element={<Index />} />
+                    <Route path="/login" element={<Login />} />
+                    <Route path="/signup" element={<Signup />} />
+                    <Route path="/auth/error" element={<AuthError />} />
+                    <Route path="/test" element={<TestPage />} />
+                    <Route
+                      path="/app/*"
+                      element={
+                        <div className="flex h-screen bg-background">
+                          <Sidebar />
+                          <main className="flex-1 overflow-hidden">
+                            <div className="h-full p-6">
+                              <Routes>
+                                <Route index element={<Navigate to="/app/dashboard" replace />} />
+                                <Route path="dashboard" element={<Dashboard />} />
+                                <Route path="editor" element={<Editor />} />
+                                <Route path="editor/:documentId" element={<Editor />} />
+                                <Route path="profile" element={<Profile />} />
+                                <Route path="settings" element={<Settings />} />
+                                <Route path="*" element={<NotFound />} />
+                              </Routes>
+                            </div>
+                          </main>
+                        </div>
+                      }
+                    />
+                    <Route path="*" element={<NotFound />} />
+                  </Routes>
+                </Suspense>
+                <Toaster />
+              </div>
             </BrowserRouter>
           </ProjectProvider>
         </AuthProvider>
       </TooltipProvider>
     </QueryClientProvider>
   );
-};
+}
 
 export default App;

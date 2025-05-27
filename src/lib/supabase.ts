@@ -1,29 +1,38 @@
 
 import { createClient } from '@supabase/supabase-js';
 import type { Database } from '../integrations/supabase/types';
-
-// Initialize the Supabase client
-const supabaseUrl = 'https://jpisccbabnzzkrzevetw.supabase.co';
-const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpwaXNjY2JhYm56emtyemV2ZXR3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDc4MjM5NjQsImV4cCI6MjA2MzM5OTk2NH0.wc3BIQQqVxEr_3hA5quy1X_AP0Fc4-bYLceUUQbv8mE';
+import { environment } from '../config/environment';
 
 /**
- * Supabase client initialization
+ * Supabase client initialization with environment configuration
  */
-export const supabase = createClient<Database>(supabaseUrl, supabaseKey, {
-  auth: {
-    storage: localStorage,
-    persistSession: true,
-    autoRefreshToken: true,
+export const supabase = createClient<Database>(
+  environment.supabaseUrl,
+  environment.supabaseKey,
+  {
+    auth: {
+      storage: localStorage,
+      persistSession: true,
+      autoRefreshToken: true,
+    }
   }
-});
+);
 
 /**
- * Authentication helpers
+ * Authentication helpers with proper error handling
  */
 
 export const signUp = async (email: string, password: string) => {
+  // Input validation
+  if (!email || !email.includes('@')) {
+    throw new Error('Valid email is required');
+  }
+  if (!password || password.length < 6) {
+    throw new Error('Password must be at least 6 characters');
+  }
+
   const { data, error } = await supabase.auth.signUp({
-    email,
+    email: email.toLowerCase().trim(),
     password,
   });
   
@@ -32,8 +41,16 @@ export const signUp = async (email: string, password: string) => {
 };
 
 export const signIn = async (email: string, password: string) => {
+  // Input validation
+  if (!email || !email.includes('@')) {
+    throw new Error('Valid email is required');
+  }
+  if (!password) {
+    throw new Error('Password is required');
+  }
+
   const { data, error } = await supabase.auth.signInWithPassword({
-    email,
+    email: email.toLowerCase().trim(),
     password,
   });
   
@@ -44,6 +61,11 @@ export const signIn = async (email: string, password: string) => {
 export const signInWithGoogle = async () => {
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: 'google',
+    options: {
+      redirectTo: environment.isProduction 
+        ? 'https://yourdomain.com/auth/callback'
+        : 'http://localhost:8080/auth/callback'
+    }
   });
   
   if (error) throw error;
