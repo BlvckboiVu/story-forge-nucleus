@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
@@ -14,6 +15,7 @@ export default function Editor() {
   const [currentDraft, setCurrentDraft] = useState<Draft | null>(null);
   const [loading, setLoading] = useState(false);
   const [editorRef, setEditorRef] = useState<any>(null);
+  const [saveError, setSaveError] = useState<string | null>(null);
   const { toast } = useToast();
   
   // Load draft if documentId is provided
@@ -24,7 +26,19 @@ export default function Editor() {
   }, [documentId]);
 
   const loadDraft = async (id: string) => {
+    if (!id.trim()) {
+      toast({
+        title: "Invalid document ID",
+        description: "The document ID is empty or invalid",
+        variant: "destructive",
+        duration: 3000,
+      });
+      return;
+    }
+
     setLoading(true);
+    setSaveError(null);
+    
     try {
       const draft = await draftService.getDraft(id);
       if (draft) {
@@ -46,23 +60,30 @@ export default function Editor() {
       }
     } catch (error) {
       console.error("Error loading draft:", error);
+      const errorMessage = error instanceof Error ? error.message : "Failed to load the document";
+      setSaveError(errorMessage);
       toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "Failed to load the document",
+        title: "Error loading draft",
+        description: errorMessage,
         variant: "destructive",
-        duration: 3000,
+        duration: 5000,
       });
+      // Don't navigate away on error - let user retry
     } finally {
       setLoading(false);
     }
   };
   
   const handleCreateDraft = async (title: string) => {
+    if (!title.trim()) {
+      throw new Error("Title cannot be empty");
+    }
+
     try {
       const projectId = "demo-project-id";
       
       const draftId = await draftService.createDraft({
-        title,
+        title: title.trim(),
         projectId,
       });
       
@@ -81,27 +102,36 @@ export default function Editor() {
       
     } catch (error) {
       console.error("Error creating draft:", error);
+      const errorMessage = error instanceof Error ? error.message : "Failed to create new draft";
       toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "Failed to create new draft",
+        title: "Error creating draft",
+        description: errorMessage,
         variant: "destructive",
-        duration: 3000,
+        duration: 5000,
       });
       throw error; // Re-throw so the modal can handle it
     }
   };
   
   const handleSaveDraft = async (content: string) => {
+    if (!content && !currentDraft) {
+      // If no content and no current draft, open the modal to create one
+      setDraftModalOpen(true);
+      return;
+    }
+
     if (!currentDraft) {
-      // If no current draft, open the modal to create one
+      // If we have content but no draft, open modal to create one
       setDraftModalOpen(true);
       return;
     }
     
+    setSaveError(null);
+    
     try {
-      // Calculate word count
+      // Calculate word count from content
       const plainText = content.replace(/<[^>]*>/g, ' ');
-      const wordCount = plainText.trim().split(/\s+/).filter(word => word !== '').length;
+      const wordCount = plainText.trim().split(/\s+/).filter(word => word.length > 0).length;
       
       await draftService.updateDraft(currentDraft.id, {
         content,
@@ -115,24 +145,23 @@ export default function Editor() {
         updatedAt: new Date()
       });
       
-      toast({
-        title: "Draft saved",
-        description: `"${currentDraft.title}" has been saved`,
-        duration: 3000,
-      });
     } catch (error) {
       console.error("Error saving draft:", error);
+      const errorMessage = error instanceof Error ? error.message : "Failed to save draft";
+      setSaveError(errorMessage);
       toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "Failed to save draft",
+        title: "Error saving draft",
+        description: errorMessage,
         variant: "destructive",
-        duration: 3000,
+        duration: 5000,
       });
+      throw error; // Re-throw so the auto-save can handle it
     }
   };
 
   const handleOpenDraft = (draft: Draft) => {
     setCurrentDraft(draft);
+    setSaveError(null);
     // Update URL to include the draft ID
     navigate(`/app/editor/${draft.id}`, { replace: true });
     toast({
@@ -144,6 +173,7 @@ export default function Editor() {
 
   const handleNewDraft = () => {
     setCurrentDraft(null);
+    setSaveError(null);
     // Navigate to editor without document ID
     navigate('/app/editor', { replace: true });
     toast({
@@ -154,7 +184,17 @@ export default function Editor() {
   };
 
   const handleInsertLLMResponse = (text: string) => {
-    if (editorRef && editorRef.getEditor) {
+    if (!editorRef || !editorRef.getEditor) {
+      toast({
+        title: "Editor not ready",
+        description: "Please wait for the editor to load before inserting text",
+        variant: "destructive",
+        duration: 3000,
+      });
+      return;
+    }
+
+    try {
       const quill = editorRef.getEditor();
       const range = quill.getSelection();
       const index = range ? range.index : quill.getLength();
@@ -168,6 +208,20 @@ export default function Editor() {
       // Get updated content and save
       const updatedContent = quill.root.innerHTML;
       handleSaveDraft(updatedContent);
+      
+      toast({
+        title: "Text inserted",
+        description: "AI response has been inserted into your document",
+        duration: 2000,
+      });
+    } catch (error) {
+      console.error("Error inserting LLM response:", error);
+      toast({
+        title: "Insert failed",
+        description: "Failed to insert text into the editor",
+        variant: "destructive",
+        duration: 3000,
+      });
     }
   };
   
@@ -188,6 +242,15 @@ export default function Editor() {
         onInsertLLMResponse={handleInsertLLMResponse}
         onEditorReady={setEditorRef}
       />
+
+      {/* Save error notification */}
+      {saveError && (
+        <div className="fixed bottom-4 left-4 right-4 z-50 bg-red-50 dark:bg-red-900/50 border border-red-200 dark:border-red-800 rounded-lg p-3">
+          <p className="text-sm text-red-800 dark:text-red-200">
+            Save Error: {saveError}
+          </p>
+        </div>
+      )}
 
       {/* Draft modal */}
       <DraftModal 
