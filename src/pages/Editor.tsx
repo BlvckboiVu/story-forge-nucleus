@@ -1,7 +1,6 @@
 
 import { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
-import { Separator } from '@/components/ui/separator';
+import { useParams, useNavigate } from 'react-router-dom';
 import { useToast } from '@/components/ui/use-toast';
 import { EditorHeader } from '@/components/editor/EditorHeader';
 import { EditorLayout } from '@/components/editor/EditorLayout';
@@ -11,6 +10,7 @@ import { draftService } from '@/services/draftService';
 
 export default function Editor() {
   const { documentId } = useParams();
+  const navigate = useNavigate();
   const [draftModalOpen, setDraftModalOpen] = useState(false);
   const [currentDraft, setCurrentDraft] = useState<Draft | null>(null);
   const [loading, setLoading] = useState(false);
@@ -42,6 +42,8 @@ export default function Editor() {
           variant: "destructive",
           duration: 3000,
         });
+        // Navigate back to editor without document ID
+        navigate('/app/editor', { replace: true });
       }
     } catch (error) {
       console.error("Error loading draft:", error);
@@ -68,6 +70,8 @@ export default function Editor() {
       // Load the newly created draft
       if (typeof draftId === 'string') {
         await loadDraft(draftId);
+        // Update URL to include the new draft ID
+        navigate(`/app/editor/${draftId}`, { replace: true });
       }
       
       toast({
@@ -84,11 +88,13 @@ export default function Editor() {
         variant: "destructive",
         duration: 3000,
       });
+      throw error; // Re-throw so the modal can handle it
     }
   };
   
   const handleSaveDraft = async (content: string) => {
     if (!currentDraft) {
+      // If no current draft, open the modal to create one
       setDraftModalOpen(true);
       return;
     }
@@ -128,6 +134,8 @@ export default function Editor() {
 
   const handleOpenDraft = (draft: Draft) => {
     setCurrentDraft(draft);
+    // Update URL to include the draft ID
+    navigate(`/app/editor/${draft.id}`, { replace: true });
     toast({
       title: "Draft opened",
       description: `"${draft.title}" has been opened`,
@@ -137,6 +145,8 @@ export default function Editor() {
 
   const handleNewDraft = () => {
     setCurrentDraft(null);
+    // Navigate to editor without document ID
+    navigate('/app/editor', { replace: true });
     toast({
       title: "New draft",
       description: "Starting a new draft",
@@ -163,14 +173,12 @@ export default function Editor() {
   };
   
   return (
-    <div className="h-full flex flex-col">
+    <div className="h-full flex flex-col overflow-hidden">
       <EditorHeader
         currentDraft={currentDraft}
         onOpenDraft={() => setDraftModalOpen(true)}
         onNewDraft={handleNewDraft}
       />
-      
-      <Separator className="my-2" />
       
       <EditorLayout
         currentDraft={currentDraft}

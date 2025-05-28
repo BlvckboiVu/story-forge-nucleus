@@ -42,7 +42,7 @@ function App() {
         <AuthProvider>
           <ProjectProvider>
             <BrowserRouter>
-              <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+              <div className="min-h-screen bg-gray-50 dark:bg-gray-900 w-full">
                 <Suspense fallback={<LoadingSpinner />}>
                   <Routes>
                     <Route path="/" element={<Index />} />

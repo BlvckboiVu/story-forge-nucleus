@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
-import { Draft, createDraft, getDrafts } from '@/lib/db';
+import { Draft, getDrafts } from '@/lib/db';
 import { useToast } from '@/components/ui/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
 import { formatDistanceToNow } from 'date-fns';
@@ -20,6 +20,7 @@ export function DraftModal({ isOpen, onClose, onCreateDraft, onOpenDraft, projec
   const [title, setTitle] = useState('');
   const [drafts, setDrafts] = useState<Draft[]>([]);
   const [loading, setLoading] = useState(false);
+  const [isCreating, setIsCreating] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -28,13 +29,21 @@ export function DraftModal({ isOpen, onClose, onCreateDraft, onOpenDraft, projec
     }
   }, [isOpen, projectId]);
 
+  // Reset form when modal closes
+  useEffect(() => {
+    if (!isOpen) {
+      setTitle('');
+      setIsCreating(false);
+    }
+  }, [isOpen]);
+
   const loadDrafts = async () => {
     if (!projectId) return;
 
     setLoading(true);
     try {
       const draftsList = await getDrafts(projectId);
-      setDrafts(draftsList);
+      setDrafts(draftsList.sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()));
     } catch (error) {
       console.error('Error loading drafts:', error);
       toast({
@@ -48,8 +57,10 @@ export function DraftModal({ isOpen, onClose, onCreateDraft, onOpenDraft, projec
     }
   };
 
-  const handleCreateDraft = () => {
-    if (!title.trim()) {
+  const handleCreateDraft = async () => {
+    const trimmedTitle = title.trim();
+    
+    if (!trimmedTitle) {
       toast({
         title: "Title required",
         description: "Please enter a title for your draft",
@@ -59,76 +70,145 @@ export function DraftModal({ isOpen, onClose, onCreateDraft, onOpenDraft, projec
       return;
     }
 
-    onCreateDraft(title);
-    setTitle('');
-    onClose();
+    if (trimmedTitle.length > 200) {
+      toast({
+        title: "Title too long",
+        description: "Title must be less than 200 characters",
+        variant: "destructive",
+        duration: 3000,
+      });
+      return;
+    }
+
+    setIsCreating(true);
+    try {
+      await onCreateDraft(trimmedTitle);
+      setTitle('');
+      onClose();
+    } catch (error) {
+      console.error('Error creating draft:', error);
+      toast({
+        title: "Error",
+        description: "Failed to create draft. Please try again.",
+        variant: "destructive",
+        duration: 3000,
+      });
+    } finally {
+      setIsCreating(false);
+    }
   };
 
   const handleOpenDraft = (draft: Draft) => {
-    onOpenDraft(draft);
-    onClose();
+    try {
+      onOpenDraft(draft);
+      onClose();
+    } catch (error) {
+      console.error('Error opening draft:', error);
+      toast({
+        title: "Error",
+        description: "Failed to open draft. Please try again.",
+        variant: "destructive",
+        duration: 3000,
+      });
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      if (!isCreating) {
+        handleCreateDraft();
+      }
+    }
   };
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-md max-h-[80vh] overflow-hidden flex flex-col">
         <DialogHeader>
           <DialogTitle>Manage Drafts</DialogTitle>
         </DialogHeader>
-        <div className="grid gap-4 py-4">
-          <div className="space-y-2">
+        
+        <div className="flex flex-col gap-4 py-4 min-h-0">
+          {/* Create New Draft Section */}
+          <div className="space-y-3">
             <h3 className="text-sm font-medium">Create New Draft</h3>
             <div className="flex items-center gap-2">
               <Input
-                placeholder="Draft Title"
+                placeholder="Enter draft title..."
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
+                onKeyDown={handleKeyDown}
                 className="flex-1"
-                maxLength={100}
-                required
+                maxLength={200}
+                disabled={isCreating}
+                autoFocus
               />
-              <Button onClick={handleCreateDraft}>Create</Button>
+              <Button 
+                onClick={handleCreateDraft}
+                disabled={!title.trim() || isCreating}
+                className="shrink-0"
+              >
+                {isCreating ? "Creating..." : "Create"}
+              </Button>
             </div>
+            {title.length > 180 && (
+              <p className="text-xs text-amber-600">
+                {200 - title.length} characters remaining
+              </p>
+            )}
           </div>
           
-          <div className="space-y-2">
+          {/* Recent Drafts Section */}
+          <div className="space-y-3 min-h-0 flex flex-col">
             <h3 className="text-sm font-medium">Recent Drafts</h3>
-            <div className="space-y-2 max-h-[250px] overflow-y-auto">
+            <div className="space-y-2 overflow-y-auto max-h-[250px] pr-2">
               {loading ? (
-                <>
-                  <Skeleton className="h-12 w-full" />
-                  <Skeleton className="h-12 w-full" />
-                  <Skeleton className="h-12 w-full" />
-                </>
+                Array.from({ length: 3 }).map((_, index) => (
+                  <Skeleton key={index} className="h-16 w-full" />
+                ))
               ) : drafts.length > 0 ? (
                 drafts.map((draft) => (
                   <div
                     key={draft.id}
-                    onClick={() => handleOpenDraft(draft)}
                     className="flex justify-between items-center p-3 rounded-md border cursor-pointer hover:bg-muted transition-colors"
+                    onClick={() => handleOpenDraft(draft)}
                   >
-                    <div>
-                      <h4 className="font-medium">{draft.title}</h4>
+                    <div className="flex-1 min-w-0">
+                      <h4 className="font-medium text-sm truncate">{draft.title}</h4>
                       <p className="text-xs text-muted-foreground">
                         {formatDistanceToNow(new Date(draft.updatedAt), { addSuffix: true })}
                         {' · '}
-                        {draft.wordCount} words
+                        {draft.wordCount?.toLocaleString() || 0} words
                       </p>
                     </div>
-                    <Button variant="ghost" size="sm">Open</Button>
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      className="shrink-0"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleOpenDraft(draft);
+                      }}
+                    >
+                      Open
+                    </Button>
                   </div>
                 ))
               ) : (
-                <p className="text-sm text-muted-foreground text-center py-4">
-                  No drafts found. Create your first draft to get started.
-                </p>
+                <div className="text-center py-8">
+                  <p className="text-sm text-muted-foreground">
+                    No drafts found. Create your first draft to get started.
+                  </p>
+                </div>
               )}
             </div>
           </div>
         </div>
+        
         <DialogFooter className="sm:justify-end">
           <Button variant="outline" onClick={onClose}>
-            Cancel
+            Close
           </Button>
         </DialogFooter>
       </DialogContent>
