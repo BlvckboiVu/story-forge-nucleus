@@ -3,7 +3,7 @@ import { ApiService } from '@/services/api.service';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { useToast } from '@/components/ui/use-toast';
+import { useToast } from '@/hooks/use-toast';
 import { Check, X, Loader2, Database, Zap, Shield, Globe, Wifi, WifiOff } from 'lucide-react';
 import { environment } from '@/config/environment';
 import { supabase } from '@/lib/supabase';
