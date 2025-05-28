@@ -37,47 +37,45 @@ const LoadingSpinner = () => (
 
 const App: React.FC = () => {
   return (
-    <React.StrictMode>
-      <QueryClientProvider client={queryClient}>
-        <TooltipProvider>
-          <BrowserRouter>
-            <AuthProvider>
-              <ProjectProvider>
-                <div className="min-h-screen bg-gray-50 dark:bg-gray-900 w-full">
-                  <Suspense fallback={<LoadingSpinner />}>
-                    <Routes>
-                      <Route path="/" element={<Index />} />
-                      <Route path="/login" element={<Login />} />
-                      <Route path="/signup" element={<Signup />} />
-                      <Route path="/auth/error" element={<AuthError />} />
-                      <Route path="/test" element={<TestPage />} />
-                      <Route
-                        path="/app/*"
-                        element={
-                          <MainLayout>
-                            <Routes>
-                              <Route index element={<Navigate to="/app/dashboard" replace />} />
-                              <Route path="dashboard" element={<Dashboard />} />
-                              <Route path="editor" element={<Editor />} />
-                              <Route path="editor/:documentId" element={<Editor />} />
-                              <Route path="profile" element={<Profile />} />
-                              <Route path="settings" element={<Settings />} />
-                              <Route path="*" element={<NotFound />} />
-                            </Routes>
-                          </MainLayout>
-                        }
-                      />
-                      <Route path="*" element={<NotFound />} />
-                    </Routes>
-                  </Suspense>
-                  <Toaster />
-                </div>
-              </ProjectProvider>
-            </AuthProvider>
-          </BrowserRouter>
-        </TooltipProvider>
-      </QueryClientProvider>
-    </React.StrictMode>
+    <QueryClientProvider client={queryClient}>
+      <TooltipProvider>
+        <BrowserRouter>
+          <AuthProvider>
+            <ProjectProvider>
+              <div className="min-h-screen bg-gray-50 dark:bg-gray-900 w-full">
+                <Suspense fallback={<LoadingSpinner />}>
+                  <Routes>
+                    <Route path="/" element={<Index />} />
+                    <Route path="/login" element={<Login />} />
+                    <Route path="/signup" element={<Signup />} />
+                    <Route path="/auth/error" element={<AuthError />} />
+                    <Route path="/test" element={<TestPage />} />
+                    <Route
+                      path="/app/*"
+                      element={
+                        <MainLayout>
+                          <Routes>
+                            <Route index element={<Navigate to="/app/dashboard" replace />} />
+                            <Route path="dashboard" element={<Dashboard />} />
+                            <Route path="editor" element={<Editor />} />
+                            <Route path="editor/:documentId" element={<Editor />} />
+                            <Route path="profile" element={<Profile />} />
+                            <Route path="settings" element={<Settings />} />
+                            <Route path="*" element={<NotFound />} />
+                          </Routes>
+                        </MainLayout>
+                      }
+                    />
+                    <Route path="*" element={<NotFound />} />
+                  </Routes>
+                </Suspense>
+                <Toaster />
+              </div>
+            </ProjectProvider>
+          </AuthProvider>
+        </BrowserRouter>
+      </TooltipProvider>
+    </QueryClientProvider>
   );
 };
 
