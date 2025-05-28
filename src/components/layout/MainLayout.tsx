@@ -1,11 +1,14 @@
 
-import { useState } from 'react';
-import { Outlet } from 'react-router-dom';
+import { useState, ReactNode } from 'react';
 import { Sidebar } from './Sidebar';
 import { MobileNav } from './MobileNav';
 import { useIsMobile } from '@/hooks/use-mobile';
 
-export function MainLayout() {
+interface MainLayoutProps {
+  children: ReactNode;
+}
+
+export function MainLayout({ children }: MainLayoutProps) {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const isMobile = useIsMobile();
   
@@ -35,7 +38,7 @@ export function MainLayout() {
         
         {/* Main content area */}
         <main className={`flex-1 overflow-auto transition-all duration-300 ${isMobile ? 'p-4' : 'p-6'}`}>
-          <Outlet />
+          {children}
         </main>
       </div>
     </div>
