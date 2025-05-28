@@ -19,10 +19,10 @@ export function MainLayout({ children }: MainLayoutProps) {
   return (
     <div className="flex flex-col h-screen overflow-hidden bg-background">
       {/* Mobile header */}
-      <header className="h-14 md:hidden border-b border-border flex items-center justify-between px-4">
+      <header className="h-12 sm:h-14 md:hidden border-b border-border flex items-center justify-between px-3 sm:px-4">
         <div className="flex items-center gap-2">
           <MobileNav />
-          <span className="font-semibold text-lg">StoryForge</span>
+          <span className="font-semibold text-base sm:text-lg">StoryForge</span>
         </div>
       </header>
       
@@ -37,7 +37,7 @@ export function MainLayout({ children }: MainLayoutProps) {
         )}
         
         {/* Main content area */}
-        <main className={`flex-1 overflow-auto transition-all duration-300 ${isMobile ? 'p-4' : 'p-6'}`}>
+        <main className={`flex-1 overflow-hidden transition-all duration-300 ${isMobile ? '' : 'p-4 lg:p-6'}`}>
           {children}
         </main>
       </div>

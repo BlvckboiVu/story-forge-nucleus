@@ -63,19 +63,17 @@ export const EditorLayout = ({
           onToggleFullscreen={toggleFullscreen}
         />
         
-        <div className="flex-1 min-h-0 overflow-hidden">
-          <div className="h-full bg-paper dark:bg-paper-dark">
-            <RichTextEditor 
-              initialContent={currentDraft?.content || ''} 
-              onSave={onSaveDraft}
-              draft={currentDraft}
-              loading={loading}
-              onEditorReady={onEditorReady}
-              isFocusMode={isFullscreen}
-              onToggleFocus={toggleFullscreen}
-              isMobile={true}
-            />
-          </div>
+        <div className="flex-1 min-h-0 overflow-hidden bg-paper dark:bg-paper-dark">
+          <RichTextEditor 
+            initialContent={currentDraft?.content || ''} 
+            onSave={onSaveDraft}
+            draft={currentDraft}
+            loading={loading}
+            onEditorReady={onEditorReady}
+            isFocusMode={isFullscreen}
+            onToggleFocus={toggleFullscreen}
+            isMobile={true}
+          />
         </div>
       </div>
     );
@@ -83,17 +81,17 @@ export const EditorLayout = ({
 
   // Desktop layout
   return (
-    <div className="flex-1 flex flex-col md:flex-row gap-4 h-full overflow-hidden">
+    <div className="flex-1 flex gap-3 lg:gap-4 h-full overflow-hidden p-3 lg:p-4">
       {/* Desktop outline sidebar */}
       {!isFocusMode && (
-        <div className="hidden md:block w-64 flex-shrink-0 overflow-auto">
+        <div className="hidden md:block w-56 lg:w-64 flex-shrink-0 overflow-auto">
           <OutlinePanel className="h-full" />
         </div>
       )}
       
       {/* Editor area */}
       <div className="flex-1 min-h-0 overflow-hidden">
-        <div className="h-full bg-paper dark:bg-paper-dark shadow-sm border border-gray-200 dark:border-gray-700 rounded-md overflow-hidden">
+        <div className="h-full bg-paper dark:bg-paper-dark shadow-sm border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
           <RichTextEditor 
             initialContent={currentDraft?.content || ''} 
             onSave={onSaveDraft}
@@ -117,23 +115,25 @@ export const EditorLayout = ({
         </div>
       )}
 
-      {/* Desktop action buttons */}
-      <div className="hidden md:flex lg:hidden fixed bottom-4 right-4 flex-col gap-2">
+      {/* Desktop action buttons for medium screens */}
+      <div className="hidden md:flex lg:hidden fixed bottom-6 right-6 flex-col gap-3">
         <Button 
           onClick={onOpenDraft}
           size="icon"
           variant="secondary"
-          className="rounded-full shadow-lg"
+          className="rounded-full shadow-lg h-12 w-12"
+          title="Open Draft"
         >
-          <FolderOpen className="h-4 w-4" />
+          <FolderOpen className="h-5 w-5" />
         </Button>
         <Button 
           onClick={onNewDraft}
           size="icon"
           variant="secondary"
-          className="rounded-full shadow-lg"
+          className="rounded-full shadow-lg h-12 w-12"
+          title="New Draft"
         >
-          <FilePlus className="h-4 w-4" />
+          <FilePlus className="h-5 w-5" />
         </Button>
       </div>
     </div>

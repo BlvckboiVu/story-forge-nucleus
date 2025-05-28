@@ -31,30 +31,30 @@ export const WritingViewOptions = ({
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <Button variant="ghost" size="sm" className="h-8 gap-1">
+        <Button variant="ghost" size="sm" className="h-8 w-8 sm:h-9 sm:w-auto sm:gap-1 p-0 sm:px-3" title="View Options">
           <Settings2 className="h-4 w-4" />
-          <span className="hidden sm:inline">View</span>
+          <span className="hidden sm:inline text-xs lg:text-sm">View</span>
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-64" align="end">
+      <PopoverContent className="w-56 sm:w-64" align="end">
         <div className="space-y-4">
           <div>
             <Label className="text-sm font-medium">Writing Mode</Label>
             <RadioGroup
               value={viewMode}
               onValueChange={(value) => onViewModeChange(value as 'scroll' | 'page')}
-              className="mt-2"
+              className="mt-2 space-y-2"
             >
               <div className="flex items-center space-x-2">
-                <RadioGroupItem value="scroll" id="scroll" />
-                <Label htmlFor="scroll" className="flex items-center gap-2 text-sm">
+                <RadioGroupItem value="scroll" id="scroll" className="h-4 w-4" />
+                <Label htmlFor="scroll" className="flex items-center gap-2 text-sm cursor-pointer">
                   <Scroll className="h-4 w-4" />
                   Continuous Scroll
                 </Label>
               </div>
               <div className="flex items-center space-x-2">
-                <RadioGroupItem value="page" id="page" />
-                <Label htmlFor="page" className="flex items-center gap-2 text-sm">
+                <RadioGroupItem value="page" id="page" className="h-4 w-4" />
+                <Label htmlFor="page" className="flex items-center gap-2 text-sm cursor-pointer">
                   <BookOpen className="h-4 w-4" />
                   Page View
                 </Label>
@@ -68,12 +68,12 @@ export const WritingViewOptions = ({
               <RadioGroup
                 value={pageHeight.toString()}
                 onValueChange={(value) => onPageHeightChange(parseInt(value))}
-                className="mt-2"
+                className="mt-2 space-y-2"
               >
                 {pageHeights.map((size) => (
                   <div key={size.value} className="flex items-center space-x-2">
-                    <RadioGroupItem value={size.value.toString()} id={size.value.toString()} />
-                    <Label htmlFor={size.value.toString()} className="text-sm">
+                    <RadioGroupItem value={size.value.toString()} id={size.value.toString()} className="h-4 w-4" />
+                    <Label htmlFor={size.value.toString()} className="text-sm cursor-pointer">
                       {size.label}
                     </Label>
                   </div>
