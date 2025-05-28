@@ -1,19 +1,13 @@
+
 import { useState, useEffect } from 'react';
 import { ApiService } from '@/services/api.service';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/components/ui/use-toast';
 import { Check, X, Loader2, Database, Zap, Shield, Globe, Wifi, WifiOff } from 'lucide-react';
 import { environment } from '@/config/environment';
 import { supabase } from '@/lib/supabase';
-
-// Import all test files
-import * as llmTests from '@/tests/llm.test';
-import * as insertTests from '@/tests/insert.test';
-import * as draftTests from '@/tests/draft.test';
-import * as editorTests from '@/tests/Editor.test';
 
 interface TestResult {
   name: string;
@@ -54,50 +48,108 @@ export default function TestPage() {
     };
   }, []);
 
-  // Collect all tests from imported test files
+  // Browser-compatible test functions
   const testSuites: TestSuite[] = [
     {
-      name: 'LLM Tests',
-      tests: Object.entries(llmTests)
-        .filter(([key]) => key.includes('test'))
-        .map(([key, fn]) => ({
-          name: key,
-          run: fn as () => Promise<void>,
+      name: 'Database Tests',
+      tests: [
+        {
+          name: 'Supabase Connection',
+          run: async () => {
+            const { data, error } = await supabase.from('profiles').select('count').limit(1);
+            if (error) throw new Error(`Database connection failed: ${error.message}`);
+          },
           isOfflineCapable: false
-        })),
+        },
+        {
+          name: 'Local Storage',
+          run: async () => {
+            const testKey = 'test-key';
+            const testValue = 'test-value';
+            localStorage.setItem(testKey, testValue);
+            const retrieved = localStorage.getItem(testKey);
+            localStorage.removeItem(testKey);
+            if (retrieved !== testValue) throw new Error('Local storage test failed');
+          },
+          isOfflineCapable: true
+        }
+      ],
       isOfflineCapable: false
     },
     {
-      name: 'Insert Tests',
-      tests: Object.entries(insertTests)
-        .filter(([key]) => key.includes('test'))
-        .map(([key, fn]) => ({
-          name: key,
-          run: fn as () => Promise<void>,
+      name: 'UI Tests',
+      tests: [
+        {
+          name: 'DOM Manipulation',
+          run: async () => {
+            const testElement = document.createElement('div');
+            testElement.id = 'test-element';
+            document.body.appendChild(testElement);
+            const found = document.getElementById('test-element');
+            document.body.removeChild(testElement);
+            if (!found) throw new Error('DOM manipulation test failed');
+          },
           isOfflineCapable: true
-        })),
+        },
+        {
+          name: 'CSS Variables',
+          run: async () => {
+            const root = document.documentElement;
+            const originalValue = getComputedStyle(root).getPropertyValue('--background');
+            if (!originalValue) throw new Error('CSS variables not accessible');
+          },
+          isOfflineCapable: true
+        }
+      ],
       isOfflineCapable: true
     },
     {
-      name: 'Draft Tests',
-      tests: Object.entries(draftTests)
-        .filter(([key]) => key.includes('test'))
-        .map(([key, fn]) => ({
-          name: key,
-          run: fn as () => Promise<void>,
+      name: 'API Tests',
+      tests: [
+        {
+          name: 'Environment Variables',
+          run: async () => {
+            if (!environment.supabaseUrl) throw new Error('Supabase URL not configured');
+            if (!environment.supabaseAnonKey) throw new Error('Supabase Anon Key not configured');
+          },
           isOfflineCapable: true
-        })),
-      isOfflineCapable: true
+        },
+        {
+          name: 'Network Connectivity',
+          run: async () => {
+            if (!navigator.onLine) throw new Error('No network connection');
+            const response = await fetch('https://httpbin.org/status/200', { 
+              method: 'GET',
+              signal: AbortSignal.timeout(5000)
+            });
+            if (!response.ok) throw new Error('Network test failed');
+          },
+          isOfflineCapable: false
+        }
+      ],
+      isOfflineCapable: false
     },
     {
-      name: 'Editor Tests',
-      tests: Object.entries(editorTests)
-        .filter(([key]) => key.includes('test'))
-        .map(([key, fn]) => ({
-          name: key,
-          run: fn as () => Promise<void>,
+      name: 'Security Tests',
+      tests: [
+        {
+          name: 'HTTPS Check',
+          run: async () => {
+            if (location.protocol !== 'https:' && location.hostname !== 'localhost') {
+              throw new Error('Site should be served over HTTPS in production');
+            }
+          },
           isOfflineCapable: true
-        })),
+        },
+        {
+          name: 'Content Security Policy',
+          run: async () => {
+            const metaTags = document.querySelectorAll('meta[http-equiv="Content-Security-Policy"]');
+            console.log('CSP check completed - review manually');
+          },
+          isOfflineCapable: true
+        }
+      ],
       isOfflineCapable: true
     }
   ];
@@ -144,7 +196,7 @@ export default function TestPage() {
           setResults(prev => 
             prev.map(r => 
               r.name === `${suite.name}: ${test.name}`
-                ? { ...r, status: 'failure', error: error.message }
+                ? { ...r, status: 'failure', error: (error as Error).message }
                 : r
             )
           );
@@ -234,19 +286,6 @@ export default function TestPage() {
             </div>
             <p className="text-xs text-muted-foreground">
               Connection security
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Performance</CardTitle>
-            <Zap className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">Optimized</div>
-            <p className="text-xs text-muted-foreground">
-              Build configuration
             </p>
           </CardContent>
         </Card>

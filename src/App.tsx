@@ -4,9 +4,9 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import { Sidebar } from "@/components/layout/Sidebar";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ProjectProvider } from "@/contexts/ProjectContext";
+import { MainLayout } from "@/components/layout/MainLayout";
 
 // Lazy load pages for better performance
 const Index = lazy(() => import("@/pages/Index"));
@@ -53,22 +53,17 @@ function App() {
                     <Route
                       path="/app/*"
                       element={
-                        <div className="flex h-screen bg-background">
-                          <Sidebar />
-                          <main className="flex-1 overflow-hidden">
-                            <div className="h-full p-6">
-                              <Routes>
-                                <Route index element={<Navigate to="/app/dashboard" replace />} />
-                                <Route path="dashboard" element={<Dashboard />} />
-                                <Route path="editor" element={<Editor />} />
-                                <Route path="editor/:documentId" element={<Editor />} />
-                                <Route path="profile" element={<Profile />} />
-                                <Route path="settings" element={<Settings />} />
-                                <Route path="*" element={<NotFound />} />
-                              </Routes>
-                            </div>
-                          </main>
-                        </div>
+                        <MainLayout>
+                          <Routes>
+                            <Route index element={<Navigate to="/app/dashboard" replace />} />
+                            <Route path="dashboard" element={<Dashboard />} />
+                            <Route path="editor" element={<Editor />} />
+                            <Route path="editor/:documentId" element={<Editor />} />
+                            <Route path="profile" element={<Profile />} />
+                            <Route path="settings" element={<Settings />} />
+                            <Route path="*" element={<NotFound />} />
+                          </Routes>
+                        </MainLayout>
                       }
                     />
                     <Route path="*" element={<NotFound />} />
