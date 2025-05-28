@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Menu, X, LayoutDashboard, BookOpen, Settings, User, LogOut, FileText, Zap } from 'lucide-react';
@@ -6,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/contexts/AuthContext';
-import { useToast } from '@/components/ui/use-toast';
+import { useToast } from '@/hooks/use-toast';
 import OutlinePanel from '@/components/editor/OutlinePanel';
 import LLMPanel from '@/components/LLMPanel';
 

@@ -1,8 +1,7 @@
-
 import { useEffect, useRef, useState } from 'react';
 import ReactQuill from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
-import { useToast } from '@/components/ui/use-toast';
+import { useToast } from '@/hooks/use-toast';
 import { Draft } from '@/lib/db';
 import { IntegratedToolbar } from './IntegratedToolbar';
 import { EditorStatusBar } from './EditorStatusBar';

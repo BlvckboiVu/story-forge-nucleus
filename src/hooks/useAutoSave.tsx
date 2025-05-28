@@ -1,6 +1,5 @@
-
 import { useEffect, useRef, useCallback } from 'react';
-import { useToast } from '@/components/ui/use-toast';
+import { useToast } from '@/hooks/use-toast';
 
 interface UseAutoSaveOptions {
   content: string;

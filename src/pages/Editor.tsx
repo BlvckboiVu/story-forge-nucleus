@@ -1,7 +1,6 @@
-
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useToast } from '@/components/ui/use-toast';
+import { useToast } from '@/hooks/use-toast';
 import { EditorHeader } from '@/components/editor/EditorHeader';
 import { EditorLayout } from '@/components/editor/EditorLayout';
 import { DraftModal } from '@/components/editor/DraftModal';

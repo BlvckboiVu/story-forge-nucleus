@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import { PlusCircle, FileText, Calendar } from "lucide-react";
 import { useAuth } from '@/contexts/AuthContext';
 import { useProjects } from '@/contexts/ProjectContext';
