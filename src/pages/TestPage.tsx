@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { ApiService } from '@/services/api.service';
 import { Button } from '@/components/ui/button';
@@ -110,7 +109,7 @@ export default function TestPage() {
           name: 'Environment Variables',
           run: async () => {
             if (!environment.supabaseUrl) throw new Error('Supabase URL not configured');
-            if (!environment.supabaseAnonKey) throw new Error('Supabase Anon Key not configured');
+            if (!environment.supabaseKey) throw new Error('Supabase Key not configured');
           },
           isOfflineCapable: true
         },
