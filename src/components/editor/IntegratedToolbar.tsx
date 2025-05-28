@@ -14,8 +14,11 @@ import {
   Quote,
   Save,
   Maximize2,
-  Minimize2
+  Minimize2,
+  Type
 } from 'lucide-react';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { useState } from 'react';
 
 interface IntegratedToolbarProps {
   selectedFont: string;
@@ -25,6 +28,8 @@ interface IntegratedToolbarProps {
   onSave: () => void;
   hasUnsavedChanges: boolean;
   onFormatClick: (format: string) => void;
+  isMobile?: boolean;
+  extraActions?: React.ReactNode;
 }
 
 const fonts = [
@@ -46,7 +51,11 @@ export const IntegratedToolbar = ({
   onSave,
   hasUnsavedChanges,
   onFormatClick,
+  isMobile = false,
+  extraActions,
 }: IntegratedToolbarProps) => {
+  const [fontPopoverOpen, setFontPopoverOpen] = useState(false);
+
   const formatButtons = [
     { format: 'bold', icon: Bold, label: 'Bold (Ctrl+B)' },
     { format: 'italic', icon: Italic, label: 'Italic (Ctrl+I)' },
@@ -77,7 +86,7 @@ export const IntegratedToolbar = ({
             className={hasUnsavedChanges ? 'text-blue-600' : ''}
           >
             <Save className="h-4 w-4 mr-1" />
-            Save
+            {!isMobile && 'Save'}
           </Button>
         </div>
         
@@ -92,6 +101,83 @@ export const IntegratedToolbar = ({
     );
   }
 
+  if (isMobile) {
+    return (
+      <div className="flex items-center justify-between p-2 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
+        <div className="flex items-center gap-1">
+          {/* Font Selection for Mobile */}
+          <Popover open={fontPopoverOpen} onOpenChange={setFontPopoverOpen}>
+            <PopoverTrigger asChild>
+              <Button variant="ghost" size="sm" className="h-8 gap-1">
+                <Type className="h-4 w-4" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-48" align="start">
+              <div className="space-y-2">
+                <p className="text-sm font-medium">Font Family</p>
+                <Select value={selectedFont} onValueChange={(value) => {
+                  onFontChange(value);
+                  setFontPopoverOpen(false);
+                }}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {fonts.map((font) => (
+                      <SelectItem key={font.value} value={font.value} style={{ fontFamily: font.value }}>
+                        {font.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </PopoverContent>
+          </Popover>
+
+          <Separator orientation="vertical" className="h-6" />
+
+          {/* Essential Format Buttons */}
+          {formatButtons.map(({ format, icon: Icon, label }) => (
+            <Button
+              key={format}
+              variant="ghost"
+              size="sm"
+              onClick={() => onFormatClick(format)}
+              title={label}
+              className="h-8 w-8 p-0"
+            >
+              <Icon className="h-4 w-4" />
+            </Button>
+          ))}
+        </div>
+
+        <div className="flex items-center gap-1">
+          {extraActions}
+          
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={onSave}
+            disabled={!hasUnsavedChanges}
+            className={`h-8 ${hasUnsavedChanges ? 'text-blue-600' : ''}`}
+          >
+            <Save className="h-4 w-4" />
+          </Button>
+          
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={onToggleFocus}
+            className="h-8 w-8 p-0"
+          >
+            <Maximize2 className="h-4 w-4" />
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  // Desktop toolbar
   return (
     <div className="flex items-center justify-between p-3 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
       <div className="flex items-center gap-3">
@@ -168,6 +254,8 @@ export const IntegratedToolbar = ({
       </div>
 
       <div className="flex items-center gap-2">
+        {extraActions}
+        
         <Button
           variant="ghost"
           size="sm"

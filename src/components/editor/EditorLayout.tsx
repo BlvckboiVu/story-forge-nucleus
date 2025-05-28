@@ -1,12 +1,13 @@
 
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { ChevronDown, ChevronUp, FilePlus, FolderOpen } from 'lucide-react';
+import { FilePlus, FolderOpen } from 'lucide-react';
 import OutlinePanel from './OutlinePanel';
 import LLMPanel from '../LLMPanel';
 import RichTextEditor from './RichTextEditor';
+import { MobileEditorHeader } from './MobileEditorHeader';
 import { Draft } from '@/lib/db';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface EditorLayoutProps {
   currentDraft: Draft | null;
@@ -30,6 +31,8 @@ export const EditorLayout = ({
   const [isOutlineVisible, setIsOutlineVisible] = useState(true);
   const [isLLMPanelCollapsed, setIsLLMPanelCollapsed] = useState(false);
   const [isFocusMode, setIsFocusMode] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const isMobile = useIsMobile();
 
   const toggleFocusMode = () => {
     setIsFocusMode(!isFocusMode);
@@ -44,29 +47,43 @@ export const EditorLayout = ({
     }
   };
 
+  const toggleFullscreen = () => {
+    setIsFullscreen(!isFullscreen);
+  };
+
+  if (isMobile) {
+    return (
+      <div className="flex flex-col h-full overflow-hidden">
+        <MobileEditorHeader
+          currentDraft={currentDraft}
+          onOpenDraft={onOpenDraft}
+          onNewDraft={onNewDraft}
+          onInsertLLMResponse={onInsertLLMResponse}
+          isFullscreen={isFullscreen}
+          onToggleFullscreen={toggleFullscreen}
+        />
+        
+        <div className="flex-1 min-h-0 overflow-hidden">
+          <div className="h-full bg-paper dark:bg-paper-dark">
+            <RichTextEditor 
+              initialContent={currentDraft?.content || ''} 
+              onSave={onSaveDraft}
+              draft={currentDraft}
+              loading={loading}
+              onEditorReady={onEditorReady}
+              isFocusMode={isFullscreen}
+              onToggleFocus={toggleFullscreen}
+              isMobile={true}
+            />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Desktop layout
   return (
     <div className="flex-1 flex flex-col md:flex-row gap-4 h-full overflow-hidden">
-      {/* Mobile outline toggle */}
-      {!isFocusMode && (
-        <div className="md:hidden">
-          <Collapsible
-            open={isOutlineVisible}
-            onOpenChange={setIsOutlineVisible}
-            className="w-full"
-          >
-            <CollapsibleTrigger asChild>
-              <Button variant="outline" className="w-full mb-2 flex items-center justify-between">
-                <span>Outline</span>
-                {isOutlineVisible ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-              </Button>
-            </CollapsibleTrigger>
-            <CollapsibleContent className="mb-4">
-              <OutlinePanel />
-            </CollapsibleContent>
-          </Collapsible>
-        </div>
-      )}
-      
       {/* Desktop outline sidebar */}
       {!isFocusMode && (
         <div className="hidden md:block w-64 flex-shrink-0 overflow-auto">
@@ -100,27 +117,25 @@ export const EditorLayout = ({
         </div>
       )}
 
-      {/* Mobile action buttons */}
-      {!isFocusMode && (
-        <div className="md:hidden mt-4 space-y-2">
-          <Button 
-            onClick={onOpenDraft}
-            className="w-full"
-            variant="outline"
-          >
-            <FolderOpen className="mr-2 h-4 w-4" />
-            Open Draft
-          </Button>
-          <Button 
-            onClick={onNewDraft}
-            className="w-full" 
-            variant="outline"
-          >
-            <FilePlus className="mr-2 h-4 w-4" />
-            New Draft
-          </Button>
-        </div>
-      )}
+      {/* Desktop action buttons */}
+      <div className="hidden md:flex lg:hidden fixed bottom-4 right-4 flex-col gap-2">
+        <Button 
+          onClick={onOpenDraft}
+          size="icon"
+          variant="secondary"
+          className="rounded-full shadow-lg"
+        >
+          <FolderOpen className="h-4 w-4" />
+        </Button>
+        <Button 
+          onClick={onNewDraft}
+          size="icon"
+          variant="secondary"
+          className="rounded-full shadow-lg"
+        >
+          <FilePlus className="h-4 w-4" />
+        </Button>
+      </div>
     </div>
   );
 };

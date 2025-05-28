@@ -6,8 +6,10 @@ import { useToast } from '@/components/ui/use-toast';
 import { Draft } from '@/lib/db';
 import { IntegratedToolbar } from './IntegratedToolbar';
 import { EditorStatusBar } from './EditorStatusBar';
+import { WritingViewOptions } from './WritingViewOptions';
 import { useAutoSave } from '@/hooks/useAutoSave';
 import { useWordCount } from '@/hooks/useWordCount';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface RichTextEditorProps {
   initialContent?: string;
@@ -17,6 +19,7 @@ interface RichTextEditorProps {
   onEditorReady?: (editor: ReactQuill | null) => void;
   isFocusMode?: boolean;
   onToggleFocus?: () => void;
+  isMobile?: boolean;
 }
 
 const WORD_LIMIT = 50000;
@@ -44,13 +47,17 @@ const RichTextEditor = ({
   onEditorReady,
   isFocusMode = false,
   onToggleFocus,
+  isMobile = false,
 }: RichTextEditorProps) => {
   const [content, setContent] = useState(initialContent);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [selectedFont, setSelectedFont] = useState('Arial');
+  const [viewMode, setViewMode] = useState<'scroll' | 'page'>('scroll');
+  const [pageHeight, setPageHeight] = useState(800);
   const { toast } = useToast();
   const editorRef = useRef<ReactQuill>(null);
   const { wordCount, currentPage, calculateWordCount } = useWordCount();
+  const deviceIsMobile = useIsMobile();
 
   useEffect(() => {
     if (initialContent) {
@@ -169,17 +176,36 @@ const RichTextEditor = ({
     });
   };
 
+  // Mobile-specific classes
+  const mobileClasses = isMobile || deviceIsMobile ? 'mobile-editor' : '';
+  const editorClasses = `
+    ${mobileClasses}
+    ${isFocusMode ? 'focus-mode max-w-4xl mx-auto px-4' : ''}
+    ${viewMode === 'page' ? 'page-view' : 'scroll-view'}
+  `.trim();
+
   return (
     <div className={`flex flex-col h-full ${isFocusMode ? 'focus-mode' : ''}`}>
-      <IntegratedToolbar
-        selectedFont={selectedFont}
-        onFontChange={handleFontChange}
-        isFocusMode={isFocusMode}
-        onToggleFocus={handleToggleFocus}
-        onSave={handleSave}
-        hasUnsavedChanges={hasUnsavedChanges}
-        onFormatClick={handleFormatClick}
-      />
+      {!isFocusMode && (
+        <IntegratedToolbar
+          selectedFont={selectedFont}
+          onFontChange={handleFontChange}
+          isFocusMode={isFocusMode}
+          onToggleFocus={handleToggleFocus}
+          onSave={handleSave}
+          hasUnsavedChanges={hasUnsavedChanges}
+          onFormatClick={handleFormatClick}
+          isMobile={isMobile || deviceIsMobile}
+          extraActions={
+            <WritingViewOptions
+              viewMode={viewMode}
+              onViewModeChange={setViewMode}
+              pageHeight={pageHeight}
+              onPageHeightChange={setPageHeight}
+            />
+          }
+        />
+      )}
 
       <div className="flex-1 bg-white dark:bg-gray-900 border-x border-gray-200 dark:border-gray-700">
         <ReactQuill
@@ -189,17 +215,18 @@ const RichTextEditor = ({
           onChange={handleChange}
           modules={modules}
           formats={formats}
-          className={`h-full ${isFocusMode ? 'max-w-4xl mx-auto px-8' : ''}`}
+          className={editorClasses}
           placeholder="Start writing your masterpiece..."
           readOnly={loading}
           style={{ 
             fontFamily: selectedFont,
-            height: '100%'
+            height: '100%',
+            ...(viewMode === 'page' && { '--page-height': `${pageHeight}px` } as any)
           }}
         />
       </div>
       
-      {!isFocusMode && (
+      {!isFocusMode && !(isMobile || deviceIsMobile) && (
         <EditorStatusBar
           wordCount={wordCount}
           currentPage={currentPage}
