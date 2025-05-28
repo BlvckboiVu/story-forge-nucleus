@@ -1,11 +1,11 @@
 
 import { useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Menu, X, LayoutDashboard, BookOpen, Settings, User, LogOut, FileText, Zap } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { signOut } from '@/lib/supabase';
+import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/components/ui/use-toast';
 import OutlinePanel from '@/components/editor/OutlinePanel';
 import LLMPanel from '@/components/LLMPanel';
@@ -19,6 +19,8 @@ export function MobileNav({ showEditorPanels = false, onInsertLLMResponse }: Mob
   const [open, setOpen] = useState(false);
   const location = useLocation();
   const { toast } = useToast();
+  const { signOut } = useAuth();
+  const navigate = useNavigate();
   
   const handleLogout = async () => {
     try {
@@ -28,6 +30,7 @@ export function MobileNav({ showEditorPanels = false, onInsertLLMResponse }: Mob
         title: "Logged out successfully",
         description: "You have been logged out of your account",
       });
+      navigate('/');
     } catch (error) {
       toast({
         title: "Logout failed",

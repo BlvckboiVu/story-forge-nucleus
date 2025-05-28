@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/components/ui/use-toast';
-import { signIn, signInWithGoogle, signUp } from '@/lib/supabase';
+import { useAuth } from '@/contexts/AuthContext';
 import { BookOpen } from 'lucide-react';
 
 export default function Login() {
@@ -15,6 +15,7 @@ export default function Login() {
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
+  const { signIn, signUp } = useAuth();
 
   const handleEmailSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -35,7 +36,7 @@ export default function Login() {
         title: "Login successful",
         description: "Welcome back to StoryForge",
       });
-      navigate('/dashboard');
+      navigate('/app/dashboard');
     } catch (error) {
       toast({
         title: "Login failed",
@@ -43,16 +44,6 @@ export default function Login() {
         variant: "destructive",
       });
     } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleGoogleSignIn = async () => {
-    try {
-      setIsLoading(true);
-      await signInWithGoogle();
-    } catch (error) {
-      navigate('/auth-error');
       setIsLoading(false);
     }
   };
@@ -68,7 +59,7 @@ export default function Login() {
         title: "Logged in as guest",
         description: "You're now using StoryForge as a guest user",
       });
-      navigate('/dashboard');
+      navigate('/app/dashboard');
     } catch (error) {
       toast({
         title: "Guest login failed",
@@ -84,10 +75,10 @@ export default function Login() {
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
       <div className="w-full max-w-md">
         <div className="mb-8 text-center">
-          <div className="flex justify-center mb-2">
+          <Link to="/" className="inline-flex items-center gap-2 mb-4">
             <BookOpen size={48} className="text-primary" />
-          </div>
-          <h1 className="text-3xl font-bold mb-1">StoryForge</h1>
+            <span className="text-3xl font-bold">StoryForge</span>
+          </Link>
           <p className="text-muted-foreground">Your writing journey begins here</p>
         </div>
       
@@ -137,15 +128,6 @@ export default function Login() {
                   <span className="bg-background px-2 text-muted-foreground">Or continue with</span>
                 </div>
               </div>
-              <Button 
-                type="button" 
-                variant="outline" 
-                className="w-full"
-                onClick={handleGoogleSignIn}
-                disabled={isLoading}
-              >
-                Google
-              </Button>
               <Button 
                 type="button" 
                 variant="secondary" 

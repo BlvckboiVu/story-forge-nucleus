@@ -14,7 +14,8 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/components/ui/use-toast";
-import { signOut } from "@/lib/supabase";
+import { useAuth } from "@/contexts/AuthContext";
+import { useNavigate } from "react-router-dom";
 
 interface SidebarProps {
   isCollapsed: boolean;
@@ -24,6 +25,8 @@ interface SidebarProps {
 export function Sidebar({ isCollapsed, toggleCollapse }: SidebarProps) {
   const location = useLocation();
   const { toast } = useToast();
+  const { signOut } = useAuth();
+  const navigate = useNavigate();
   
   const handleLogout = async () => {
     try {
@@ -32,6 +35,7 @@ export function Sidebar({ isCollapsed, toggleCollapse }: SidebarProps) {
         title: "Logged out successfully",
         description: "You have been logged out of your account",
       });
+      navigate('/');
     } catch (error) {
       toast({
         title: "Logout failed",
@@ -45,22 +49,22 @@ export function Sidebar({ isCollapsed, toggleCollapse }: SidebarProps) {
     {
       title: "Dashboard",
       icon: <LayoutDashboard size={20} />,
-      path: "/dashboard",
+      path: "/app/dashboard",
     },
     {
       title: "Editor",
       icon: <BookOpen size={20} />,
-      path: "/editor",
+      path: "/app/editor",
     },
     {
       title: "Settings",
       icon: <Settings size={20} />,
-      path: "/settings",
+      path: "/app/settings",
     },
     {
       title: "Profile",
       icon: <User size={20} />,
-      path: "/profile",
+      path: "/app/profile",
     },
   ];
 
@@ -74,7 +78,7 @@ export function Sidebar({ isCollapsed, toggleCollapse }: SidebarProps) {
       {/* Logo and App Name */}
       <div className="p-4 flex items-center justify-between">
         <Link 
-          to="/dashboard" 
+          to="/app/dashboard" 
           className={cn(
             "font-semibold text-xl flex items-center gap-2 transition-opacity",
             isCollapsed ? "opacity-0" : "opacity-100"

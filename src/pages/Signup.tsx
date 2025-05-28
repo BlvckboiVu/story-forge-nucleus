@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/components/ui/use-toast';
-import { signUp, signInWithGoogle } from '@/lib/supabase';
+import { useAuth } from '@/contexts/AuthContext';
 import { BookOpen } from 'lucide-react';
 
 export default function Signup() {
@@ -16,8 +16,9 @@ export default function Signup() {
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
+  const { signUp } = useAuth();
 
-  const handleSignup = async (e: React.FormEvent) => {
+  const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!email || !password || !confirmPassword) {
@@ -31,8 +32,8 @@ export default function Signup() {
 
     if (password !== confirmPassword) {
       toast({
-        title: "Passwords don't match",
-        description: "Please make sure both passwords are the same",
+        title: "Password mismatch",
+        description: "Passwords do not match",
         variant: "destructive",
       });
       return;
@@ -52,45 +53,13 @@ export default function Signup() {
       await signUp(email, password);
       toast({
         title: "Account created successfully",
-        description: "Welcome to StoryForge! You can now start writing.",
+        description: "Welcome to StoryForge!",
       });
-      navigate('/dashboard');
+      navigate('/app/dashboard');
     } catch (error) {
       toast({
-        title: "Signup failed",
-        description: error instanceof Error ? error.message : "Failed to create account",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleGoogleSignup = async () => {
-    try {
-      setIsLoading(true);
-      await signInWithGoogle();
-    } catch (error) {
-      navigate('/auth-error');
-    }
-  };
-
-  const handleGuestLogin = async () => {
-    try {
-      setIsLoading(true);
-      const guestEmail = `guest${Date.now()}@storyforge.com`;
-      const guestPassword = 'guest123456';
-      
-      await signUp(guestEmail, guestPassword);
-      toast({
-        title: "Logged in as guest",
-        description: "You're now using StoryForge as a guest user",
-      });
-      navigate('/dashboard');
-    } catch (error) {
-      toast({
-        title: "Guest login failed",
-        description: "Could not create guest account",
+        title: "Sign up failed",
+        description: "Could not create account. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -102,24 +71,24 @@ export default function Signup() {
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
       <div className="w-full max-w-md">
         <div className="mb-8 text-center">
-          <div className="flex justify-center mb-2">
+          <Link to="/" className="inline-flex items-center gap-2 mb-4">
             <BookOpen size={48} className="text-primary" />
-          </div>
-          <h1 className="text-3xl font-bold mb-1">StoryForge</h1>
-          <p className="text-muted-foreground">Start your writing journey today</p>
+            <span className="text-3xl font-bold">StoryForge</span>
+          </Link>
+          <p className="text-muted-foreground">Create your writing account</p>
         </div>
       
         <Card>
           <CardHeader>
             <CardTitle>Create Account</CardTitle>
-            <CardDescription>Sign up to start writing your stories</CardDescription>
+            <CardDescription>Sign up to start your writing journey</CardDescription>
           </CardHeader>
-          <form onSubmit={handleSignup}>
+          <form onSubmit={handleSignUp}>
             <CardContent className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
+                <Label htmlFor="signup-email">Email</Label>
                 <Input
-                  id="email"
+                  id="signup-email"
                   type="email"
                   placeholder="yourname@example.com"
                   value={email}
@@ -128,9 +97,9 @@ export default function Signup() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="password">Password</Label>
+                <Label htmlFor="signup-password">Password</Label>
                 <Input
-                  id="password"
+                  id="signup-password"
                   type="password"
                   placeholder="At least 6 characters"
                   value={password}
@@ -139,11 +108,11 @@ export default function Signup() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="confirmPassword">Confirm Password</Label>
+                <Label htmlFor="confirm-password">Confirm Password</Label>
                 <Input
-                  id="confirmPassword"
+                  id="confirm-password"
                   type="password"
-                  placeholder="Confirm your password"
+                  placeholder="Repeat your password"
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   required
@@ -153,32 +122,6 @@ export default function Signup() {
             <CardFooter className="flex flex-col space-y-4">
               <Button type="submit" className="w-full" disabled={isLoading}>
                 {isLoading ? "Creating account..." : "Create Account"}
-              </Button>
-              <div className="relative w-full">
-                <div className="absolute inset-0 flex items-center">
-                  <span className="w-full border-t" />
-                </div>
-                <div className="relative flex justify-center text-xs uppercase">
-                  <span className="bg-background px-2 text-muted-foreground">Or continue with</span>
-                </div>
-              </div>
-              <Button 
-                type="button" 
-                variant="outline" 
-                className="w-full"
-                onClick={handleGoogleSignup}
-                disabled={isLoading}
-              >
-                Google
-              </Button>
-              <Button 
-                type="button" 
-                variant="secondary" 
-                className="w-full"
-                onClick={handleGuestLogin}
-                disabled={isLoading}
-              >
-                Continue as Guest
               </Button>
               <div className="text-center text-sm">
                 Already have an account?{" "}

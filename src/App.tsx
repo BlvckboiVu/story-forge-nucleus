@@ -38,10 +38,10 @@ const LoadingSpinner = () => (
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <BrowserRouter>
-        <AuthProvider>
-          <ProjectProvider>
-            <TooltipProvider>
+      <TooltipProvider>
+        <BrowserRouter>
+          <AuthProvider>
+            <ProjectProvider>
               <div className="min-h-screen bg-gray-50 dark:bg-gray-900 w-full">
                 <Suspense fallback={<LoadingSpinner />}>
                   <Routes>
@@ -71,10 +71,10 @@ function App() {
                 </Suspense>
                 <Toaster />
               </div>
-            </TooltipProvider>
-          </ProjectProvider>
-        </AuthProvider>
-      </BrowserRouter>
+            </ProjectProvider>
+          </AuthProvider>
+        </BrowserRouter>
+      </TooltipProvider>
     </QueryClientProvider>
   );
 }
