@@ -2,7 +2,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { User, AuthContextType } from '../types';
 import { supabase, signIn as supabaseSignIn, signUp as supabaseSignUp, signOut as supabaseSignOut } from '../lib/supabase';
-import { useNavigate } from 'react-router-dom';
+import { User as SupabaseUser } from '@supabase/supabase-js';
 
 // Create context with a default value
 const AuthContext = createContext<AuthContextType>({
@@ -17,6 +17,16 @@ const AuthContext = createContext<AuthContextType>({
 interface AuthProviderProps {
   children: ReactNode;
 }
+
+// Helper function to convert Supabase User to our User type
+const convertSupabaseUser = (supabaseUser: SupabaseUser): User => ({
+  id: supabaseUser.id,
+  email: supabaseUser.email || '',
+  displayName: supabaseUser.user_metadata?.display_name,
+  avatarUrl: supabaseUser.user_metadata?.avatar_url,
+  createdAt: new Date(supabaseUser.created_at),
+  updatedAt: new Date(supabaseUser.updated_at || supabaseUser.created_at),
+});
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
@@ -36,7 +46,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             setUser(JSON.parse(storedUser));
           }
         } else if (session?.user) {
-          setUser(session.user as User);
+          setUser(convertSupabaseUser(session.user));
         } else {
           // Check localStorage as fallback
           const storedUser = localStorage.getItem('storyforge_user');
@@ -58,8 +68,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       console.log('Auth state changed:', event, session?.user?.email);
       if (session?.user) {
-        setUser(session.user as User);
-        localStorage.setItem('storyforge_user', JSON.stringify(session.user));
+        const convertedUser = convertSupabaseUser(session.user);
+        setUser(convertedUser);
+        localStorage.setItem('storyforge_user', JSON.stringify(convertedUser));
       } else {
         setUser(null);
         localStorage.removeItem('storyforge_user');
@@ -76,26 +87,25 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     setError(null);
     
     try {
-      const { data, error } = await supabaseSignUp(email, password);
-      if (error) {
-        console.error('Supabase signup error:', error);
-        // Fallback to mock user for demo
-        const mockUser = {
-          id: crypto.randomUUID(),
-          email,
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        };
-        
-        localStorage.setItem('storyforge_user', JSON.stringify(mockUser));
-        setUser(mockUser as User);
-      } else if (data.user) {
-        setUser(data.user as User);
-        localStorage.setItem('storyforge_user', JSON.stringify(data.user));
+      const result = await supabaseSignUp(email, password);
+      if (result.user) {
+        const convertedUser = convertSupabaseUser(result.user);
+        setUser(convertedUser);
+        localStorage.setItem('storyforge_user', JSON.stringify(convertedUser));
       }
     } catch (e) {
       console.error('Error signing up:', e);
       setError(e instanceof Error ? e.message : 'Failed to sign up');
+      // Fallback to mock user for demo
+      const mockUser = {
+        id: crypto.randomUUID(),
+        email,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+      
+      localStorage.setItem('storyforge_user', JSON.stringify(mockUser));
+      setUser(mockUser as User);
     } finally {
       setLoading(false);
     }
@@ -107,26 +117,25 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     setError(null);
     
     try {
-      const { data, error } = await supabaseSignIn(email, password);
-      if (error) {
-        console.error('Supabase signin error:', error);
-        // Fallback to mock user for demo
-        const mockUser = {
-          id: crypto.randomUUID(),
-          email,
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        };
-        
-        localStorage.setItem('storyforge_user', JSON.stringify(mockUser));
-        setUser(mockUser as User);
-      } else if (data.user) {
-        setUser(data.user as User);
-        localStorage.setItem('storyforge_user', JSON.stringify(data.user));
+      const result = await supabaseSignIn(email, password);
+      if (result.user) {
+        const convertedUser = convertSupabaseUser(result.user);
+        setUser(convertedUser);
+        localStorage.setItem('storyforge_user', JSON.stringify(convertedUser));
       }
     } catch (e) {
       console.error('Error signing in:', e);
       setError(e instanceof Error ? e.message : 'Failed to sign in');
+      // Fallback to mock user for demo
+      const mockUser = {
+        id: crypto.randomUUID(),
+        email,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+      
+      localStorage.setItem('storyforge_user', JSON.stringify(mockUser));
+      setUser(mockUser as User);
     } finally {
       setLoading(false);
     }
@@ -138,11 +147,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     setError(null);
     
     try {
-      const { error } = await supabaseSignOut();
-      if (error) {
-        console.error('Supabase signout error:', error);
-      }
-      
+      await supabaseSignOut();
       // Always clear local storage and state
       localStorage.removeItem('storyforge_user');
       setUser(null);
