@@ -14,7 +14,7 @@ export default function Login() {
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
-  const { signIn, signUp } = useAuth();
+  const { signIn, guestLogin, error } = useAuth();
 
   const handleEmailSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -50,19 +50,20 @@ export default function Login() {
   const handleGuestLogin = async () => {
     try {
       setIsLoading(true);
-      const guestEmail = `guest${Date.now()}@storyforge.com`;
-      const guestPassword = 'guest123456';
-      
-      await signUp(guestEmail, guestPassword);
+      await guestLogin();
       toast({
         title: "Logged in as guest",
         description: "You're now using StoryForge as a guest user",
       });
       navigate('/app/dashboard');
-    } catch (error) {
+    } catch (error: any) {
+      let description = "Could not create guest account";
+      if (typeof error?.message === 'string' && error.message.toLowerCase().includes('rate limit')) {
+        description = "Supabase rate limit hit. Using local guest mode. Data will not sync to cloud.";
+      }
       toast({
         title: "Guest login failed",
-        description: "Could not create guest account",
+        description,
         variant: "destructive",
       });
     } finally {
@@ -145,6 +146,10 @@ export default function Login() {
             </CardFooter>
           </form>
         </Card>
+        {/* Show AuthContext error if present */}
+        {error && (
+          <div className="text-red-500 text-sm text-center mb-2">{error}</div>
+        )}
       </div>
     </div>
   );

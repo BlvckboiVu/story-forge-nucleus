@@ -1,4 +1,3 @@
-
 import { createClient } from '@supabase/supabase-js';
 import type { Database } from '../integrations/supabase/types';
 import { environment } from '../config/environment';
@@ -92,4 +91,19 @@ export const syncDrafts = async () => {
 
 export const syncOutlines = async () => {
   // Will be implemented to sync local outlines to Supabase
+};
+
+/**
+ * Create a profile entry in the profiles table
+ */
+export const createProfile = async (id: string, email: string) => {
+  const { error } = await supabase.from('profiles').insert([
+    {
+      id,
+      email,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    },
+  ]);
+  if (error) throw error;
 };

@@ -5,7 +5,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '@/components/ui/tooltip';
 import { useToast } from '@/hooks/use-toast';
 import { 
   ChevronLeft, 
@@ -164,244 +164,248 @@ const LLMPanel = ({ isCollapsed, onToggle, onInsertResponse }: LLMPanelProps) =>
 
   if (isCollapsed) {
     return (
-      <div className="w-12 h-full bg-background border-l border-border flex flex-col items-center py-4">
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={onToggle}
-              className="mb-4"
-            >
-              <ChevronLeft className="h-4 w-4" />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent side="left">
-            <p>Expand AI Panel</p>
-          </TooltipContent>
-        </Tooltip>
-        
-        <div className="flex flex-col gap-2">
+      <TooltipProvider>
+        <div className="w-12 h-full bg-background border-l border-border flex flex-col items-center py-4">
           <Tooltip>
             <TooltipTrigger asChild>
-              <div className="w-2 h-2 bg-primary rounded-full" />
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={onToggle}
+                className="mb-4"
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
             </TooltipTrigger>
             <TooltipContent side="left">
-              <p>AI Assistant</p>
+              <p>Expand AI Panel</p>
             </TooltipContent>
           </Tooltip>
           
-          {messages.length > 0 && (
+          <div className="flex flex-col gap-2">
             <Tooltip>
               <TooltipTrigger asChild>
-                <div className="w-1 h-6 bg-green-500 rounded-full opacity-60" />
+                <div className="w-2 h-2 bg-primary rounded-full" />
               </TooltipTrigger>
               <TooltipContent side="left">
-                <p>{messages.length} messages</p>
+                <p>AI Assistant</p>
               </TooltipContent>
             </Tooltip>
-          )}
+            
+            {messages.length > 0 && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="w-1 h-6 bg-green-500 rounded-full opacity-60" />
+                </TooltipTrigger>
+                <TooltipContent side="left">
+                  <p>{messages.length} messages</p>
+                </TooltipContent>
+              </Tooltip>
+            )}
+          </div>
         </div>
-      </div>
+      </TooltipProvider>
     );
   }
 
   return (
-    <div className="w-80 h-full bg-background border-l border-border flex flex-col">
-      {/* Header */}
-      <div className="p-4 border-b border-border">
-        <div className="flex items-center justify-between mb-3">
-          <h3 className="font-semibold text-sm">AI Assistant</h3>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={onToggle}
-            className="h-8 w-8"
-          >
-            <ChevronRight className="h-4 w-4" />
-          </Button>
-        </div>
-        
-        <div className="flex items-center justify-between text-xs text-muted-foreground mb-2">
-          <span>Mode:</span>
-          <div className="flex items-center gap-2">
-            <span className={cn(!lowTokenMode && "text-foreground")}>Standard</span>
-            <Switch
-              checked={lowTokenMode}
-              onCheckedChange={setLowTokenMode}
-              className="scale-75"
-            />
-            <span className={cn(lowTokenMode && "text-foreground")}>
-              <Zap className="inline w-3 h-3" /> Low-Token
-            </span>
+    <TooltipProvider>
+      <div className="w-80 h-full bg-background border-l border-border flex flex-col">
+        {/* Header */}
+        <div className="p-4 border-b border-border">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="font-semibold text-sm">AI Assistant</h3>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={onToggle}
+              className="h-8 w-8"
+            >
+              <ChevronRight className="h-4 w-4" />
+            </Button>
           </div>
-        </div>
-
-        <div className="flex gap-1">
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setShowApiKeyInput(!showApiKeyInput)}
-                className="flex-1 h-7"
-              >
-                <Key className="w-3 h-3 mr-1" />
-                API Key
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>Configure OpenRouter API key</p>
-            </TooltipContent>
-          </Tooltip>
           
-          {messages.length > 0 && (
+          <div className="flex items-center justify-between text-xs text-muted-foreground mb-2">
+            <span>Mode:</span>
+            <div className="flex items-center gap-2">
+              <span className={cn(!lowTokenMode && "text-foreground")}>Standard</span>
+              <Switch
+                checked={lowTokenMode}
+                onCheckedChange={setLowTokenMode}
+                className="scale-75"
+              />
+              <span className={cn(lowTokenMode && "text-foreground")}>
+                <Zap className="inline w-3 h-3" /> Low-Token
+              </span>
+            </div>
+          </div>
+
+          <div className="flex gap-1">
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={clearHistory}
-                  className="h-7"
+                  onClick={() => setShowApiKeyInput(!showApiKeyInput)}
+                  className="flex-1 h-7"
                 >
-                  <Trash2 className="w-3 h-3" />
+                  <Key className="w-3 h-3 mr-1" />
+                  API Key
                 </Button>
               </TooltipTrigger>
               <TooltipContent>
-                <p>Clear history</p>
+                <p>Configure OpenRouter API key</p>
               </TooltipContent>
             </Tooltip>
+            
+            {messages.length > 0 && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={clearHistory}
+                    className="h-7"
+                  >
+                    <Trash2 className="w-3 h-3" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Clear history</p>
+                </TooltipContent>
+              </Tooltip>
+            )}
+          </div>
+
+          {showApiKeyInput && (
+            <div className="mt-3 space-y-2">
+              <Input
+                type="password"
+                placeholder="Enter OpenRouter API key"
+                value={apiKey}
+                onChange={(e) => setApiKey(e.target.value)}
+                className="h-8 text-xs"
+              />
+              <Button
+                onClick={handleSaveApiKey}
+                size="sm"
+                className="w-full h-7"
+              >
+                Save Key
+              </Button>
+            </div>
           )}
         </div>
 
-        {showApiKeyInput && (
-          <div className="mt-3 space-y-2">
-            <Input
-              type="password"
-              placeholder="Enter OpenRouter API key"
-              value={apiKey}
-              onChange={(e) => setApiKey(e.target.value)}
-              className="h-8 text-xs"
-            />
-            <Button
-              onClick={handleSaveApiKey}
-              size="sm"
-              className="w-full h-7"
-            >
-              Save Key
-            </Button>
-          </div>
-        )}
-      </div>
-
-      {/* Messages Area */}
-      <ScrollArea className="flex-1 p-4" ref={scrollAreaRef}>
-        {messages.length === 0 ? (
-          <div className="text-center text-muted-foreground text-sm mt-8">
-            <History className="w-8 h-8 mx-auto mb-2 opacity-50" />
-            <p>No conversation yet.</p>
-            <p className="text-xs mt-1">Send a prompt to get started!</p>
-          </div>
-        ) : (
-          <div className="space-y-4">
-            {messages.map((message) => (
-              <div key={message.id} className="space-y-2">
-                <div className="bg-blue-50 dark:bg-blue-950/30 p-2 rounded text-xs">
-                  <div className="font-medium mb-1">You:</div>
-                  <div className="text-muted-foreground">{message.prompt}</div>
-                </div>
-                
-                <div className="bg-green-50 dark:bg-green-950/30 p-2 rounded text-xs">
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="font-medium">AI:</span>
-                    <div className="flex gap-1">
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => handleCopyResponse(message.response)}
-                            className="h-5 w-5"
-                          >
-                            <Copy className="w-3 h-3" />
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p>Copy response</p>
-                        </TooltipContent>
-                      </Tooltip>
-                      
-                      {onInsertResponse && (
+        {/* Messages Area */}
+        <ScrollArea className="flex-1 p-4" ref={scrollAreaRef}>
+          {messages.length === 0 ? (
+            <div className="text-center text-muted-foreground text-sm mt-8">
+              <History className="w-8 h-8 mx-auto mb-2 opacity-50" />
+              <p>No conversation yet.</p>
+              <p className="text-xs mt-1">Send a prompt to get started!</p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {messages.map((message) => (
+                <div key={message.id} className="space-y-2">
+                  <div className="bg-blue-50 dark:bg-blue-950/30 p-2 rounded text-xs">
+                    <div className="font-medium mb-1">You:</div>
+                    <div className="text-muted-foreground">{message.prompt}</div>
+                  </div>
+                  
+                  <div className="bg-green-50 dark:bg-green-950/30 p-2 rounded text-xs">
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="font-medium">AI:</span>
+                      <div className="flex gap-1">
                         <Tooltip>
                           <TooltipTrigger asChild>
                             <Button
                               variant="ghost"
                               size="icon"
-                              onClick={() => handleInsertResponse(message.response)}
+                              onClick={() => handleCopyResponse(message.response)}
                               className="h-5 w-5"
                             >
-                              <Plus className="w-3 h-3" />
+                              <Copy className="w-3 h-3" />
                             </Button>
                           </TooltipTrigger>
                           <TooltipContent>
-                            <p>Insert into document</p>
+                            <p>Copy response</p>
                           </TooltipContent>
                         </Tooltip>
-                      )}
+                        
+                        {onInsertResponse && (
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => handleInsertResponse(message.response)}
+                                className="h-5 w-5"
+                              >
+                                <Plus className="w-3 h-3" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>Insert into document</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        )}
+                      </div>
+                    </div>
+                    <div className="text-muted-foreground whitespace-pre-wrap">
+                      {message.response}
+                    </div>
+                    <div className="text-xs text-muted-foreground mt-1 opacity-70">
+                      {new Date(message.timestamp).toLocaleTimeString()} • {message.model.split('/').pop()}
                     </div>
                   </div>
-                  <div className="text-muted-foreground whitespace-pre-wrap">
-                    {message.response}
-                  </div>
-                  <div className="text-xs text-muted-foreground mt-1 opacity-70">
-                    {new Date(message.timestamp).toLocaleTimeString()} • {message.model.split('/').pop()}
-                  </div>
                 </div>
-              </div>
-            ))}
+              ))}
+            </div>
+          )}
+        </ScrollArea>
+
+        {/* Cache Stats */}
+        {cacheStats.size > 0 && (
+          <div className="px-4 py-2 text-xs text-muted-foreground border-t border-border">
+            Cache: {cacheStats.size}/{cacheStats.maxSize} responses
           </div>
         )}
-      </ScrollArea>
 
-      {/* Cache Stats */}
-      {cacheStats.size > 0 && (
-        <div className="px-4 py-2 text-xs text-muted-foreground border-t border-border">
-          Cache: {cacheStats.size}/{cacheStats.maxSize} responses
-        </div>
-      )}
+        <Separator />
 
-      <Separator />
-
-      {/* Input Area */}
-      <div className="p-4">
-        <div className="flex gap-2">
-          <Textarea
-            placeholder="Ask the AI assistant..."
-            value={prompt}
-            onChange={(e) => setPrompt(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault();
-                handleSendPrompt();
-              }
-            }}
-            className="flex-1 min-h-[60px] resize-none text-sm"
-            disabled={isLoading}
-          />
-          <Button
-            onClick={handleSendPrompt}
-            disabled={isLoading || !prompt.trim()}
-            size="sm"
-            className="self-end"
-          >
-            <Send className="w-4 h-4" />
-          </Button>
-        </div>
-        <div className="text-xs text-muted-foreground mt-1">
-          Press Shift+Enter for new line
+        {/* Input Area */}
+        <div className="p-4">
+          <div className="flex gap-2">
+            <Textarea
+              placeholder="Ask the AI assistant..."
+              value={prompt}
+              onChange={(e) => setPrompt(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                  e.preventDefault();
+                  handleSendPrompt();
+                }
+              }}
+              className="flex-1 min-h-[60px] resize-none text-sm"
+              disabled={isLoading}
+            />
+            <Button
+              onClick={handleSendPrompt}
+              disabled={isLoading || !prompt.trim()}
+              size="sm"
+              className="self-end"
+            >
+              <Send className="w-4 h-4" />
+            </Button>
+          </div>
+          <div className="text-xs text-muted-foreground mt-1">
+            Press Shift+Enter for new line
+          </div>
         </div>
       </div>
-    </div>
+    </TooltipProvider>
   );
 };
 

@@ -1,7 +1,6 @@
-
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { User, AuthContextType } from '../types';
-import { supabase, signIn as supabaseSignIn, signUp as supabaseSignUp, signOut as supabaseSignOut } from '../lib/supabase';
+import { supabase, signIn as supabaseSignIn, signUp as supabaseSignUp, signOut as supabaseSignOut, createProfile } from '../lib/supabase';
 import { User as SupabaseUser } from '@supabase/supabase-js';
 
 // Create context with a default value
@@ -12,6 +11,7 @@ const AuthContext = createContext<AuthContextType>({
   signUp: async () => {},
   signIn: async () => {},
   signOut: async () => {},
+  guestLogin: async () => {},
 });
 
 interface AuthProviderProps {
@@ -26,12 +26,40 @@ const convertSupabaseUser = (supabaseUser: SupabaseUser): User => ({
   avatarUrl: supabaseUser.user_metadata?.avatar_url,
   createdAt: new Date(supabaseUser.created_at),
   updatedAt: new Date(supabaseUser.updated_at || supabaseUser.created_at),
+  role: supabaseUser.user_metadata?.role || 'user',
+  isOnline: navigator.onLine
 });
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isOffline, setIsOffline] = useState(!navigator.onLine);
+
+  // Handle online/offline status
+  useEffect(() => {
+    const handleOnline = () => {
+      setIsOffline(false);
+      if (user) {
+        setUser({ ...user, isOnline: true });
+      }
+    };
+
+    const handleOffline = () => {
+      setIsOffline(true);
+      if (user) {
+        setUser({ ...user, isOnline: false });
+      }
+    };
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, [user]);
 
   useEffect(() => {
     // Check for existing session
@@ -39,20 +67,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       try {
         const { data: { session }, error } = await supabase.auth.getSession();
         if (error) {
-          console.error('Session check error:', error);
-          // Fall back to localStorage for demo purposes
-          const storedUser = localStorage.getItem('storyforge_user');
-          if (storedUser) {
-            setUser(JSON.parse(storedUser));
-          }
+          setUser(null);
         } else if (session?.user) {
           setUser(convertSupabaseUser(session.user));
         } else {
-          // Check localStorage as fallback
-          const storedUser = localStorage.getItem('storyforge_user');
-          if (storedUser) {
-            setUser(JSON.parse(storedUser));
-          }
+          setUser(null);
         }
       } catch (e) {
         console.error('Error checking authentication:', e);
@@ -61,23 +80,17 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         setLoading(false);
       }
     };
-
     checkUser();
-    
     // Set up auth state change listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      console.log('Auth state changed:', event, session?.user?.email);
       if (session?.user) {
         const convertedUser = convertSupabaseUser(session.user);
         setUser(convertedUser);
-        localStorage.setItem('storyforge_user', JSON.stringify(convertedUser));
       } else {
         setUser(null);
-        localStorage.removeItem('storyforge_user');
       }
       setLoading(false);
     });
-    
     return () => { subscription.unsubscribe(); };
   }, []);
 
@@ -85,27 +98,31 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const signUp = async (email: string, password: string) => {
     setLoading(true);
     setError(null);
-    
     try {
       const result = await supabaseSignUp(email, password);
+      console.log('Supabase signUp result:', result);
       if (result.user) {
         const convertedUser = convertSupabaseUser(result.user);
         setUser(convertedUser);
-        localStorage.setItem('storyforge_user', JSON.stringify(convertedUser));
+        try {
+          await createProfile(convertedUser.id, convertedUser.email);
+        } catch (profileError) {
+          console.error('Profile creation failed:', profileError);
+          setError('Account created, but failed to create user profile. Please contact support.');
+          throw profileError;
+        }
+      } else if (result.session === null && result.user === null && result.error === null && result.data) {
+        // Supabase may require email confirmation
+        setError('Check your email to confirm your account before logging in.');
+        throw new Error('Email confirmation required.');
+      } else {
+        throw new Error('Signup failed: No user returned');
       }
     } catch (e) {
       console.error('Error signing up:', e);
       setError(e instanceof Error ? e.message : 'Failed to sign up');
-      // Fallback to mock user for demo
-      const mockUser = {
-        id: crypto.randomUUID(),
-        email,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      };
-      
-      localStorage.setItem('storyforge_user', JSON.stringify(mockUser));
-      setUser(mockUser as User);
+      setUser(null);
+      throw e;
     } finally {
       setLoading(false);
     }
@@ -115,27 +132,80 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const signIn = async (email: string, password: string) => {
     setLoading(true);
     setError(null);
-    
     try {
       const result = await supabaseSignIn(email, password);
       if (result.user) {
         const convertedUser = convertSupabaseUser(result.user);
         setUser(convertedUser);
-        localStorage.setItem('storyforge_user', JSON.stringify(convertedUser));
+      } else {
+        throw new Error('Login failed: No user returned');
       }
     } catch (e) {
       console.error('Error signing in:', e);
       setError(e instanceof Error ? e.message : 'Failed to sign in');
-      // Fallback to mock user for demo
-      const mockUser = {
-        id: crypto.randomUUID(),
-        email,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      };
+      setUser(null);
+      throw e;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Guest login function with improved offline handling
+  const guestLogin = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      if (!navigator.onLine) {
+        // Always use local guest in offline mode
+        const localGuestUser = {
+          id: 'local-guest',
+          email: 'local-guest@storyforge.com',
+          displayName: 'Guest',
+          avatarUrl: undefined,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          role: 'guest' as const,
+          isOnline: false
+        };
+        setUser(localGuestUser);
+        return;
+      }
+
+      const guestEmail = `guest_${Date.now()}@storyforge.com`;
+      const guestPassword = crypto.randomUUID().slice(0, 16);
       
-      localStorage.setItem('storyforge_user', JSON.stringify(mockUser));
-      setUser(mockUser as User);
+      try {
+        const result = await supabaseSignUp(guestEmail, guestPassword);
+        if (result?.user) {
+          const convertedUser = convertSupabaseUser(result.user);
+          // Ensure guest role
+          convertedUser.role = 'guest';
+          setUser(convertedUser);
+          await createProfile(convertedUser.id, convertedUser.email);
+        }
+      } catch (e: any) {
+        if (e?.message?.toLowerCase().includes('rate limit')) {
+          const localGuestUser = {
+            id: 'local-guest',
+            email: 'local-guest@storyforge.com',
+            displayName: 'Guest',
+            avatarUrl: undefined,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+            role: 'guest' as const,
+            isOnline: true
+          };
+          setUser(localGuestUser);
+          setError('Rate limit reached. Using local guest mode.');
+        } else {
+          throw e;
+        }
+      }
+    } catch (e) {
+      console.error('Error with guest login:', e);
+      setError(e instanceof Error ? e.message : 'Failed to login as guest');
+      setUser(null);
+      throw e;
     } finally {
       setLoading(false);
     }
@@ -166,6 +236,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     signUp,
     signIn,
     signOut,
+    guestLogin,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

@@ -6,9 +6,11 @@ import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { User } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function Profile() {
   const { toast } = useToast();
+  const { user } = useAuth();
   
   const handleUpdateProfile = (e: React.FormEvent) => {
     e.preventDefault();
@@ -45,15 +47,15 @@ export default function Profile() {
                 <User size={40} className="text-muted-foreground" />
               </div>
             </div>
-            <CardTitle className="text-center mt-2">Jane Smith</CardTitle>
+            <CardTitle className="text-center mt-2">{user?.displayName || user?.email?.split('@')[0] || 'User'}</CardTitle>
             <CardDescription className="text-center">
-              jane.smith@example.com
+              {user?.email || 'No email'}
             </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-2 text-sm text-center">
-              <p>Member since June 2024</p>
-              <p>3 projects · 25,000 words written</p>
+              <p>Member since --</p>
+              <p>-- projects · -- words written</p>
             </div>
           </CardContent>
           <CardFooter>

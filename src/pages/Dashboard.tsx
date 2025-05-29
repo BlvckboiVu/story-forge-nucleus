@@ -58,7 +58,7 @@ export default function Dashboard() {
       });
 
       // Navigate to editor with the new project
-      navigate('/editor');
+      navigate('/app/editor');
     } catch (error) {
       toast({
         title: "Error",
@@ -72,12 +72,12 @@ export default function Dashboard() {
     const project = projects.find(p => p.id === projectId);
     if (project) {
       setCurrentProject(project);
-      navigate('/editor');
+      navigate('/app/editor');
     }
   };
 
   const handleDraftClick = (draftId: string) => {
-    navigate(`/editor/${draftId}`);
+    navigate(`/app/editor/${draftId}`);
   };
 
   const formatDate = (date: Date) => {

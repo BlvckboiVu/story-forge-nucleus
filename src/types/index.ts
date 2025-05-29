@@ -1,4 +1,3 @@
-
 // Base type with common fields
 export interface BaseEntity {
   id: string;
@@ -11,6 +10,8 @@ export interface User extends BaseEntity {
   email: string;
   displayName?: string;
   avatarUrl?: string;
+  role: 'admin' | 'user' | 'guest';
+  isOnline: boolean;
 }
 
 // Project type (a novel, short story, or other writing project)
