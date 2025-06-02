@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { User, AuthContextType } from '../types';
 import { supabase, signIn as supabaseSignIn, signUp as supabaseSignUp, signOut as supabaseSignOut, createProfile } from '../lib/supabase';
@@ -65,11 +66,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     // Check for existing session
     const checkUser = async () => {
       try {
-        const { data: { session }, error } = await supabase.auth.getSession();
+        const { data, error } = await supabase.auth.getSession();
         if (error) {
           setUser(null);
-        } else if (session?.user) {
-          setUser(convertSupabaseUser(session.user));
+        } else if (data.session?.user) {
+          setUser(convertSupabaseUser(data.session.user));
         } else {
           setUser(null);
         }
