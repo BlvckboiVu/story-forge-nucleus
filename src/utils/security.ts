@@ -1,4 +1,3 @@
-
 import DOMPurify from 'dompurify';
 
 /**
@@ -16,7 +15,6 @@ export const sanitizeHtml = (html: string): string => {
     ],
     ALLOWED_ATTR: ['href', 'target'],
     ALLOW_DATA_ATTR: false,
-    FORBID_SCRIPTS: true,
     FORBID_TAGS: ['script', 'object', 'embed', 'form', 'input'],
   });
 };

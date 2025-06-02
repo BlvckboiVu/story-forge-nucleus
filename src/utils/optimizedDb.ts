@@ -1,4 +1,3 @@
-
 import * as React from 'react';
 import { Draft, Project } from '@/lib/db';
 import db from '@/lib/db';
@@ -150,9 +149,8 @@ export class OptimizedDraftService {
       const drafts = await db.drafts
         .where('projectId')
         .equals(projectId)
-        .orderBy('updatedAt')
         .reverse()
-        .toArray();
+        .sortBy('updatedAt');
 
       // Sanitize all content
       const sanitizedDrafts = drafts.map(draft => ({

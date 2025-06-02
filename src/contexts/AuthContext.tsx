@@ -99,10 +99,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     setLoading(true);
     setError(null);
     try {
-      const result = await supabaseSignUp(email, password);
-      console.log('Supabase signUp result:', result);
-      if (result.user) {
-        const convertedUser = convertSupabaseUser(result.user);
+      const { data, error } = await supabaseSignUp(email, password);
+      console.log('Supabase signUp result:', data);
+      if (data.user) {
+        const convertedUser = convertSupabaseUser(data.user);
         setUser(convertedUser);
         try {
           await createProfile(convertedUser.id, convertedUser.email);
@@ -111,7 +111,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           setError('Account created, but failed to create user profile. Please contact support.');
           throw profileError;
         }
-      } else if (result.session === null && result.user === null && result.error === null && result.data) {
+      } else if (data.session === null && data.user === null && error === null) {
         // Supabase may require email confirmation
         setError('Check your email to confirm your account before logging in.');
         throw new Error('Email confirmation required.');
@@ -133,9 +133,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     setLoading(true);
     setError(null);
     try {
-      const result = await supabaseSignIn(email, password);
-      if (result.user) {
-        const convertedUser = convertSupabaseUser(result.user);
+      const { data, error } = await supabaseSignIn(email, password);
+      if (data.user) {
+        const convertedUser = convertSupabaseUser(data.user);
         setUser(convertedUser);
       } else {
         throw new Error('Login failed: No user returned');

@@ -1,3 +1,4 @@
+
 // Base type with common fields
 export interface BaseEntity {
   id: string;
@@ -106,6 +107,7 @@ export interface AuthContextType {
   signUp: (email: string, password: string) => Promise<void>;
   signIn: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
+  guestLogin: () => Promise<void>;
 }
 
 // Project context type
