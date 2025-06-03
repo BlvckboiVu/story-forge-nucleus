@@ -3,85 +3,79 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+
+  color-scheme: light dark;
+  color: rgba(255, 255, 255, 0.87);
+  background-color: #242424;
+
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  -webkit-text-size-adjust: 100%;
+
+  --paper: #fafafa;
+  --paper-dark: #1a1a1a;
+}
+
 @layer base {
   :root {
     --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
-
+    --foreground: 0 0% 3.9%;
     --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
-
+    --card-foreground: 0 0% 3.9%;
     --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
-
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
-
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
-
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
-
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
-
+    --popover-foreground: 0 0% 3.9%;
+    --primary: 0 0% 9%;
+    --primary-foreground: 0 0% 98%;
+    --secondary: 0 0% 96.1%;
+    --secondary-foreground: 0 0% 9%;
+    --muted: 0 0% 96.1%;
+    --muted-foreground: 0 0% 45.1%;
+    --accent: 0 0% 96.1%;
+    --accent-foreground: 0 0% 9%;
     --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
-
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
-
+    --destructive-foreground: 0 0% 98%;
+    --border: 0 0% 89.8%;
+    --input: 0 0% 89.8%;
+    --ring: 0 0% 3.9%;
+    --chart-1: 12 76% 61%;
+    --chart-2: 173 58% 39%;
+    --chart-3: 197 37% 24%;
+    --chart-4: 43 74% 66%;
+    --chart-5: 27 87% 67%;
     --radius: 0.5rem;
-
-    --sidebar-background: 0 0% 98%;
-    --sidebar-foreground: 240 5.3% 26.1%;
-    --sidebar-primary: 240 5.9% 10%;
-    --sidebar-primary-foreground: 0 0% 98%;
-    --sidebar-accent: 240 4.8% 95.9%;
-    --sidebar-accent-foreground: 240 5.9% 10%;
-    --sidebar-border: 220 13% 91%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
   }
 
   .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
-
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
-
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
-
-    --primary: 210 40% 98%;
-    --primary-foreground: 222.2 47.4% 11.2%;
-
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
-
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
-
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
-
+    --background: 0 0% 3.9%;
+    --foreground: 0 0% 98%;
+    --card: 0 0% 3.9%;
+    --card-foreground: 0 0% 98%;
+    --popover: 0 0% 3.9%;
+    --popover-foreground: 0 0% 98%;
+    --primary: 0 0% 98%;
+    --primary-foreground: 0 0% 9%;
+    --secondary: 0 0% 14.9%;
+    --secondary-foreground: 0 0% 98%;
+    --muted: 0 0% 14.9%;
+    --muted-foreground: 0 0% 63.9%;
+    --accent: 0 0% 14.9%;
+    --accent-foreground: 0 0% 98%;
     --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
-
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
-    
-    --sidebar-background: 240 5.9% 10%;
-    --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 224.3 76.3% 48%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 3.7% 15.9%;
-    --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 0 0% 14.9%;
+    --input: 0 0% 14.9%;
+    --ring: 0 0% 83.1%;
+    --chart-1: 220 70% 50%;
+    --chart-2: 160 60% 45%;
+    --chart-3: 30 80% 55%;
+    --chart-4: 280 65% 60%;
+    --chart-5: 340 75% 55%;
   }
 }
 
@@ -89,171 +83,73 @@
   * {
     @apply border-border;
   }
-
   body {
     @apply bg-background text-foreground;
   }
 }
 
-@layer components {
-  .editor-container {
-    @apply w-full max-w-4xl mx-auto p-3 sm:p-4 bg-paper dark:bg-paper-dark rounded-md shadow-sm;
-  }
-  
-  .content-editable {
-    @apply outline-none w-full font-serif text-base sm:text-lg text-ink dark:text-ink-dark min-h-[300px] leading-relaxed;
-  }
-  
-  .writing-container {
-    @apply mx-auto my-4 sm:my-8 px-4 sm:px-6 py-8 sm:py-12 bg-paper dark:bg-paper-dark rounded-lg shadow-md max-w-4xl;
-  }
-  
-  .chapter-title {
-    @apply text-2xl sm:text-3xl font-bold mb-4 sm:mb-6 text-center font-serif;
-  }
-  
-  .chapter-content {
-    @apply prose prose-sm sm:prose-lg mx-auto font-serif text-ink dark:text-ink-dark;
-  }
-
-  /* Quill editor dark mode styles */
-  .dark .ql-toolbar {
-    @apply border-gray-600 bg-gray-800;
-  }
-
-  .dark .ql-container {
-    @apply border-gray-600 bg-gray-900;
-  }
-
-  .dark .ql-editor {
-    @apply text-gray-100;
-  }
-
-  .dark .ql-editor.ql-blank::before {
-    @apply text-gray-400;
-  }
-
-  .dark .ql-toolbar .ql-stroke {
-    stroke: #e5e7eb;
-  }
-
-  .dark .ql-toolbar .ql-fill {
-    fill: #e5e7eb;
-  }
-
-  .dark .ql-toolbar button:hover .ql-stroke,
-  .dark .ql-toolbar button:focus .ql-stroke,
-  .dark .ql-toolbar button.ql-active .ql-stroke {
-    stroke: #3b82f6;
-  }
-
-  .dark .ql-toolbar button:hover .ql-fill,
-  .dark .ql-toolbar button:focus .ql-fill,
-  .dark .ql-toolbar button.ql-active .ql-fill {
-    fill: #3b82f6;
-  }
+.bg-paper {
+  background-color: var(--paper);
 }
 
-/* Mobile editor styles */
-.mobile-editor .ql-editor {
-  padding: 0.75rem !important;
-  font-size: 16px !important; /* Prevents zoom on iOS */
-  line-height: 1.6 !important;
-  min-height: calc(100vh - 140px) !important;
+.bg-paper-dark {
+  background-color: var(--paper-dark);
 }
 
-.mobile-editor .ql-container {
-  border: none !important;
+/* Rich Text Editor Styles */
+.rich-text-editor .ql-editor {
+  padding: 1.5rem !important;
+  font-size: 16px;
+  line-height: 1.6;
+  min-height: 400px;
 }
 
-.mobile-editor .ql-editor::before {
-  font-style: normal !important;
-  color: #9ca3af !important;
-  font-size: 16px !important;
-}
-
-/* Responsive mobile styles */
-@media (min-width: 640px) {
-  .mobile-editor .ql-editor {
-    padding: 1rem !important;
-    min-height: calc(100vh - 120px) !important;
-  }
-}
-
-/* Page view styles */
-.page-view .ql-editor {
+.rich-text-editor.page-view .ql-editor {
   max-width: 8.5in;
   min-height: var(--page-height, 800px);
-  margin: 1rem auto;
-  padding: 0.75in !important;
-  background: white;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-  page-break-after: always;
-}
-
-.page-view .ql-container {
-  background: #f3f4f6;
-  padding: 1rem;
-}
-
-@media (min-width: 768px) {
-  .page-view .ql-editor {
-    margin: 2rem auto;
-    padding: 1in !important;
-  }
-  
-  .page-view .ql-container {
-    padding: 2rem;
-  }
-}
-
-/* Focus mode styles */
-.focus-mode .ql-editor {
-  max-width: 42rem;
   margin: 0 auto;
+  padding: 1in !important;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  background: white;
+  overflow-y: auto;
+}
+
+.rich-text-editor.focus-mode .ql-editor {
+  padding: 2rem !important;
+  max-width: 4xl;
+  margin: 0 auto;
+}
+
+.rich-text-editor.mobile-editor .ql-editor {
   padding: 1rem !important;
+  font-size: 18px;
 }
 
-@media (min-width: 768px) {
-  .focus-mode .ql-editor {
-    padding: 2rem !important;
-  }
+/* Quill Snow Theme Customizations */
+.ql-snow .ql-toolbar {
+  display: none !important;
 }
 
-/* Responsive improvements */
-@media (max-width: 768px) {
-  .ql-toolbar {
-    border: none !important;
-    padding: 0.5rem !important;
-  }
-  
-  .ql-formats {
-    margin-right: 0.25rem !important;
-  }
+.ql-snow .ql-container {
+  border: none !important;
+  font-family: inherit;
 }
 
-/* Better touch targets for mobile */
-@media (max-width: 768px) {
-  button {
-    min-height: 44px;
-    min-width: 44px;
-  }
-  
-  .ql-editor {
-    -webkit-user-select: text;
-    user-select: text;
-    -webkit-touch-callout: default;
-  }
+.ql-editor {
+  border: none !important;
+  outline: none !important;
 }
 
-/* Ensure proper scrolling on mobile */
-@media (max-width: 768px) {
-  .overflow-hidden {
-    overflow: hidden;
-  }
-  
-  .overflow-auto {
-    overflow: auto;
-    -webkit-overflow-scrolling: touch;
-  }
+.ql-editor:focus {
+  outline: none !important;
+}
+
+/* Page view specific styles */
+.page-view .ql-container {
+  overflow: auto !important;
+  max-height: 80vh !important;
+}
+
+.page-view .ql-editor {
+  overflow-y: auto !important;
 }

@@ -167,7 +167,9 @@ export const IntegratedToolbar = ({
         </div>
 
         <div className="flex items-center gap-1 ml-2">
-          {extraActions}
+          <div className="flex items-center gap-1">
+            {extraActions}
+          </div>
           
           <Button
             variant="ghost"
@@ -271,7 +273,9 @@ export const IntegratedToolbar = ({
       </div>
 
       <div className="flex items-center gap-2 ml-4">
-        {extraActions}
+        <div className="flex items-center gap-2">
+          {extraActions}
+        </div>
         
         <Button
           variant="ghost"

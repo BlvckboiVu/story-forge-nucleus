@@ -1,3 +1,4 @@
+
 import { useEffect, useRef, useState } from 'react';
 import ReactQuill from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
@@ -71,6 +72,16 @@ const RichTextEditor = ({
     }
   }, [onEditorReady]);
 
+  // Apply font change to the editor
+  useEffect(() => {
+    const quill = editorRef.current?.getEditor();
+    if (quill && selectedFont) {
+      // Apply font to entire editor content
+      const range = quill.getSelection() || { index: 0, length: quill.getLength() };
+      quill.formatText(0, quill.getLength(), 'font', selectedFont);
+    }
+  }, [selectedFont]);
+
   const handleSaveContent = (contentToSave: string) => {
     onSave(contentToSave);
     setHasUnsavedChanges(false);
@@ -86,10 +97,8 @@ const RichTextEditor = ({
     setSelectedFont(fontFamily);
     const quill = editorRef.current?.getEditor();
     if (quill) {
-      const range = quill.getSelection();
-      if (range) {
-        quill.format('font', fontFamily);
-      }
+      // Apply font to entire content
+      quill.formatText(0, quill.getLength(), 'font', fontFamily);
     }
   };
 
@@ -178,10 +187,21 @@ const RichTextEditor = ({
   // Mobile-specific classes
   const mobileClasses = isMobile || deviceIsMobile ? 'mobile-editor' : '';
   const editorClasses = `
+    rich-text-editor
     ${mobileClasses}
     ${isFocusMode ? 'focus-mode max-w-4xl mx-auto px-4' : ''}
     ${viewMode === 'page' ? 'page-view' : 'scroll-view'}
   `.trim();
+
+  const editorStyle = {
+    fontFamily: selectedFont,
+    height: '100%',
+    ...(viewMode === 'page' && { 
+      '--page-height': `${pageHeight}px`,
+      overflow: 'auto',
+      maxHeight: '80vh'
+    } as any)
+  };
 
   return (
     <div className={`flex flex-col h-full ${isFocusMode ? 'focus-mode' : ''}`}>
@@ -206,34 +226,51 @@ const RichTextEditor = ({
         />
       )}
 
-      <div className="flex-1 bg-white dark:bg-gray-900 border-x border-gray-200 dark:border-gray-700">
-        <ReactQuill
-          ref={editorRef}
-          theme="snow"
-          value={content}
-          onChange={handleChange}
-          modules={modules}
-          formats={formats}
-          className={editorClasses}
-          placeholder="Start writing your masterpiece..."
-          readOnly={loading}
-          style={{ 
-            fontFamily: selectedFont,
-            height: '100%',
-            ...(viewMode === 'page' && { '--page-height': `${pageHeight}px` } as any)
-          }}
-        />
+      <div className="flex-1 bg-white dark:bg-gray-900 border-x border-gray-200 dark:border-gray-700 relative">
+        <div className="h-full p-4">
+          <ReactQuill
+            ref={editorRef}
+            theme="snow"
+            value={content}
+            onChange={handleChange}
+            modules={modules}
+            formats={formats}
+            className={editorClasses}
+            placeholder="Start writing your masterpiece..."
+            readOnly={loading}
+            style={editorStyle}
+          />
+        </div>
       </div>
       
       {!isFocusMode && !(isMobile || deviceIsMobile) && (
-        <EditorStatusBar
-          wordCount={wordCount}
-          currentPage={currentPage}
-          hasUnsavedChanges={hasUnsavedChanges}
-          loading={loading}
-          draft={draft}
-          onSave={handleSave}
-        />
+        <div className="bg-gray-50 dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 px-4 py-3">
+          <div className="flex items-center justify-between">
+            <div className="text-sm text-muted-foreground">
+              <span className={wordCount > 50000 ? 'text-red-600' : wordCount > 45000 ? 'text-yellow-600' : ''}>
+                {wordCount.toLocaleString()} words
+              </span>
+              {viewMode === 'page' && (
+                <span className="ml-4">Page {currentPage}</span>
+              )}
+              {hasUnsavedChanges && (
+                <span className="text-orange-600 ml-2">• Unsaved changes</span>
+              )}
+            </div>
+            
+            <button
+              onClick={handleSave}
+              disabled={loading || !hasUnsavedChanges}
+              className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                hasUnsavedChanges 
+                  ? 'bg-blue-600 hover:bg-blue-700 text-white shadow-sm' 
+                  : 'bg-gray-200 hover:bg-gray-300 text-gray-700 cursor-not-allowed'
+              }`}
+            >
+              {loading ? 'Saving...' : 'Save Draft'}
+            </button>
+          </div>
+        </div>
       )}
     </div>
   );
