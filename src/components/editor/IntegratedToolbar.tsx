@@ -33,6 +33,7 @@ interface IntegratedToolbarProps {
 }
 
 const fonts = [
+  { value: 'Inter', label: 'Inter' },
   { value: 'Arial', label: 'Arial' },
   { value: 'Times New Roman', label: 'Times New Roman' },
   { value: 'Helvetica', label: 'Helvetica' },
@@ -76,17 +77,17 @@ export const IntegratedToolbar = ({
 
   if (isFocusMode) {
     return (
-      <div className="flex items-center justify-between p-2 sm:p-3 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 min-h-[48px] sm:min-h-[52px]">
+      <div className="flex items-center justify-between p-3 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 min-h-[56px]">
         <div className="flex items-center gap-2">
           <Button
             variant="ghost"
             size="sm"
             onClick={onSave}
             disabled={!hasUnsavedChanges}
-            className={`h-8 sm:h-9 text-xs sm:text-sm ${hasUnsavedChanges ? 'text-blue-600' : ''}`}
+            className={`h-9 text-sm ${hasUnsavedChanges ? 'text-blue-600' : ''}`}
           >
-            <Save className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
-            {!isMobile && <span className="hidden sm:inline">Save</span>}
+            <Save className="h-4 w-4 mr-2" />
+            Save
           </Button>
         </div>
         
@@ -94,10 +95,10 @@ export const IntegratedToolbar = ({
           variant="ghost"
           size="sm"
           onClick={onToggleFocus}
-          className="h-8 sm:h-9 w-8 sm:w-9"
+          className="h-9 w-9"
           title="Exit Focus Mode"
         >
-          <Minimize2 className="h-3 w-3 sm:h-4 sm:w-4" />
+          <Minimize2 className="h-4 w-4" />
         </Button>
       </div>
     );
@@ -105,12 +106,12 @@ export const IntegratedToolbar = ({
 
   if (isMobile) {
     return (
-      <div className="flex items-center justify-between p-2 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 min-h-[48px]">
-        <div className="flex items-center gap-1 flex-1 min-w-0">
+      <div className="flex items-center justify-between p-3 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 min-h-[56px]">
+        <div className="flex items-center gap-2 flex-1 min-w-0">
           {/* Font Selection for Mobile */}
           <Popover open={fontPopoverOpen} onOpenChange={setFontPopoverOpen}>
             <PopoverTrigger asChild>
-              <Button variant="ghost" size="sm" className="h-8 w-8 p-0" title="Font">
+              <Button variant="ghost" size="sm" className="h-9 w-9 p-0" title="Font">
                 <Type className="h-4 w-4" />
               </Button>
             </PopoverTrigger>
@@ -136,7 +137,7 @@ export const IntegratedToolbar = ({
             </PopoverContent>
           </Popover>
 
-          <Separator orientation="vertical" className="h-5" />
+          <Separator orientation="vertical" className="h-6 mx-1" />
 
           {/* Essential Format Buttons */}
           {formatButtons.map(({ format, icon: Icon, label }) => (
@@ -146,47 +147,34 @@ export const IntegratedToolbar = ({
               size="sm"
               onClick={() => onFormatClick(format)}
               title={label}
-              className="h-8 w-8 p-0"
+              className="h-9 w-9 p-0"
             >
               <Icon className="h-4 w-4" />
             </Button>
           ))}
 
-          <Separator orientation="vertical" className="h-5" />
+          <Separator orientation="vertical" className="h-6 mx-1" />
 
-          {/* List Buttons for Mobile */}
+          {/* List Button for Mobile */}
           <Button
             variant="ghost"
             size="sm"
             onClick={() => onFormatClick('list-bullet')}
             title="Bullet List"
-            className="h-8 w-8 p-0"
+            className="h-9 w-9 p-0"
           >
             <List className="h-4 w-4" />
           </Button>
         </div>
 
-        <div className="flex items-center gap-1 ml-2">
-          <div className="flex items-center gap-1">
-            {extraActions}
-          </div>
-          
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={onSave}
-            disabled={!hasUnsavedChanges}
-            className={`h-8 w-8 p-0 ${hasUnsavedChanges ? 'text-blue-600' : ''}`}
-            title="Save"
-          >
-            <Save className="h-4 w-4" />
-          </Button>
+        <div className="flex items-center gap-2 ml-3">
+          {extraActions}
           
           <Button
             variant="ghost"
             size="sm"
             onClick={onToggleFocus}
-            className="h-8 w-8 p-0"
+            className="h-9 w-9 p-0"
             title="Focus Mode"
           >
             <Maximize2 className="h-4 w-4" />
@@ -198,16 +186,18 @@ export const IntegratedToolbar = ({
 
   // Desktop toolbar
   return (
-    <div className="flex items-center justify-between p-3 lg:p-4 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 min-h-[60px]">
-      <div className="flex items-center gap-3 lg:gap-4 flex-1 min-w-0">
+    <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 min-h-[64px]">
+      <div className="flex items-center gap-4 flex-1 min-w-0">
         {/* Font Selection */}
-        <div className="flex items-center gap-2">
-          <label htmlFor="font-select" className="text-sm font-medium whitespace-nowrap">Font:</label>
+        <div className="flex items-center gap-3">
+          <label htmlFor="font-select" className="text-sm font-medium text-gray-700 dark:text-gray-300 whitespace-nowrap">
+            Font:
+          </label>
           <Select value={selectedFont} onValueChange={onFontChange}>
-            <SelectTrigger className="w-[120px] lg:w-[140px] h-9" id="font-select">
+            <SelectTrigger className="w-[160px] h-9 border-gray-300 dark:border-gray-600" id="font-select">
               <SelectValue />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent className="z-50">
               {fonts.map((font) => (
                 <SelectItem key={font.value} value={font.value} style={{ fontFamily: font.value }}>
                   {font.label}
@@ -217,7 +207,7 @@ export const IntegratedToolbar = ({
           </Select>
         </div>
 
-        <Separator orientation="vertical" className="h-6" />
+        <Separator orientation="vertical" className="h-7" />
 
         {/* Format Buttons */}
         <div className="flex items-center gap-1">
@@ -228,14 +218,14 @@ export const IntegratedToolbar = ({
               size="sm"
               onClick={() => onFormatClick(format)}
               title={label}
-              className="h-9 w-9 p-0"
+              className="h-9 w-9 p-0 hover:bg-gray-100 dark:hover:bg-gray-800"
             >
               <Icon className="h-4 w-4" />
             </Button>
           ))}
         </div>
 
-        <Separator orientation="vertical" className="h-6" />
+        <Separator orientation="vertical" className="h-7" />
 
         {/* Alignment Buttons */}
         <div className="flex items-center gap-1">
@@ -246,16 +236,16 @@ export const IntegratedToolbar = ({
               size="sm"
               onClick={() => onFormatClick(format)}
               title={label}
-              className="h-9 w-9 p-0"
+              className="h-9 w-9 p-0 hover:bg-gray-100 dark:hover:bg-gray-800"
             >
               <Icon className="h-4 w-4" />
             </Button>
           ))}
         </div>
 
-        <Separator orientation="vertical" className="h-6" />
+        <Separator orientation="vertical" className="h-7" />
 
-        {/* List Buttons */}
+        {/* List and Quote Buttons */}
         <div className="flex items-center gap-1">
           {listButtons.map(({ format, icon: Icon, label }) => (
             <Button
@@ -264,7 +254,7 @@ export const IntegratedToolbar = ({
               size="sm"
               onClick={() => onFormatClick(format)}
               title={label}
-              className="h-9 w-9 p-0"
+              className="h-9 w-9 p-0 hover:bg-gray-100 dark:hover:bg-gray-800"
             >
               <Icon className="h-4 w-4" />
             </Button>
@@ -272,27 +262,14 @@ export const IntegratedToolbar = ({
         </div>
       </div>
 
-      <div className="flex items-center gap-2 ml-4">
-        <div className="flex items-center gap-2">
-          {extraActions}
-        </div>
-        
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={onSave}
-          disabled={!hasUnsavedChanges}
-          className={`h-9 ${hasUnsavedChanges ? 'text-blue-600' : ''}`}
-        >
-          <Save className="h-4 w-4 mr-2" />
-          Save
-        </Button>
+      <div className="flex items-center gap-3 ml-4">
+        {extraActions}
         
         <Button
           variant="ghost"
           size="sm"
           onClick={onToggleFocus}
-          className="h-9"
+          className="h-9 hover:bg-gray-100 dark:hover:bg-gray-800"
         >
           <Maximize2 className="h-4 w-4 mr-2" />
           Focus

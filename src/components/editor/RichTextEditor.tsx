@@ -5,11 +5,12 @@ import 'react-quill/dist/quill.snow.css';
 import { useToast } from '@/hooks/use-toast';
 import { Draft } from '@/lib/db';
 import { IntegratedToolbar } from './IntegratedToolbar';
-import { EditorStatusBar } from './EditorStatusBar';
 import { WritingViewOptions } from './WritingViewOptions';
 import { useAutoSave } from '@/hooks/useAutoSave';
 import { useWordCount } from '@/hooks/useWordCount';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { Button } from '@/components/ui/button';
+import { Save } from 'lucide-react';
 
 interface RichTextEditorProps {
   initialContent?: string;
@@ -51,7 +52,7 @@ const RichTextEditor = ({
 }: RichTextEditorProps) => {
   const [content, setContent] = useState(initialContent);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
-  const [selectedFont, setSelectedFont] = useState('Arial');
+  const [selectedFont, setSelectedFont] = useState('Inter');
   const [viewMode, setViewMode] = useState<'scroll' | 'page'>('scroll');
   const [pageHeight, setPageHeight] = useState(800);
   const { toast } = useToast();
@@ -76,9 +77,8 @@ const RichTextEditor = ({
   useEffect(() => {
     const quill = editorRef.current?.getEditor();
     if (quill && selectedFont) {
-      // Apply font to entire editor content
-      const range = quill.getSelection() || { index: 0, length: quill.getLength() };
-      quill.formatText(0, quill.getLength(), 'font', selectedFont);
+      const editor = quill.root;
+      editor.style.fontFamily = selectedFont;
     }
   }, [selectedFont]);
 
@@ -97,8 +97,8 @@ const RichTextEditor = ({
     setSelectedFont(fontFamily);
     const quill = editorRef.current?.getEditor();
     if (quill) {
-      // Apply font to entire content
-      quill.formatText(0, quill.getLength(), 'font', fontFamily);
+      const editor = quill.root;
+      editor.style.fontFamily = fontFamily;
     }
   };
 
@@ -198,13 +198,11 @@ const RichTextEditor = ({
     height: '100%',
     ...(viewMode === 'page' && { 
       '--page-height': `${pageHeight}px`,
-      overflow: 'auto',
-      maxHeight: '80vh'
     } as any)
   };
 
   return (
-    <div className={`flex flex-col h-full ${isFocusMode ? 'focus-mode' : ''}`}>
+    <div className={`flex flex-col h-full relative ${isFocusMode ? 'focus-mode' : ''}`}>
       {!isFocusMode && (
         <IntegratedToolbar
           selectedFont={selectedFont}
@@ -226,49 +224,55 @@ const RichTextEditor = ({
         />
       )}
 
-      <div className="flex-1 bg-white dark:bg-gray-900 border-x border-gray-200 dark:border-gray-700 relative">
-        <div className="h-full p-4">
-          <ReactQuill
-            ref={editorRef}
-            theme="snow"
-            value={content}
-            onChange={handleChange}
-            modules={modules}
-            formats={formats}
-            className={editorClasses}
-            placeholder="Start writing your masterpiece..."
-            readOnly={loading}
-            style={editorStyle}
-          />
-        </div>
+      <div className="flex-1 bg-white dark:bg-gray-900 border-x border-gray-200 dark:border-gray-700 relative overflow-hidden">
+        <ReactQuill
+          ref={editorRef}
+          theme="snow"
+          value={content}
+          onChange={handleChange}
+          modules={modules}
+          formats={formats}
+          className={editorClasses}
+          placeholder="Start writing your masterpiece..."
+          readOnly={loading}
+          style={editorStyle}
+        />
       </div>
       
-      {!isFocusMode && !(isMobile || deviceIsMobile) && (
-        <div className="bg-gray-50 dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 px-4 py-3">
+      {/* Professional status bar with save button */}
+      {!isFocusMode && (
+        <div className="bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700 px-6 py-3">
           <div className="flex items-center justify-between">
-            <div className="text-sm text-muted-foreground">
+            <div className="flex items-center gap-6 text-sm text-muted-foreground">
               <span className={wordCount > 50000 ? 'text-red-600' : wordCount > 45000 ? 'text-yellow-600' : ''}>
                 {wordCount.toLocaleString()} words
               </span>
               {viewMode === 'page' && (
-                <span className="ml-4">Page {currentPage}</span>
+                <span>Page {currentPage}</span>
               )}
               {hasUnsavedChanges && (
-                <span className="text-orange-600 ml-2">• Unsaved changes</span>
+                <span className="flex items-center gap-1 text-amber-600">
+                  <div className="w-2 h-2 bg-amber-500 rounded-full animate-pulse"></div>
+                  Unsaved changes
+                </span>
               )}
             </div>
             
-            <button
+            <Button
               onClick={handleSave}
               disabled={loading || !hasUnsavedChanges}
-              className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-                hasUnsavedChanges 
-                  ? 'bg-blue-600 hover:bg-blue-700 text-white shadow-sm' 
-                  : 'bg-gray-200 hover:bg-gray-300 text-gray-700 cursor-not-allowed'
-              }`}
+              size="sm"
+              className={`
+                transition-all duration-200 
+                ${hasUnsavedChanges 
+                  ? 'bg-blue-600 hover:bg-blue-700 text-white shadow-md hover:shadow-lg' 
+                  : 'bg-gray-100 hover:bg-gray-200 text-gray-600 border'
+                }
+              `}
             >
+              <Save className="h-4 w-4 mr-2" />
               {loading ? 'Saving...' : 'Save Draft'}
-            </button>
+            </Button>
           </div>
         </div>
       )}
