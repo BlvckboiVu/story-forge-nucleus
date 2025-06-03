@@ -2,6 +2,7 @@
 import { Button } from '@/components/ui/button';
 import { FilePlus, FolderOpen } from 'lucide-react';
 import { DarkModeToggle } from '@/components/ui/DarkModeToggle';
+import OutlinePopup from './OutlinePopup';
 import { Draft } from '@/lib/db';
 
 interface EditorHeaderProps {
@@ -37,6 +38,7 @@ export const EditorHeader = ({ currentDraft, onOpenDraft, onNewDraft }: EditorHe
         <DarkModeToggle />
         
         <div className="hidden sm:flex space-x-2">
+          <OutlinePopup />
           <Button 
             variant="outline" 
             onClick={onOpenDraft}
