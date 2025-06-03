@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { User, AuthContextType } from '../types';
 import { supabase, signIn as supabaseSignIn, signUp as supabaseSignUp, signOut as supabaseSignOut, createProfile } from '../lib/supabase';
@@ -100,7 +99,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     setLoading(true);
     setError(null);
     try {
-      const { data, error } = await supabaseSignUp(email, password);
+      const data = await supabaseSignUp(email, password);
       console.log('Supabase signUp result:', data);
       if (data.user) {
         const convertedUser = convertSupabaseUser(data.user);
@@ -112,7 +111,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           setError('Account created, but failed to create user profile. Please contact support.');
           throw profileError;
         }
-      } else if (data.session === null && data.user === null && error === null) {
+      } else if (data.session === null && data.user === null) {
         // Supabase may require email confirmation
         setError('Check your email to confirm your account before logging in.');
         throw new Error('Email confirmation required.');
@@ -134,7 +133,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     setLoading(true);
     setError(null);
     try {
-      const { data, error } = await supabaseSignIn(email, password);
+      const data = await supabaseSignIn(email, password);
       if (data.user) {
         const convertedUser = convertSupabaseUser(data.user);
         setUser(convertedUser);
