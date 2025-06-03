@@ -1,62 +1,65 @@
-
+import React from 'react';
 import { Button } from '@/components/ui/button';
-import { FilePlus, FolderOpen } from 'lucide-react';
-import { DarkModeToggle } from '@/components/ui/DarkModeToggle';
-import OutlinePopup from './OutlinePopup';
-import { Draft } from '@/lib/db';
+import { PenTool, FolderOpen, FilePlus } from 'lucide-react';
 
 interface EditorHeaderProps {
-  currentDraft: Draft | null;
+  currentDraft: { title: string } | null;
   onOpenDraft: () => void;
   onNewDraft: () => void;
 }
 
+import { StoryBibleDrawer } from '../StoryBibleDrawer';
+import { useProjects } from '@/contexts/ProjectContext';
+import OutlinePopup from './OutlinePopup';
+
 export const EditorHeader = ({ currentDraft, onOpenDraft, onNewDraft }: EditorHeaderProps) => {
-  const formatLastSaved = (date: Date) => {
-    return new Intl.DateTimeFormat('en-US', {
-      hour: '2-digit',
-      minute: '2-digit',
-      second: '2-digit',
-    }).format(date);
-  };
+  const { currentProject } = useProjects();
 
   return (
-    <div className="flex items-center justify-between mb-4 p-4 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700">
-      <div className="flex-1">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-          {currentDraft ? currentDraft.title : "New Draft"}
-        </h1>
-        <p className="text-sm text-muted-foreground mt-1">
-          {currentDraft 
-            ? `Last saved at ${formatLastSaved(new Date(currentDraft.updatedAt))}` 
-            : "Not saved yet - create or open a draft to begin"
-          }
-        </p>
-      </div>
-      
-      <div className="flex items-center space-x-3">
-        <DarkModeToggle />
-        
-        <div className="hidden sm:flex space-x-2">
+    <header className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 px-6 py-4">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-6">
+          <div className="flex items-center gap-3">
+            <PenTool className="h-5 w-5 text-primary" />
+            <h1 className="text-lg font-semibold">Writer's Studio</h1>
+          </div>
+          
+          {currentDraft && (
+            <div className="text-sm text-muted-foreground">
+              Editing: <span className="font-medium text-foreground">{currentDraft.title}</span>
+            </div>
+          )}
+        </div>
+
+        <div className="flex items-center gap-3">
+          {currentProject && (
+            <StoryBibleDrawer projectId={currentProject.id} />
+          )}
+          
           <OutlinePopup />
-          <Button 
-            variant="outline" 
-            onClick={onOpenDraft}
-            className="flex items-center gap-2"
-          >
-            <FolderOpen className="h-4 w-4" />
-            Open Draft
-          </Button>
-          <Button 
-            variant="outline" 
-            onClick={onNewDraft}
-            className="flex items-center gap-2"
-          >
-            <FilePlus className="h-4 w-4" />
-            New Draft
-          </Button>
+
+          <div className="flex items-center gap-2">
+            <Button 
+              onClick={onOpenDraft}
+              variant="outline"
+              size="sm"
+              className="gap-2"
+            >
+              <FolderOpen className="h-4 w-4" />
+              Open
+            </Button>
+            <Button 
+              onClick={onNewDraft}
+              variant="outline"
+              size="sm"
+              className="gap-2"
+            >
+              <FilePlus className="h-4 w-4" />
+              New
+            </Button>
+          </div>
         </div>
       </div>
-    </div>
+    </header>
   );
 };

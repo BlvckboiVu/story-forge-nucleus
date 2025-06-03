@@ -1,139 +1,83 @@
-import { useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
-import { 
-  LayoutDashboard, 
-  BookOpen, 
-  Settings, 
-  User, 
-  ChevronLeft, 
-  ChevronRight,
-  LogOut
-} from "lucide-react";
-import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
-import { useToast } from "@/hooks/use-toast";
-import { useAuth } from "@/contexts/AuthContext";
-import { useNavigate } from "react-router-dom";
+import React from 'react';
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet"
+import { Separator } from "@/components/ui/separator"
+import { NavLink } from 'react-router-dom';
+import { useAuth } from '@/contexts/AuthContext';
+import {
+  Home,
+  PenTool,
+  Settings,
+  User,
+  Book
+} from 'lucide-react';
 
 interface SidebarProps {
-  isCollapsed: boolean;
-  toggleCollapse: () => void;
+  isOpen: boolean;
+  onClose: () => void;
 }
 
-export function Sidebar({ isCollapsed, toggleCollapse }: SidebarProps) {
-  const location = useLocation();
-  const { toast } = useToast();
-  const { signOut } = useAuth();
-  const navigate = useNavigate();
-  
-  const handleLogout = async () => {
-    try {
-      await signOut();
-      toast({
-        title: "Logged out successfully",
-        description: "You have been logged out of your account",
-      });
-      navigate('/');
-    } catch (error) {
-      toast({
-        title: "Logout failed",
-        description: "There was a problem logging you out",
-        variant: "destructive",
-      });
-    }
-  };
+const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
+  const { user, logout } = useAuth();
 
-  const navItems = [
-    {
-      title: "Dashboard",
-      icon: <LayoutDashboard size={20} />,
-      path: "/app/dashboard",
-    },
-    {
-      title: "Editor",
-      icon: <BookOpen size={20} />,
-      path: "/app/editor",
-    },
-    {
-      title: "Settings",
-      icon: <Settings size={20} />,
-      path: "/app/settings",
-    },
-    {
-      title: "Profile",
-      icon: <User size={20} />,
-      path: "/app/profile",
-    },
+  const navigation = [
+    { name: 'Dashboard', href: '/app/dashboard', icon: Home },
+    { name: 'Editor', href: '/app/editor', icon: PenTool },
+    { name: 'Story Bible', href: '/app/story-bible', icon: Book },
+    { name: 'Profile', href: '/app/profile', icon: User },
+    { name: 'Settings', href: '/app/settings', icon: Settings },
   ];
 
   return (
-    <aside 
-      className={cn(
-        "h-full bg-sidebar border-r border-sidebar-border transition-all duration-300 flex flex-col relative",
-        isCollapsed ? "w-[60px]" : "w-[250px]"
-      )}
-    >
-      {/* Logo and App Name */}
-      <div className="p-4 flex items-center justify-between">
-        <Link 
-          to="/app/dashboard" 
-          className={cn(
-            "font-semibold text-xl flex items-center gap-2 transition-opacity",
-            isCollapsed ? "opacity-0" : "opacity-100"
-          )}
-        >
-          <BookOpen size={24} />
-          <span className={cn("transition-opacity", isCollapsed ? "opacity-0 hidden" : "opacity-100")}>
-            StoryForge
-          </span>
-        </Link>
-        <Button 
-          variant="ghost" 
-          size="icon" 
-          onClick={toggleCollapse}
-          className="absolute -right-4 top-4 rounded-full border bg-background shadow-md text-muted-foreground"
-        >
-          {isCollapsed ? <ChevronRight size={14} /> : <ChevronLeft size={14} />}
-        </Button>
-      </div>
-      
-      <Separator className="my-2" />
-      
-      {/* Navigation Links */}
-      <nav className="flex-1 px-2 py-4">
-        <ul className="space-y-2">
-          {navItems.map((item) => (
-            <li key={item.path}>
-              <Link
-                to={item.path}
-                className={cn(
-                  "flex items-center gap-3 px-3 py-2 rounded-md hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors",
-                  location.pathname === item.path && "bg-sidebar-accent text-sidebar-accent-foreground font-medium",
-                  !isCollapsed ? "justify-start" : "justify-center"
-                )}
-              >
-                {item.icon}
-                {!isCollapsed && <span>{item.title}</span>}
-              </Link>
-            </li>
+    <Sheet open={isOpen} onOpenChange={onClose}>
+      <SheetContent className="w-full sm:w-64">
+        <SheetHeader className="text-left">
+          <SheetTitle>Menu</SheetTitle>
+          <SheetDescription>
+            Navigate your writing journey.
+          </SheetDescription>
+        </SheetHeader>
+        <Separator className="my-4" />
+        <nav className="flex flex-col space-y-2">
+          {navigation.map((item) => (
+            <NavLink
+              key={item.name}
+              to={item.href}
+              className={({ isActive }) =>
+                `flex items-center space-x-2 rounded-md p-2 text-sm font-medium transition-colors hover:bg-secondary hover:text-foreground ${
+                  isActive ? 'bg-secondary text-foreground' : 'text-muted-foreground'
+                }`
+              }
+              onClick={onClose}
+            >
+              <item.icon className="h-4 w-4" />
+              <span>{item.name}</span>
+            </NavLink>
           ))}
-        </ul>
-      </nav>
-      
-      <div className="mt-auto p-4">
-        <Button 
-          variant="ghost" 
-          onClick={handleLogout}
-          className={cn(
-            "w-full flex items-center gap-2",
-            isCollapsed && "justify-center"
-          )}
-        >
-          <LogOut size={18} />
-          {!isCollapsed && <span>Logout</span>}
-        </Button>
-      </div>
-    </aside>
+        </nav>
+        <Separator className="my-4" />
+        {user && (
+          <div className="mt-auto">
+            <p className="text-sm text-muted-foreground">
+              Logged in as {user.email}
+            </p>
+            <button
+              className="w-full rounded-md bg-destructive px-4 py-2 text-sm font-medium text-white hover:bg-destructive/90 focus:outline-none focus:ring-2 focus:ring-destructive focus:ring-offset-1 disabled:pointer-events-none disabled:opacity-50"
+              onClick={logout}
+            >
+              Logout
+            </button>
+          </div>
+        )}
+      </SheetContent>
+    </Sheet>
   );
-}
+};
+
+export default Sidebar;

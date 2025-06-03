@@ -18,6 +18,7 @@ const Settings = lazy(() => import("@/pages/Settings"));
 const TestPage = lazy(() => import("@/pages/admin/TestPage"));
 const NotFound = lazy(() => import("@/pages/NotFound"));
 const AuthError = lazy(() => import("@/pages/AuthError"));
+const StoryBible = lazy(() => import("@/pages/StoryBible"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -135,6 +136,7 @@ const App: React.FC = () => {
                                 <Route path="dashboard" element={<Dashboard />} />
                                 <Route path="editor" element={<Editor />} />
                                 <Route path="editor/:documentId" element={<Editor />} />
+                                <Route path="story-bible" element={<StoryBible />} />
                                 <Route path="profile" element={<Profile />} />
                                 <Route path="settings" element={<Settings />} />
                                 <Route path="*" element={<NotFound />} />
