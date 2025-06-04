@@ -1,10 +1,11 @@
+
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { PlusCircle, FileText, Calendar } from "lucide-react";
+import { PlusCircle, FileText, Calendar, Book } from "lucide-react";
 import { useAuth } from '@/contexts/AuthContext';
 import { useProjects } from '@/contexts/ProjectContext';
 import { getDrafts, type Draft } from '@/lib/db';
@@ -80,6 +81,18 @@ export default function Dashboard() {
     navigate(`/app/editor/${draftId}`);
   };
 
+  const handleStoryBibleClick = () => {
+    if (currentProject) {
+      navigate('/app/story-bible');
+    } else {
+      toast({
+        title: "No project selected",
+        description: "Please select a project first to access its Story Bible",
+        variant: "destructive",
+      });
+    }
+  };
+
   const formatDate = (date: Date) => {
     const now = new Date();
     const diffInHours = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60));
@@ -104,6 +117,50 @@ export default function Dashboard() {
           New Project
         </Button>
       </div>
+
+      {/* Quick Actions */}
+      {currentProject && (
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <Card 
+            className="hover:shadow-md transition-shadow cursor-pointer"
+            onClick={() => navigate('/app/editor')}
+          >
+            <CardContent className="flex items-center p-6">
+              <FileText className="h-8 w-8 text-primary mr-4" />
+              <div>
+                <h3 className="font-semibold">Continue Writing</h3>
+                <p className="text-sm text-muted-foreground">Jump back into your current project</p>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card 
+            className="hover:shadow-md transition-shadow cursor-pointer"
+            onClick={handleStoryBibleClick}
+          >
+            <CardContent className="flex items-center p-6">
+              <Book className="h-8 w-8 text-primary mr-4" />
+              <div>
+                <h3 className="font-semibold">Story Bible</h3>
+                <p className="text-sm text-muted-foreground">Manage characters, locations & lore</p>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card 
+            className="hover:shadow-md transition-shadow cursor-pointer"
+            onClick={handleCreateProject}
+          >
+            <CardContent className="flex items-center p-6">
+              <PlusCircle className="h-8 w-8 text-primary mr-4" />
+              <div>
+                <h3 className="font-semibold">New Project</h3>
+                <p className="text-sm text-muted-foreground">Start a fresh writing project</p>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
       
       <Tabs defaultValue="projects" value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="grid w-full grid-cols-2 md:w-auto">
