@@ -1,5 +1,5 @@
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import ReactQuill from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
 import { useToast } from '@/hooks/use-toast';
@@ -11,6 +11,9 @@ import { useWordCount } from '@/hooks/useWordCount';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Button } from '@/components/ui/button';
 import { Save } from 'lucide-react';
+import { useProjects } from '@/contexts/ProjectContext';
+import { StoryBibleEntry, getStoryBibleEntriesByProject } from '@/lib/storyBibleDb';
+import { debouncedHighlight, registerStoryBibleFormat, HighlightMatch } from '@/utils/highlighting';
 
 interface RichTextEditorProps {
   initialContent?: string;
@@ -37,7 +40,8 @@ const formats = [
   'list', 'bullet', 'indent',
   'align',
   'blockquote', 'code-block',
-  'link'
+  'link',
+  'story-bible-highlight' // Custom format for highlighting
 ];
 
 const RichTextEditor = ({
@@ -55,10 +59,36 @@ const RichTextEditor = ({
   const [selectedFont, setSelectedFont] = useState('Inter');
   const [viewMode, setViewMode] = useState<'scroll' | 'page'>('scroll');
   const [pageHeight, setPageHeight] = useState(800);
+  const [storyBibleEntries, setStoryBibleEntries] = useState<StoryBibleEntry[]>([]);
+  const [highlightMatches, setHighlightMatches] = useState<HighlightMatch[]>([]);
   const { toast } = useToast();
   const editorRef = useRef<ReactQuill>(null);
   const { wordCount, currentPage, calculateWordCount } = useWordCount();
+  const { currentProject } = useProjects();
   const deviceIsMobile = useIsMobile();
+
+  // Register custom Quill format for Story Bible highlighting
+  useEffect(() => {
+    if (typeof window !== 'undefined' && window.Quill) {
+      registerStoryBibleFormat(window.Quill);
+    }
+  }, []);
+
+  // Load Story Bible entries for current project
+  useEffect(() => {
+    const loadStoryBibleEntries = async () => {
+      if (!currentProject) return;
+      
+      try {
+        const entries = await getStoryBibleEntriesByProject(currentProject.id, 0, 100);
+        setStoryBibleEntries(entries);
+      } catch (error) {
+        console.error('Failed to load Story Bible entries:', error);
+      }
+    };
+
+    loadStoryBibleEntries();
+  }, [currentProject]);
 
   useEffect(() => {
     if (initialContent) {
@@ -81,6 +111,30 @@ const RichTextEditor = ({
       editor.style.fontFamily = selectedFont;
     }
   }, [selectedFont]);
+
+  // Handle highlighting when content or selection changes
+  const handleHighlighting = useCallback(() => {
+    const quill = editorRef.current?.getEditor();
+    if (!quill || !storyBibleEntries.length || isFocusMode) return;
+
+    debouncedHighlight(quill, storyBibleEntries, setHighlightMatches);
+  }, [storyBibleEntries, isFocusMode]);
+
+  // Set up selection change listener for highlighting
+  useEffect(() => {
+    const quill = editorRef.current?.getEditor();
+    if (!quill) return;
+
+    const handleSelectionChange = () => {
+      handleHighlighting();
+    };
+
+    quill.on('selection-change', handleSelectionChange);
+
+    return () => {
+      quill.off('selection-change', handleSelectionChange);
+    };
+  }, [handleHighlighting]);
 
   const handleSaveContent = (contentToSave: string) => {
     onSave(contentToSave);
@@ -160,6 +214,9 @@ const RichTextEditor = ({
 
     setContent(value);
     setHasUnsavedChanges(true);
+    
+    // Trigger highlighting after content change
+    setTimeout(handleHighlighting, 100);
   };
 
   const handleSave = () => {
@@ -249,6 +306,11 @@ const RichTextEditor = ({
               </span>
               {viewMode === 'page' && (
                 <span>Page {currentPage}</span>
+              )}
+              {highlightMatches.length > 0 && (
+                <span className="text-blue-600">
+                  {highlightMatches.length} Story Bible {highlightMatches.length === 1 ? 'reference' : 'references'}
+                </span>
               )}
               {hasUnsavedChanges && (
                 <span className="flex items-center gap-1 text-amber-600">
