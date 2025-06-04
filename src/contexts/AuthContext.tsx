@@ -112,7 +112,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           throw profileError;
         }
       } else if (data.session === null && data.user === null) {
-        // Supabase may require email confirmation
         setError('Check your email to confirm your account before logging in.');
         throw new Error('Email confirmation required.');
       } else {
@@ -156,7 +155,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     setError(null);
     try {
       if (!navigator.onLine) {
-        // Always use local guest in offline mode
         const localGuestUser = {
           id: 'local-guest',
           email: 'local-guest@storyforge.com',
@@ -178,7 +176,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         const result = await supabaseSignUp(guestEmail, guestPassword);
         if (result?.user) {
           const convertedUser = convertSupabaseUser(result.user);
-          // Ensure guest role
           convertedUser.role = 'guest';
           setUser(convertedUser);
           await createProfile(convertedUser.id, convertedUser.email);
@@ -218,7 +215,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     
     try {
       await supabaseSignOut();
-      // Always clear local storage and state
       localStorage.removeItem('storyforge_user');
       setUser(null);
     } catch (e) {
