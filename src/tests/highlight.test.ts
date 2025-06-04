@@ -167,18 +167,36 @@ describe('AI Suggestions', () => {
       expect(suggestion.name).toBe('Custom Entry');
       expect(suggestion.description).toContain('unique element');
     });
+
+    it('should generate suggestions with genre options', async () => {
+      const suggestion = await generateSuggestion('Character', { genre: 'Fantasy' });
+      
+      expect(suggestion.name).toBeDefined();
+      expect(suggestion.description).toBeDefined();
+      expect(suggestion.tags).toBeInstanceOf(Array);
+      expect(suggestion.rules).toBeInstanceOf(Array);
+    });
+
+    it('should generate suggestions with culture options', async () => {
+      const suggestion = await generateSuggestion('Character', { culture: 'Nordic' });
+      
+      expect(suggestion.name).toBeDefined();
+      expect(suggestion.description).toBeDefined();
+      expect(suggestion.tags).toBeInstanceOf(Array);
+      expect(suggestion.rules).toBeInstanceOf(Array);
+    });
   });
 
   describe('getCachedSuggestion', () => {
     it('should cache suggestions for performance', async () => {
       const type = 'Character';
-      const context = 'test';
+      const options = { genre: 'Fantasy' };
       
       // First call
-      const suggestion1 = await getCachedSuggestion(type, context);
+      const suggestion1 = await getCachedSuggestion(type, options);
       
       // Second call should return the same cached result
-      const suggestion2 = await getCachedSuggestion(type, context);
+      const suggestion2 = await getCachedSuggestion(type, options);
       
       expect(suggestion1).toEqual(suggestion2);
     });
@@ -188,6 +206,18 @@ describe('AI Suggestions', () => {
       const locationSuggestion = await getCachedSuggestion('Location');
       
       expect(characterSuggestion.name).not.toBe(locationSuggestion.name);
+    });
+
+    it('should handle different options correctly', async () => {
+      const fantasyOptions = { genre: 'Fantasy' };
+      const scifiOptions = { genre: 'Sci-Fi' };
+      
+      const fantasySuggestion = await getCachedSuggestion('Character', fantasyOptions);
+      const scifiSuggestion = await getCachedSuggestion('Character', scifiOptions);
+      
+      // Should be different suggestions for different genres
+      expect(fantasySuggestion).toBeDefined();
+      expect(scifiSuggestion).toBeDefined();
     });
   });
 });
