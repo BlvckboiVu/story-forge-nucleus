@@ -1,6 +1,6 @@
 
 import { useState, ReactNode } from 'react';
-import { Sidebar } from './Sidebar';
+import Sidebar from './Sidebar';
 import { MobileNav } from './MobileNav';
 import { useIsMobile } from '@/hooks/use-mobile';
 
@@ -31,8 +31,8 @@ export function MainLayout({ children }: MainLayoutProps) {
         {/* Sidebar for desktop */}
         {!isMobile && (
           <Sidebar 
-            isCollapsed={sidebarCollapsed} 
-            toggleCollapse={toggleSidebar} 
+            isOpen={!sidebarCollapsed} 
+            onClose={toggleSidebar} 
           />
         )}
         

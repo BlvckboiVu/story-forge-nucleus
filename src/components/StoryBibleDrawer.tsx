@@ -6,14 +6,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { 
-  Drawer,
-  DrawerContent,
-  DrawerHeader,
-  DrawerTitle,
-  DrawerTrigger,
-} from '@/components/ui/drawer';
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from '@/components/ui/sheet';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Book, Plus, Search, Filter, Edit, Trash2, ChevronRight } from 'lucide-react';
+import { Book, Plus, Search, Filter, Edit, Trash2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { StoryBibleModal } from './StoryBibleModal';
 import { 
@@ -30,11 +30,11 @@ interface StoryBibleDrawerProps {
 }
 
 const TYPE_COLORS = {
-  Character: 'bg-blue-100 text-blue-800',
-  Location: 'bg-green-100 text-green-800',
-  Lore: 'bg-purple-100 text-purple-800',
-  Item: 'bg-orange-100 text-orange-800',
-  Custom: 'bg-gray-100 text-gray-800',
+  Character: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200',
+  Location: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
+  Lore: 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200',
+  Item: 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200',
+  Custom: 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200',
 };
 
 export const StoryBibleDrawer: React.FC<StoryBibleDrawerProps> = ({ projectId }) => {
@@ -46,6 +46,7 @@ export const StoryBibleDrawer: React.FC<StoryBibleDrawerProps> = ({ projectId })
   const [selectedEntry, setSelectedEntry] = useState<StoryBibleEntry | null>(null);
   const [hasMore, setHasMore] = useState(true);
   const [offset, setOffset] = useState(0);
+  const [sheetOpen, setSheetOpen] = useState(false);
   const isMobile = useIsMobile();
   const { toast } = useToast();
 
@@ -126,10 +127,10 @@ export const StoryBibleDrawer: React.FC<StoryBibleDrawerProps> = ({ projectId })
     <Card className="mb-3 hover:shadow-md transition-shadow cursor-pointer group">
       <CardHeader className="pb-2">
         <div className="flex items-start justify-between">
-          <div className="flex-1">
+          <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 mb-1">
               <h4 className="font-medium text-sm truncate">{entry.name}</h4>
-              <Badge className={`text-xs ${TYPE_COLORS[entry.type]}`}>
+              <Badge className={`text-xs shrink-0 ${TYPE_COLORS[entry.type]}`}>
                 {entry.type}
               </Badge>
             </div>
@@ -137,7 +138,7 @@ export const StoryBibleDrawer: React.FC<StoryBibleDrawerProps> = ({ projectId })
               Updated {entry.updated_at.toLocaleDateString()}
             </p>
           </div>
-          <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+          <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity ml-2">
             <Button
               size="sm"
               variant="ghost"
@@ -188,108 +189,99 @@ export const StoryBibleDrawer: React.FC<StoryBibleDrawerProps> = ({ projectId })
     </Card>
   );
 
-  const DrawerContentComponent = () => (
-    <div className="h-full flex flex-col">
-      <DrawerHeader className="border-b">
-        <DrawerTitle className="flex items-center gap-2">
-          <Book className="h-5 w-5" />
-          Story Bible
-        </DrawerTitle>
-      </DrawerHeader>
-
-      <div className="flex-1 p-4 overflow-hidden">
-        <div className="space-y-4 h-full flex flex-col">
-          {/* Controls */}
-          <div className="space-y-3">
-            <div className="flex gap-2">
-              <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Search entries..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-9"
-                />
-              </div>
-              <Button
-                onClick={() => {
-                  setSelectedEntry(null);
-                  setModalOpen(true);
-                }}
-                size="sm"
-                className="shrink-0"
-              >
-                <Plus className="h-4 w-4" />
-              </Button>
-            </div>
-
-            <div className="flex items-center gap-2">
-              <Filter className="h-4 w-4 text-muted-foreground" />
-              <Select
-                value={typeFilter}
-                onValueChange={(value: StoryBibleEntry['type'] | 'all') => setTypeFilter(value)}
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Types</SelectItem>
-                  <SelectItem value="Character">Character</SelectItem>
-                  <SelectItem value="Location">Location</SelectItem>
-                  <SelectItem value="Lore">Lore</SelectItem>
-                  <SelectItem value="Item">Item</SelectItem>
-                  <SelectItem value="Custom">Custom</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
-          {/* Entries List */}
-          <ScrollArea className="flex-1">
-            <div className="space-y-2">
-              {entries.map(entry => (
-                <EntryCard key={entry.id} entry={entry} />
-              ))}
-              
-              {hasMore && (
-                <Button
-                  variant="outline"
-                  onClick={() => loadEntries()}
-                  disabled={loading}
-                  className="w-full"
-                >
-                  {loading ? 'Loading...' : 'Load More'}
-                </Button>
-              )}
-              
-              {entries.length === 0 && !loading && (
-                <div className="text-center py-8 text-muted-foreground">
-                  <Book className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                  <p className="text-sm">No story bible entries yet.</p>
-                  <p className="text-xs">Create your first entry to get started!</p>
-                </div>
-              )}
-            </div>
-          </ScrollArea>
-        </div>
-      </div>
-    </div>
-  );
-
   return (
     <>
-      <Drawer>
-        <DrawerTrigger asChild>
-          <Button variant="outline" size="sm" className="gap-2">
+      <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
+        <SheetTrigger asChild>
+          <Button variant="outline" size="sm" className="gap-2 hover:bg-accent transition-colors">
             <Book className="h-4 w-4" />
             Story Bible
-            <ChevronRight className="h-3 w-3" />
           </Button>
-        </DrawerTrigger>
-        <DrawerContent className="h-[80vh]">
-          <DrawerContentComponent />
-        </DrawerContent>
-      </Drawer>
+        </SheetTrigger>
+        <SheetContent className="w-full sm:w-96 h-full flex flex-col">
+          <SheetHeader className="border-b pb-4">
+            <SheetTitle className="flex items-center gap-2">
+              <Book className="h-5 w-5" />
+              Story Bible
+            </SheetTitle>
+          </SheetHeader>
+
+          <div className="flex-1 flex flex-col gap-4 py-4 overflow-hidden">
+            {/* Controls */}
+            <div className="space-y-3">
+              <div className="flex gap-2">
+                <div className="relative flex-1">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Search entries..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pl-9"
+                  />
+                </div>
+                <Button
+                  onClick={() => {
+                    setSelectedEntry(null);
+                    setModalOpen(true);
+                  }}
+                  size="sm"
+                  className="shrink-0"
+                >
+                  <Plus className="h-4 w-4" />
+                </Button>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <Filter className="h-4 w-4 text-muted-foreground" />
+                <Select
+                  value={typeFilter}
+                  onValueChange={(value: StoryBibleEntry['type'] | 'all') => setTypeFilter(value)}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Types</SelectItem>
+                    <SelectItem value="Character">Character</SelectItem>
+                    <SelectItem value="Location">Location</SelectItem>
+                    <SelectItem value="Lore">Lore</SelectItem>
+                    <SelectItem value="Item">Item</SelectItem>
+                    <SelectItem value="Custom">Custom</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            {/* Entries List */}
+            <ScrollArea className="flex-1">
+              <div className="space-y-2 pr-4">
+                {entries.map(entry => (
+                  <EntryCard key={entry.id} entry={entry} />
+                ))}
+                
+                {hasMore && (
+                  <Button
+                    variant="outline"
+                    onClick={() => loadEntries()}
+                    disabled={loading}
+                    className="w-full"
+                  >
+                    {loading ? 'Loading...' : 'Load More'}
+                  </Button>
+                )}
+                
+                {entries.length === 0 && !loading && (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <Book className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                    <p className="text-sm">No story bible entries yet.</p>
+                    <p className="text-xs">Create your first entry to get started!</p>
+                  </div>
+                )}
+              </div>
+            </ScrollArea>
+          </div>
+        </SheetContent>
+      </Sheet>
 
       <StoryBibleModal
         isOpen={modalOpen}

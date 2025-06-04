@@ -1,3 +1,4 @@
+
 import React from 'react';
 import {
   Sheet,
@@ -15,7 +16,8 @@ import {
   PenTool,
   Settings,
   User,
-  Book
+  Book,
+  LogOut
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -24,7 +26,7 @@ interface SidebarProps {
 }
 
 const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
-  const { user, logout } = useAuth();
+  const { user, signOut } = useAuth();
 
   const navigation = [
     { name: 'Dashboard', href: '/app/dashboard', icon: Home },
@@ -33,6 +35,15 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
     { name: 'Profile', href: '/app/profile', icon: User },
     { name: 'Settings', href: '/app/settings', icon: Settings },
   ];
+
+  const handleLogout = async () => {
+    try {
+      await signOut();
+      onClose();
+    } catch (error) {
+      console.error('Error signing out:', error);
+    }
+  };
 
   return (
     <Sheet open={isOpen} onOpenChange={onClose}>
@@ -64,13 +75,14 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
         <Separator className="my-4" />
         {user && (
           <div className="mt-auto">
-            <p className="text-sm text-muted-foreground">
+            <p className="text-sm text-muted-foreground mb-2">
               Logged in as {user.email}
             </p>
             <button
-              className="w-full rounded-md bg-destructive px-4 py-2 text-sm font-medium text-white hover:bg-destructive/90 focus:outline-none focus:ring-2 focus:ring-destructive focus:ring-offset-1 disabled:pointer-events-none disabled:opacity-50"
-              onClick={logout}
+              className="w-full rounded-md bg-destructive px-4 py-2 text-sm font-medium text-white hover:bg-destructive/90 focus:outline-none focus:ring-2 focus:ring-destructive focus:ring-offset-1 disabled:pointer-events-none disabled:opacity-50 flex items-center justify-center gap-2"
+              onClick={handleLogout}
             >
+              <LogOut className="h-4 w-4" />
               Logout
             </button>
           </div>
