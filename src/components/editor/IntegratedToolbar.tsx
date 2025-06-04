@@ -18,7 +18,7 @@ import {
   Type
 } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 interface IntegratedToolbarProps {
   selectedFont: string;
@@ -30,6 +30,7 @@ interface IntegratedToolbarProps {
   onFormatClick: (format: string) => void;
   isMobile?: boolean;
   extraActions?: React.ReactNode;
+  editorRef?: any;
 }
 
 const fonts = [
@@ -54,8 +55,50 @@ export const IntegratedToolbar = ({
   onFormatClick,
   isMobile = false,
   extraActions,
+  editorRef,
 }: IntegratedToolbarProps) => {
   const [fontPopoverOpen, setFontPopoverOpen] = useState(false);
+  const [activeFormats, setActiveFormats] = useState<Record<string, boolean>>({});
+
+  // Check active formats from editor
+  useEffect(() => {
+    const checkFormats = () => {
+      if (!editorRef?.current?.getEditor) return;
+      
+      try {
+        const quill = editorRef.current.getEditor();
+        const range = quill.getSelection();
+        if (!range) return;
+
+        const format = quill.getFormat(range);
+        setActiveFormats({
+          bold: !!format.bold,
+          italic: !!format.italic,
+          underline: !!format.underline,
+          'align-center': format.align === 'center',
+          'align-right': format.align === 'right',
+          'align-left': !format.align || format.align === 'left',
+          'list-bullet': format.list === 'bullet',
+          'list-ordered': format.list === 'ordered',
+          blockquote: !!format.blockquote,
+        });
+      } catch (error) {
+        console.error('Error checking formats:', error);
+      }
+    };
+
+    const quill = editorRef?.current?.getEditor();
+    if (quill) {
+      quill.on('selection-change', checkFormats);
+      quill.on('text-change', checkFormats);
+      checkFormats(); // Initial check
+      
+      return () => {
+        quill.off('selection-change', checkFormats);
+        quill.off('text-change', checkFormats);
+      };
+    }
+  }, [editorRef]);
 
   const formatButtons = [
     { format: 'bold', icon: Bold, label: 'Bold (Ctrl+B)' },
@@ -147,7 +190,11 @@ export const IntegratedToolbar = ({
               size="sm"
               onClick={() => onFormatClick(format)}
               title={label}
-              className="h-9 w-9 p-0"
+              className={`h-9 w-9 p-0 transition-colors ${
+                activeFormats[format] 
+                  ? 'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300' 
+                  : 'hover:bg-gray-100 dark:hover:bg-gray-800'
+              }`}
             >
               <Icon className="h-4 w-4" />
             </Button>
@@ -161,7 +208,11 @@ export const IntegratedToolbar = ({
             size="sm"
             onClick={() => onFormatClick('list-bullet')}
             title="Bullet List"
-            className="h-9 w-9 p-0"
+            className={`h-9 w-9 p-0 transition-colors ${
+              activeFormats['list-bullet']
+                ? 'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300'
+                : 'hover:bg-gray-100 dark:hover:bg-gray-800'
+            }`}
           >
             <List className="h-4 w-4" />
           </Button>
@@ -218,7 +269,11 @@ export const IntegratedToolbar = ({
               size="sm"
               onClick={() => onFormatClick(format)}
               title={label}
-              className="h-9 w-9 p-0 hover:bg-gray-100 dark:hover:bg-gray-800"
+              className={`h-9 w-9 p-0 transition-colors ${
+                activeFormats[format]
+                  ? 'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300'
+                  : 'hover:bg-gray-100 dark:hover:bg-gray-800'
+              }`}
             >
               <Icon className="h-4 w-4" />
             </Button>
@@ -236,7 +291,11 @@ export const IntegratedToolbar = ({
               size="sm"
               onClick={() => onFormatClick(format)}
               title={label}
-              className="h-9 w-9 p-0 hover:bg-gray-100 dark:hover:bg-gray-800"
+              className={`h-9 w-9 p-0 transition-colors ${
+                activeFormats[format]
+                  ? 'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300'
+                  : 'hover:bg-gray-100 dark:hover:bg-gray-800'
+              }`}
             >
               <Icon className="h-4 w-4" />
             </Button>
@@ -254,7 +313,11 @@ export const IntegratedToolbar = ({
               size="sm"
               onClick={() => onFormatClick(format)}
               title={label}
-              className="h-9 w-9 p-0 hover:bg-gray-100 dark:hover:bg-gray-800"
+              className={`h-9 w-9 p-0 transition-colors ${
+                activeFormats[format]
+                  ? 'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300'
+                  : 'hover:bg-gray-100 dark:hover:bg-gray-800'
+              }`}
             >
               <Icon className="h-4 w-4" />
             </Button>

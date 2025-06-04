@@ -62,6 +62,7 @@ const RichTextEditor = ({
   const [highlightMatches, setHighlightMatches] = useState<HighlightMatch[]>([]);
   const { toast } = useToast();
   const editorRef = useRef<ReactQuill>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
   const { wordCount, currentPage, calculateWordCount } = useWordCount();
   const { currentProject } = useProjects();
   const deviceIsMobile = useIsMobile();
@@ -111,6 +112,75 @@ const RichTextEditor = ({
     }
   }, [selectedFont]);
 
+  // Auto-scroll to keep cursor in view with early trigger
+  const handleCursorScroll = useCallback(() => {
+    const quill = editorRef.current?.getEditor();
+    const container = containerRef.current;
+    if (!quill || !container) return;
+
+    const selection = quill.getSelection();
+    if (!selection) return;
+
+    try {
+      const bounds = quill.getBounds(selection.index);
+      const containerRect = container.getBoundingClientRect();
+      const editorRect = quill.root.getBoundingClientRect();
+      
+      // Calculate position relative to container
+      const cursorTop = editorRect.top + bounds.top - containerRect.top;
+      const cursorBottom = cursorTop + bounds.height;
+      
+      // Trigger scroll when cursor gets within 100px of bottom edge (not at the edge)
+      const scrollThreshold = containerRect.height - 100;
+      const topThreshold = 50;
+      
+      if (cursorBottom > scrollThreshold) {
+        // Scroll down to keep cursor in comfortable view
+        const targetScrollTop = container.scrollTop + (cursorBottom - scrollThreshold) + 50;
+        container.scrollTo({
+          top: targetScrollTop,
+          behavior: 'smooth'
+        });
+      } else if (cursorTop < topThreshold) {
+        // Scroll up if cursor is too close to top
+        const targetScrollTop = Math.max(0, container.scrollTop - (topThreshold - cursorTop) - 50);
+        container.scrollTo({
+          top: targetScrollTop,
+          behavior: 'smooth'
+        });
+      }
+    } catch (error) {
+      console.error('Error handling cursor scroll:', error);
+    }
+  }, []);
+
+  // Set up cursor position tracking
+  useEffect(() => {
+    const quill = editorRef.current?.getEditor();
+    if (!quill) return;
+
+    const handleSelectionChange = () => {
+      handleCursorScroll();
+      handleHighlighting();
+    };
+
+    const handleTextChange = () => {
+      // Delay both highlighting and scroll to allow text changes to settle
+      setTimeout(() => {
+        handleHighlighting();
+        handleCursorScroll();
+      }, 50);
+    };
+
+    quill.on('selection-change', handleSelectionChange);
+    quill.on('text-change', handleTextChange);
+
+    return () => {
+      quill.off('selection-change', handleSelectionChange);
+      quill.off('text-change', handleTextChange);
+    };
+  }, [handleCursorScroll]);
+
   // Handle highlighting when content or selection changes
   const handleHighlighting = useCallback(() => {
     const quill = editorRef.current?.getEditor();
@@ -122,29 +192,6 @@ const RichTextEditor = ({
       console.error('Error during highlighting:', error);
     }
   }, [storyBibleEntries, isFocusMode]);
-
-  // Set up selection change listener for highlighting
-  useEffect(() => {
-    const quill = editorRef.current?.getEditor();
-    if (!quill) return;
-
-    const handleSelectionChange = () => {
-      handleHighlighting();
-    };
-
-    const handleTextChange = () => {
-      // Delay highlighting to allow text changes to settle
-      setTimeout(handleHighlighting, 50);
-    };
-
-    quill.on('selection-change', handleSelectionChange);
-    quill.on('text-change', handleTextChange);
-
-    return () => {
-      quill.off('selection-change', handleSelectionChange);
-      quill.off('text-change', handleTextChange);
-    };
-  }, [handleHighlighting]);
 
   const handleSaveContent = (contentToSave: string) => {
     onSave(contentToSave);
@@ -224,9 +271,6 @@ const RichTextEditor = ({
 
     setContent(value);
     setHasUnsavedChanges(true);
-    
-    // Trigger highlighting after content change
-    setTimeout(handleHighlighting, 100);
   };
 
   const handleSave = () => {
@@ -270,28 +314,34 @@ const RichTextEditor = ({
 
   return (
     <div className={`flex flex-col h-full relative ${isFocusMode ? 'focus-mode' : ''}`}>
-      {!isFocusMode && (
-        <IntegratedToolbar
-          selectedFont={selectedFont}
-          onFontChange={handleFontChange}
-          isFocusMode={isFocusMode}
-          onToggleFocus={handleToggleFocus}
-          onSave={handleSave}
-          hasUnsavedChanges={hasUnsavedChanges}
-          onFormatClick={handleFormatClick}
-          isMobile={isMobile || deviceIsMobile}
-          extraActions={
+      {/* Move toolbar to top */}
+      <IntegratedToolbar
+        selectedFont={selectedFont}
+        onFontChange={handleFontChange}
+        isFocusMode={isFocusMode}
+        onToggleFocus={handleToggleFocus}
+        onSave={handleSave}
+        hasUnsavedChanges={hasUnsavedChanges}
+        onFormatClick={handleFormatClick}
+        isMobile={isMobile || deviceIsMobile}
+        editorRef={editorRef}
+        extraActions={
+          !isFocusMode ? (
             <WritingViewOptions
               viewMode={viewMode}
               onViewModeChange={setViewMode}
               pageHeight={pageHeight}
               onPageHeightChange={setPageHeight}
             />
-          }
-        />
-      )}
+          ) : undefined
+        }
+      />
 
-      <div className="flex-1 bg-white dark:bg-gray-900 border-x border-gray-200 dark:border-gray-700 relative overflow-hidden">
+      <div 
+        ref={containerRef}
+        className="flex-1 bg-white dark:bg-gray-900 border-x border-gray-200 dark:border-gray-700 relative overflow-auto"
+        style={{ scrollBehavior: 'smooth' }}
+      >
         <ReactQuill
           ref={editorRef}
           theme="snow"
