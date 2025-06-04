@@ -1,6 +1,5 @@
-
 import { useEffect, useRef, useState, useCallback } from 'react';
-import ReactQuill from 'react-quill';
+import ReactQuill, { Quill } from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
 import { useToast } from '@/hooks/use-toast';
 import { Draft } from '@/lib/db';
@@ -69,8 +68,8 @@ const RichTextEditor = ({
 
   // Register custom Quill format for Story Bible highlighting
   useEffect(() => {
-    if (typeof window !== 'undefined' && window.Quill) {
-      registerStoryBibleFormat(window.Quill);
+    if (Quill) {
+      registerStoryBibleFormat(Quill);
     }
   }, []);
 
