@@ -116,7 +116,11 @@ const RichTextEditor = ({
     const quill = editorRef.current?.getEditor();
     if (!quill || !storyBibleEntries.length || isFocusMode) return;
 
-    debouncedHighlight(quill, storyBibleEntries, setHighlightMatches);
+    try {
+      debouncedHighlight(quill, storyBibleEntries, setHighlightMatches);
+    } catch (error) {
+      console.error('Error during highlighting:', error);
+    }
   }, [storyBibleEntries, isFocusMode]);
 
   // Set up selection change listener for highlighting
@@ -128,10 +132,17 @@ const RichTextEditor = ({
       handleHighlighting();
     };
 
+    const handleTextChange = () => {
+      // Delay highlighting to allow text changes to settle
+      setTimeout(handleHighlighting, 50);
+    };
+
     quill.on('selection-change', handleSelectionChange);
+    quill.on('text-change', handleTextChange);
 
     return () => {
       quill.off('selection-change', handleSelectionChange);
+      quill.off('text-change', handleTextChange);
     };
   }, [handleHighlighting]);
 

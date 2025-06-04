@@ -29,34 +29,39 @@ export const highlightCurrentParagraph = (
   const selection = quill.getSelection();
   if (!selection) return [];
 
-  // Get current line/paragraph
-  const [line] = quill.getLine(selection.index);
-  if (!line) return [];
+  try {
+    // Get current line/paragraph
+    const [line] = quill.getLine(selection.index);
+    if (!line) return [];
 
-  const lineStart = quill.getIndex(line);
-  const lineLength = line.length();
-  const lineText = quill.getText(lineStart, lineLength);
+    const lineStart = quill.getIndex(line);
+    const lineLength = line.length();
+    const lineText = quill.getText(lineStart, lineLength);
 
-  // Limit to 1000 words for performance
-  const words = lineText.split(/\s+/);
-  const limitedText = words.slice(0, 1000).join(' ');
+    // Limit to 1000 words for performance
+    const words = lineText.split(/\s+/);
+    const limitedText = words.slice(0, 1000).join(' ');
 
-  // Clear existing highlights in current paragraph
-  clearHighlights(quill, lineStart, lineLength);
+    // Clear existing highlights in current paragraph
+    clearHighlights(quill, lineStart, lineLength);
 
-  // Find matches
-  const matches = findMatches(limitedText, entries, lineStart);
+    // Find matches
+    const matches = findMatches(limitedText, entries, lineStart);
 
-  // Apply highlights
-  matches.forEach(match => {
-    applyHighlight(quill, match);
-  });
+    // Apply highlights
+    matches.forEach(match => {
+      applyHighlight(quill, match);
+    });
 
-  if (onHighlight) {
-    onHighlight(matches);
+    if (onHighlight) {
+      onHighlight(matches);
+    }
+
+    return matches;
+  } catch (error) {
+    console.error('Error highlighting paragraph:', error);
+    return [];
   }
-
-  return matches;
 };
 
 export const findMatches = (
@@ -109,21 +114,29 @@ export const removeDuplicates = (matches: HighlightMatch[]): HighlightMatch[] =>
 };
 
 const applyHighlight = (quill: any, match: HighlightMatch) => {
-  quill.formatText(
-    match.start,
-    match.end - match.start,
-    {
-      'story-bible-highlight': true,
-      'title': createTooltipContent(match.entry)
-    }
-  );
+  try {
+    quill.formatText(
+      match.start,
+      match.end - match.start,
+      {
+        'story-bible-highlight': {
+          title: createTooltipContent(match.entry)
+        }
+      }
+    );
+  } catch (error) {
+    console.error('Error applying highlight:', error);
+  }
 };
 
 const clearHighlights = (quill: any, start: number, length: number) => {
-  quill.formatText(start, length, {
-    'story-bible-highlight': false,
-    'title': false
-  });
+  try {
+    quill.formatText(start, length, {
+      'story-bible-highlight': false
+    });
+  } catch (error) {
+    console.error('Error clearing highlights:', error);
+  }
 };
 
 const createTooltipContent = (entry: StoryBibleEntry): string => {
@@ -141,35 +154,39 @@ const escapeRegExp = (string: string): string => {
 
 // Custom Quill format for Story Bible highlights
 export const registerStoryBibleFormat = (Quill: any) => {
-  const Inline = Quill.import('blots/inline');
-  
-  class StoryBibleHighlight extends Inline {
-    static create(value: any) {
-      const node = super.create();
-      node.setAttribute('style', 'border-bottom: 2px dotted #3b82f6; cursor: help;');
-      if (value.title) {
-        node.setAttribute('title', value.title);
+  try {
+    const Inline = Quill.import('blots/inline');
+    
+    class StoryBibleHighlight extends Inline {
+      static create(value: any) {
+        const node = super.create();
+        node.setAttribute('style', 'border-bottom: 2px dotted #3b82f6; cursor: help;');
+        if (value && value.title) {
+          node.setAttribute('title', value.title);
+        }
+        return node;
       }
-      return node;
+      
+      static formats(node: HTMLElement) {
+        return {
+          title: node.getAttribute('title')
+        };
+      }
+      
+      format(name: string, value: any) {
+        if (name !== this.statics.blotName || !value) {
+          super.format(name, value);
+        } else {
+          this.domNode.setAttribute('title', value.title || '');
+        }
+      }
     }
     
-    static formats(node: HTMLElement) {
-      return {
-        title: node.getAttribute('title')
-      };
-    }
+    StoryBibleHighlight.blotName = 'story-bible-highlight';
+    StoryBibleHighlight.tagName = 'span';
     
-    format(name: string, value: any) {
-      if (name !== this.statics.blotName || !value) {
-        super.format(name, value);
-      } else {
-        this.domNode.setAttribute('title', value.title || '');
-      }
-    }
+    Quill.register(StoryBibleHighlight, true);
+  } catch (error) {
+    console.error('Error registering Story Bible format:', error);
   }
-  
-  StoryBibleHighlight.blotName = 'story-bible-highlight';
-  StoryBibleHighlight.tagName = 'span';
-  
-  Quill.register(StoryBibleHighlight);
 };

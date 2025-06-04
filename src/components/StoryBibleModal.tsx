@@ -12,7 +12,7 @@ import { X, Plus, Trash2, Sparkles } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { StoryBibleEntry } from '@/lib/storyBibleDb';
 import { sanitizeHtml } from '@/utils/security';
-import { getCachedSuggestion } from '@/utils/suggestions';
+import { getCachedSuggestion, getAvailableGenres, getAvailableCultures } from '@/utils/suggestions';
 import ReactQuill from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
 
@@ -63,8 +63,14 @@ export const StoryBibleModal: React.FC<StoryBibleModalProps> = ({
   const [newTag, setNewTag] = useState('');
   const [loading, setLoading] = useState(false);
   const [suggestingEntry, setSuggestingEntry] = useState(false);
+  const [selectedGenre, setSelectedGenre] = useState('Fantasy');
+  const [selectedCulture, setSelectedCulture] = useState('');
+  const [showSuggestionOptions, setShowSuggestionOptions] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const { toast } = useToast();
+
+  const availableGenres = getAvailableGenres();
+  const availableCultures = getAvailableCultures();
 
   useEffect(() => {
     if (entry) {
@@ -87,6 +93,7 @@ export const StoryBibleModal: React.FC<StoryBibleModalProps> = ({
       });
     }
     setErrors({});
+    setShowSuggestionOptions(false);
   }, [entry, isOpen]);
 
   const validateForm = (): boolean => {
@@ -213,7 +220,10 @@ export const StoryBibleModal: React.FC<StoryBibleModalProps> = ({
   const suggestEntry = async () => {
     setSuggestingEntry(true);
     try {
-      const suggestion = await getCachedSuggestion(formData.type);
+      const suggestion = await getCachedSuggestion(formData.type, {
+        genre: selectedGenre,
+        culture: selectedCulture || undefined
+      });
       
       setFormData(prev => ({
         ...prev,
@@ -225,9 +235,10 @@ export const StoryBibleModal: React.FC<StoryBibleModalProps> = ({
 
       toast({
         title: 'Suggestion applied',
-        description: 'AI-generated entry details have been filled in. Feel free to customize them!',
+        description: `AI-generated ${selectedGenre}${selectedCulture ? ` (${selectedCulture})` : ''} entry details have been filled in. Feel free to customize them!`,
         duration: 3000,
       });
+      setShowSuggestionOptions(false);
     } catch (error) {
       toast({
         title: 'Suggestion failed',
@@ -246,17 +257,61 @@ export const StoryBibleModal: React.FC<StoryBibleModalProps> = ({
         <DialogHeader>
           <DialogTitle className="flex items-center justify-between">
             {entry ? 'Edit Entry' : 'Create New Entry'}
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={suggestEntry}
-              disabled={suggestingEntry}
-              className="gap-2"
-            >
-              <Sparkles className="h-4 w-4" />
-              {suggestingEntry ? 'Suggesting...' : 'AI Suggest'}
-            </Button>
+            <div className="flex items-center gap-2">
+              {showSuggestionOptions && (
+                <div className="flex items-center gap-2 bg-gray-50 dark:bg-gray-800 p-2 rounded-lg">
+                  <Select value={selectedGenre} onValueChange={setSelectedGenre}>
+                    <SelectTrigger className="w-32">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {availableGenres.map(genre => (
+                        <SelectItem key={genre} value={genre}>{genre}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Select value={selectedCulture} onValueChange={setSelectedCulture}>
+                    <SelectTrigger className="w-32">
+                      <SelectValue placeholder="Culture" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="">Any</SelectItem>
+                      {availableCultures.map(culture => (
+                        <SelectItem key={culture} value={culture}>{culture}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Button
+                    type="button"
+                    size="sm"
+                    onClick={suggestEntry}
+                    disabled={suggestingEntry}
+                  >
+                    {suggestingEntry ? 'Generating...' : 'Generate'}
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setShowSuggestionOptions(false)}
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+              )}
+              {!showSuggestionOptions && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowSuggestionOptions(true)}
+                  className="gap-2"
+                >
+                  <Sparkles className="h-4 w-4" />
+                  AI Suggest
+                </Button>
+              )}
+            </div>
           </DialogTitle>
         </DialogHeader>
 

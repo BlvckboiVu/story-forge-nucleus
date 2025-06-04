@@ -6,7 +6,6 @@ import {
   SheetDescription,
   SheetHeader,
   SheetTitle,
-  SheetTrigger,
 } from "@/components/ui/sheet"
 import { Separator } from "@/components/ui/separator"
 import { NavLink } from 'react-router-dom';
@@ -47,7 +46,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
 
   return (
     <Sheet open={isOpen} onOpenChange={onClose}>
-      <SheetContent className="w-full sm:w-64">
+      <SheetContent side="left" className="w-full sm:w-64">
         <SheetHeader className="text-left">
           <SheetTitle>Menu</SheetTitle>
           <SheetDescription>
