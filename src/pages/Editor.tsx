@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
@@ -24,7 +23,7 @@ export default function Editor() {
   
   // AI Panel state
   const { createConversation, setActiveConversation } = useAIStore();
-  
+
   // Load draft if documentId is provided
   useEffect(() => {
     if (documentId) {
@@ -57,7 +56,7 @@ export default function Editor() {
   }, [currentDraft, createConversation, setActiveConversation]);
 
   const loadDraft = async (id: string) => {
-    if (!id.trim()) {
+    if (!id?.trim()) {
       toast({
         title: "Invalid document ID",
         description: "The document ID is empty or invalid",
@@ -86,7 +85,6 @@ export default function Editor() {
           variant: "destructive",
           duration: 3000,
         });
-        // Navigate back to editor without document ID
         navigate('/app/editor', { replace: true });
       }
     } catch (error) {
@@ -99,14 +97,13 @@ export default function Editor() {
         variant: "destructive",
         duration: 5000,
       });
-      // Don't navigate away on error - let user retry
     } finally {
       setLoading(false);
     }
   };
   
   const handleCreateDraft = async (title: string) => {
-    if (!title.trim()) {
+    if (!title?.trim()) {
       throw new Error("Title cannot be empty");
     }
     if (!currentProject) {
@@ -118,18 +115,19 @@ export default function Editor() {
       });
       throw new Error("No project selected");
     }
+    
     try {
       const projectId = currentProject.id;
       const draftId = await draftService.createDraft({
         title: title.trim(),
         projectId,
       });
-      // Load the newly created draft
+      
       if (typeof draftId === 'string') {
         await loadDraft(draftId);
-        // Update URL to include the new draft ID
         navigate(`/app/editor/${draftId}`, { replace: true });
       }
+      
       toast({
         title: "Draft created",
         description: `"${title}" has been created`,
@@ -144,19 +142,17 @@ export default function Editor() {
         variant: "destructive",
         duration: 5000,
       });
-      throw error; // Re-throw so the modal can handle it
+      throw error;
     }
   };
   
   const handleSaveDraft = async (content: string) => {
     if (!content && !currentDraft) {
-      // If no content and no current draft, open the modal to create one
       setDraftModalOpen(true);
       return;
     }
 
     if (!currentDraft) {
-      // If we have content but no draft, open modal to create one
       setDraftModalOpen(true);
       return;
     }
@@ -164,7 +160,6 @@ export default function Editor() {
     setSaveError(null);
     
     try {
-      // Calculate word count from content
       const plainText = content.replace(/<[^>]*>/g, ' ');
       const wordCount = plainText.trim().split(/\s+/).filter(word => word.length > 0).length;
       
@@ -190,14 +185,23 @@ export default function Editor() {
         variant: "destructive",
         duration: 5000,
       });
-      throw error; // Re-throw so the auto-save can handle it
+      throw error;
     }
   };
 
   const handleOpenDraft = (draft: Draft) => {
+    if (!draft?.id) {
+      toast({
+        title: "Invalid draft",
+        description: "Cannot open invalid draft",
+        variant: "destructive",
+        duration: 3000,
+      });
+      return;
+    }
+    
     setCurrentDraft(draft);
     setSaveError(null);
-    // Update URL to include the draft ID
     navigate(`/app/editor/${draft.id}`, { replace: true });
     toast({
       title: "Draft opened",
@@ -209,7 +213,6 @@ export default function Editor() {
   const handleNewDraft = () => {
     setCurrentDraft(null);
     setSaveError(null);
-    // Navigate to editor without document ID
     navigate('/app/editor', { replace: true });
     toast({
       title: "New draft",
@@ -219,6 +222,16 @@ export default function Editor() {
   };
 
   const handleInsertLLMResponse = (text: string) => {
+    if (!text?.trim()) {
+      toast({
+        title: "No text to insert",
+        description: "The response is empty",
+        variant: "destructive",
+        duration: 3000,
+      });
+      return;
+    }
+
     if (!editorRef || !editorRef.getEditor) {
       toast({
         title: "Editor not ready",
@@ -234,13 +247,9 @@ export default function Editor() {
       const range = quill.getSelection();
       const index = range ? range.index : quill.getLength();
       
-      // Insert the text at cursor position
       quill.insertText(index, text, 'user');
-      
-      // Set cursor position after inserted text
       quill.setSelection(index + text.length);
       
-      // Get updated content and save
       const updatedContent = quill.root.innerHTML;
       handleSaveDraft(updatedContent);
       
@@ -294,10 +303,8 @@ export default function Editor() {
             />
           </div>
           
-          {/* AI Assistant Panel */}
           <AIPanel onInsertResponse={handleInsertLLMResponse} />
           
-          {/* Save error notification */}
           {saveError && (
             <div className="fixed bottom-4 left-4 right-4 z-50 bg-red-50 dark:bg-red-900/50 border border-red-200 dark:border-red-800 rounded-lg p-3">
               <p className="text-sm text-red-800 dark:text-red-200">
@@ -306,7 +313,6 @@ export default function Editor() {
             </div>
           )}
           
-          {/* Draft modal */}
           <DraftModal 
             isOpen={draftModalOpen}
             onClose={() => setDraftModalOpen(false)}

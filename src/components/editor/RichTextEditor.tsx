@@ -1,3 +1,4 @@
+
 import { useEffect, useRef, useState, useCallback } from 'react';
 import ReactQuill, { Quill } from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
@@ -60,6 +61,7 @@ const RichTextEditor = ({
   const [pageHeight, setPageHeight] = useState(800);
   const [storyBibleEntries, setStoryBibleEntries] = useState<StoryBibleEntry[]>([]);
   const [highlightMatches, setHighlightMatches] = useState<HighlightMatch[]>([]);
+  const [editorError, setEditorError] = useState<string | null>(null);
   const { toast } = useToast();
   const editorRef = useRef<ReactQuill>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -69,8 +71,13 @@ const RichTextEditor = ({
 
   // Register custom Quill format for Story Bible highlighting
   useEffect(() => {
-    if (Quill) {
-      registerStoryBibleFormat(Quill);
+    try {
+      if (Quill) {
+        registerStoryBibleFormat(Quill);
+      }
+    } catch (error) {
+      console.error('Failed to register Story Bible format:', error);
+      setEditorError('Failed to initialize editor formatting');
     }
   }, []);
 
@@ -82,8 +89,10 @@ const RichTextEditor = ({
       try {
         const entries = await getStoryBibleEntriesByProject(currentProject.id, 0, 100);
         setStoryBibleEntries(entries);
+        setEditorError(null);
       } catch (error) {
         console.error('Failed to load Story Bible entries:', error);
+        setEditorError('Failed to load Story Bible entries');
       }
     };
 
@@ -105,10 +114,14 @@ const RichTextEditor = ({
 
   // Apply font change to the editor
   useEffect(() => {
-    const quill = editorRef.current?.getEditor();
-    if (quill && selectedFont) {
-      const editor = quill.root;
-      editor.style.fontFamily = selectedFont;
+    try {
+      const quill = editorRef.current?.getEditor();
+      if (quill && selectedFont) {
+        const editor = quill.root;
+        editor.style.fontFamily = selectedFont;
+      }
+    } catch (error) {
+      console.error('Failed to apply font:', error);
     }
   }, [selectedFont]);
 
@@ -194,8 +207,14 @@ const RichTextEditor = ({
   }, [storyBibleEntries, isFocusMode]);
 
   const handleSaveContent = (contentToSave: string) => {
-    onSave(contentToSave);
-    setHasUnsavedChanges(false);
+    try {
+      onSave(contentToSave);
+      setHasUnsavedChanges(false);
+      setEditorError(null);
+    } catch (error) {
+      console.error('Save failed:', error);
+      setEditorError('Failed to save content');
+    }
   };
 
   const { clearAutoSave } = useAutoSave({
@@ -205,94 +224,125 @@ const RichTextEditor = ({
   });
 
   const handleFontChange = (fontFamily: string) => {
+    if (!fontFamily?.trim()) return;
+    
     setSelectedFont(fontFamily);
-    const quill = editorRef.current?.getEditor();
-    if (quill) {
-      const editor = quill.root;
-      editor.style.fontFamily = fontFamily;
+    try {
+      const quill = editorRef.current?.getEditor();
+      if (quill) {
+        const editor = quill.root;
+        editor.style.fontFamily = fontFamily;
+      }
+    } catch (error) {
+      console.error('Font change failed:', error);
     }
   };
 
   const handleFormatClick = (format: string) => {
-    const quill = editorRef.current?.getEditor();
-    if (!quill) return;
+    try {
+      const quill = editorRef.current?.getEditor();
+      if (!quill) return;
 
-    const range = quill.getSelection();
-    if (!range) return;
+      const range = quill.getSelection();
+      if (!range) return;
 
-    switch (format) {
-      case 'bold':
-        quill.format('bold', !quill.getFormat(range).bold);
-        break;
-      case 'italic':
-        quill.format('italic', !quill.getFormat(range).italic);
-        break;
-      case 'underline':
-        quill.format('underline', !quill.getFormat(range).underline);
-        break;
-      case 'align-left':
-        quill.format('align', false);
-        break;
-      case 'align-center':
-        quill.format('align', 'center');
-        break;
-      case 'align-right':
-        quill.format('align', 'right');
-        break;
-      case 'list-bullet':
-        quill.format('list', 'bullet');
-        break;
-      case 'list-ordered':
-        quill.format('list', 'ordered');
-        break;
-      case 'blockquote':
-        quill.format('blockquote', !quill.getFormat(range).blockquote);
-        break;
+      switch (format) {
+        case 'bold':
+          quill.format('bold', !quill.getFormat(range).bold);
+          break;
+        case 'italic':
+          quill.format('italic', !quill.getFormat(range).italic);
+          break;
+        case 'underline':
+          quill.format('underline', !quill.getFormat(range).underline);
+          break;
+        case 'align-left':
+          quill.format('align', false);
+          break;
+        case 'align-center':
+          quill.format('align', 'center');
+          break;
+        case 'align-right':
+          quill.format('align', 'right');
+          break;
+        case 'list-bullet':
+          quill.format('list', 'bullet');
+          break;
+        case 'list-ordered':
+          quill.format('list', 'ordered');
+          break;
+        case 'blockquote':
+          quill.format('blockquote', !quill.getFormat(range).blockquote);
+          break;
+      }
+    } catch (error) {
+      console.error('Format failed:', error);
+      setEditorError('Formatting operation failed');
     }
   };
 
   const handleChange = (value: string) => {
-    const newWordCount = calculateWordCount(value);
-    
-    if (newWordCount > WORD_LIMIT) {
-      toast({
-        title: "Word limit exceeded",
-        description: `Your draft has exceeded the ${WORD_LIMIT.toLocaleString()} word limit. Consider splitting into multiple drafts.`,
-        variant: "destructive",
-        duration: 5000,
-      });
-    } else if (newWordCount > WORD_LIMIT * 0.9) {
-      toast({
-        title: "Approaching word limit",
-        description: `You're approaching the ${WORD_LIMIT.toLocaleString()} word limit (${newWordCount.toLocaleString()} words).`,
-        duration: 4000,
-      });
-    }
+    try {
+      const newWordCount = calculateWordCount(value);
+      
+      if (newWordCount > WORD_LIMIT) {
+        toast({
+          title: "Word limit exceeded",
+          description: `Your draft has exceeded the ${WORD_LIMIT.toLocaleString()} word limit. Consider splitting into multiple drafts.`,
+          variant: "destructive",
+          duration: 5000,
+        });
+      } else if (newWordCount > WORD_LIMIT * 0.9) {
+        toast({
+          title: "Approaching word limit",
+          description: `You're approaching the ${WORD_LIMIT.toLocaleString()} word limit (${newWordCount.toLocaleString()} words).`,
+          duration: 4000,
+        });
+      }
 
-    setContent(value);
-    setHasUnsavedChanges(true);
+      setContent(value);
+      setHasUnsavedChanges(true);
+      setEditorError(null);
+    } catch (error) {
+      console.error('Content change failed:', error);
+      setEditorError('Failed to update content');
+    }
   };
 
   const handleSave = () => {
-    handleSaveContent(content);
-    clearAutoSave();
-    
-    toast({
-      title: "Draft saved",
-      description: `Your document has been saved successfully`,
-      duration: 3000,
-    });
+    try {
+      handleSaveContent(content);
+      clearAutoSave();
+      
+      toast({
+        title: "Draft saved",
+        description: `Your document has been saved successfully`,
+        duration: 3000,
+      });
+    } catch (error) {
+      console.error('Manual save failed:', error);
+      toast({
+        title: "Save failed",
+        description: "Failed to save your document",
+        variant: "destructive",
+        duration: 3000,
+      });
+    }
   };
 
   const handleToggleFocus = () => {
-    if (onToggleFocus) {
-      onToggleFocus();
+    try {
+      if (onToggleFocus) {
+        onToggleFocus();
+      }
+      toast({
+        title: isFocusMode ? "Focus mode disabled" : "Focus mode enabled",
+        description: isFocusMode ? "Regular editing mode restored" : "Distraction-free writing mode activated",
+        duration: 2000,
+      });
+    } catch (error) {
+      console.error('Focus toggle failed:', error);
     }
-    toast({
-      title: isFocusMode ? "Focus mode disabled" : "Focus mode enabled",
-      description: isFocusMode ? "Regular editing mode restored" : "Distraction-free writing mode activated",
-      duration: 2000,
-    });
   };
 
   // Mobile-specific classes
@@ -311,6 +361,26 @@ const RichTextEditor = ({
       '--page-height': `${pageHeight}px`,
     } as any)
   };
+
+  if (editorError) {
+    return (
+      <div className="flex flex-col items-center justify-center h-full p-6 text-center">
+        <div className="text-red-500 mb-4">
+          <h3 className="text-lg font-semibold">Editor Error</h3>
+          <p className="text-sm">{editorError}</p>
+        </div>
+        <Button
+          onClick={() => {
+            setEditorError(null);
+            window.location.reload();
+          }}
+          variant="outline"
+        >
+          Reload Editor
+        </Button>
+      </div>
+    );
+  }
 
   return (
     <div className={`flex flex-col h-full relative ${isFocusMode ? 'focus-mode' : ''}`}>
