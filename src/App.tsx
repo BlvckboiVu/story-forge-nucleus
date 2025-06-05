@@ -1,6 +1,6 @@
 
 import { Suspense, lazy } from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AuthProvider } from './contexts/AuthContext';
 import { ProjectProvider } from './contexts/ProjectContext';
@@ -46,6 +46,15 @@ const PageLoader = () => (
   </div>
 );
 
+// Protected layout wrapper component
+const ProtectedLayout = () => {
+  return (
+    <MainLayout>
+      <Outlet />
+    </MainLayout>
+  );
+};
+
 function App() {
   return (
     <ErrorBoundary>
@@ -65,7 +74,7 @@ function App() {
                         <Route path="/auth-error" element={<AuthError />} />
                         
                         {/* Protected app routes */}
-                        <Route path="/app" element={<MainLayout />}>
+                        <Route path="/app" element={<ProtectedLayout />}>
                           <Route index element={<Navigate to="/app/dashboard" replace />} />
                           <Route path="dashboard" element={<Dashboard />} />
                           <Route path="editor" element={<Editor />} />
