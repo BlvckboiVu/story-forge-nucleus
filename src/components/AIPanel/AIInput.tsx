@@ -1,24 +1,18 @@
+
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { Send } from 'lucide-react';
+import { Send, Loader2 } from 'lucide-react';
 import { useAIStore } from '@/stores/aiStore';
-import { useDebounce } from '@/hooks/use-debounce';
+import { motion } from 'framer-motion';
 
 interface AIInputProps {
   isLoading: boolean;
 }
 
 const AIInput = React.memo(({ isLoading }: AIInputProps) => {
-  const { inputText, setInputText, sendMessage } = useAIStore();
+  const { sendMessage } = useAIStore();
   const [localInput, setLocalInput] = React.useState('');
-  
-  // Debounce input updates to store
-  const debouncedSetInput = useDebounce(setInputText, 500);
-
-  React.useEffect(() => {
-    debouncedSetInput(localInput);
-  }, [localInput, debouncedSetInput]);
 
   const handleInputChange = React.useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setLocalInput(e.target.value);
@@ -43,36 +37,46 @@ const AIInput = React.memo(({ isLoading }: AIInputProps) => {
   }, [handleSubmit]);
 
   return (
-    <div className="space-y-2">
+    <motion.div 
+      className="space-y-2"
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+    >
       <div className="flex gap-2">
         <Textarea
           value={localInput}
           onChange={handleInputChange}
           onKeyDown={handleKeyDown}
-          placeholder="Ask the AI assistant..."
-          className="flex-1 min-h-[60px] max-h-[200px] resize-none text-sm"
+          placeholder="Ask me anything about your story... 💭"
+          className="flex-1 min-h-[60px] max-h-[120px] resize-none text-sm border-border/50 focus:border-blue-300 dark:focus:border-blue-600 transition-colors"
           disabled={isLoading}
-          maxLength={4000}
+          maxLength={2000}
           aria-label="AI assistant input"
         />
         <Button
           onClick={handleSubmit}
           disabled={isLoading || !localInput.trim()}
           size="sm"
-          className="self-end"
+          className="self-end bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 transition-all duration-200"
           aria-label="Send message"
         >
-          <Send className="h-4 w-4" />
+          {isLoading ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <Send className="h-4 w-4" />
+          )}
         </Button>
       </div>
       <div className="flex justify-between text-xs text-muted-foreground">
-        <span>Shift + Enter for new line</span>
-        <span>{localInput.length}/4000</span>
+        <span>✨ Shift + Enter for new line</span>
+        <span className={localInput.length > 1800 ? "text-orange-500" : ""}>
+          {localInput.length}/2000
+        </span>
       </div>
-    </div>
+    </motion.div>
   );
 });
 
 AIInput.displayName = 'AIInput';
 
-export default AIInput; 
+export default AIInput;

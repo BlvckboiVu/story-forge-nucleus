@@ -1,6 +1,7 @@
+
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { OpenRouterAPI } from '@/services/openrouter';
+import { openRouterService } from '@/services/openrouter';
 import { SecureStorage } from '@/utils/encryption';
 
 export interface AIMessage {
@@ -70,9 +71,9 @@ interface AIState {
   sendMessage: (content: string) => Promise<void>;
 }
 
-const api = new OpenRouterAPI();
 const secureStorage = SecureStorage.getInstance();
 
+// Computed selector for current messages
 export const useAIStore = create<AIState>()(
   persist(
     (set, get) => ({
@@ -90,7 +91,7 @@ export const useAIStore = create<AIState>()(
         sceneSummaries: [],
         tokenCount: 0,
       },
-      selectedModel: 'openai/gpt-3.5-turbo',
+      selectedModel: 'meta-llama/llama-3.2-3b-instruct:free',
       temperature: 0.7,
       maxTokens: 1000,
 
@@ -107,7 +108,7 @@ export const useAIStore = create<AIState>()(
       setMaxTokens: (tokens) => set({ maxTokens: tokens }),
 
       setApiKey: async (key) => {
-        await secureStorage.storeApiKey('openrouter', key);
+        await openRouterService.setApiKey(key);
       },
 
       getApiKey: async () => {
@@ -208,7 +209,6 @@ export const useAIStore = create<AIState>()(
           let context = '';
           if (state.contextEnabled) {
             set({ isProcessingContext: true });
-            // In a real implementation, we would process context here
             context = `${state.contextData.recentText}\n\n${
               state.contextData.storyBibleEntries
                 .map((entry) => `${entry.name}: ${entry.description}`)
@@ -217,19 +217,25 @@ export const useAIStore = create<AIState>()(
             set({ isProcessingContext: false });
           }
 
+          // Build messages for API
+          const conversation = state.conversations.find(c => c.id === conversationId);
+          const messages = conversation?.messages.map(msg => ({
+            role: msg.role as 'user' | 'assistant',
+            content: msg.content
+          })) || [];
+
           // Get API response
-          const response = await api.sendMessage(content, {
+          const response = await openRouterService.generateCompletion(messages, {
             model: state.selectedModel,
             temperature: state.temperature,
             maxTokens: state.maxTokens,
-            context,
           });
 
           // Add AI response
           state.addMessage(conversationId, {
             role: 'assistant',
-            content: response.content,
-            tokens: response.tokens,
+            content: response.choices[0].message.content,
+            tokens: response.usage?.total_tokens,
           });
         } catch (error) {
           console.error('Failed to send message:', error);
@@ -251,3 +257,13 @@ export const useAIStore = create<AIState>()(
     }
   )
 );
+
+// Computed selector for current conversation messages
+export const useCurrentMessages = () => {
+  return useAIStore((state) => {
+    const conversation = state.conversations.find(
+      (c) => c.id === state.activeConversationId
+    );
+    return conversation?.messages || [];
+  });
+};

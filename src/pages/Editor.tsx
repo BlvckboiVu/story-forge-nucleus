@@ -1,12 +1,15 @@
+
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import { EditorHeader } from '@/components/editor/EditorHeader';
 import { EditorLayout } from '@/components/editor/EditorLayout';
 import { DraftModal } from '@/components/editor/DraftModal';
+import { AIPanel } from '@/components/AIPanel';
 import { Draft } from '@/lib/db';
 import { draftService } from '@/services/draftService';
 import { useProjects } from '@/contexts/ProjectContext';
+import { useAIStore } from '@/stores/aiStore';
 
 export default function Editor() {
   const { documentId } = useParams();
@@ -18,6 +21,9 @@ export default function Editor() {
   const [saveError, setSaveError] = useState<string | null>(null);
   const { toast } = useToast();
   const { currentProject, projects, setCurrentProject } = useProjects();
+  
+  // AI Panel state
+  const { createConversation, setActiveConversation } = useAIStore();
   
   // Load draft if documentId is provided
   useEffect(() => {
@@ -41,6 +47,14 @@ export default function Editor() {
       }
     }
   }, [currentProject, projects, setCurrentProject]);
+
+  // Initialize AI conversation when draft loads
+  useEffect(() => {
+    if (currentDraft) {
+      const conversationId = createConversation(`${currentDraft.title} - Writing Session`);
+      setActiveConversation(conversationId);
+    }
+  }, [currentDraft, createConversation, setActiveConversation]);
 
   const loadDraft = async (id: string) => {
     if (!id.trim()) {
@@ -247,7 +261,7 @@ export default function Editor() {
   };
   
   return (
-    <div className="h-full flex flex-col overflow-hidden">
+    <div className="h-full flex overflow-hidden">
       {!currentProject ? (
         <div className="flex-1 flex items-center justify-center">
           <div className="text-center">
@@ -263,20 +277,26 @@ export default function Editor() {
         </div>
       ) : (
         <>
-          <EditorHeader
-            currentDraft={currentDraft}
-            onOpenDraft={() => setDraftModalOpen(true)}
-            onNewDraft={handleNewDraft}
-          />
-          <EditorLayout
-            currentDraft={currentDraft}
-            loading={loading}
-            onSaveDraft={handleSaveDraft}
-            onOpenDraft={() => setDraftModalOpen(true)}
-            onNewDraft={handleNewDraft}
-            onInsertLLMResponse={handleInsertLLMResponse}
-            onEditorReady={setEditorRef}
-          />
+          <div className="flex-1 flex flex-col overflow-hidden">
+            <EditorHeader
+              currentDraft={currentDraft}
+              onOpenDraft={() => setDraftModalOpen(true)}
+              onNewDraft={handleNewDraft}
+            />
+            <EditorLayout
+              currentDraft={currentDraft}
+              loading={loading}
+              onSaveDraft={handleSaveDraft}
+              onOpenDraft={() => setDraftModalOpen(true)}
+              onNewDraft={handleNewDraft}
+              onInsertLLMResponse={handleInsertLLMResponse}
+              onEditorReady={setEditorRef}
+            />
+          </div>
+          
+          {/* AI Assistant Panel */}
+          <AIPanel onInsertResponse={handleInsertLLMResponse} />
+          
           {/* Save error notification */}
           {saveError && (
             <div className="fixed bottom-4 left-4 right-4 z-50 bg-red-50 dark:bg-red-900/50 border border-red-200 dark:border-red-800 rounded-lg p-3">
@@ -285,6 +305,7 @@ export default function Editor() {
               </p>
             </div>
           )}
+          
           {/* Draft modal */}
           <DraftModal 
             isOpen={draftModalOpen}
