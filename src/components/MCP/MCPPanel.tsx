@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -14,7 +13,7 @@ import {
   Plug, 
   PlugZap, 
   FileText, 
-  Tool, 
+  Wrench, 
   MessageSquare, 
   Settings,
   Loader2,
@@ -116,7 +115,7 @@ export default function MCPPanel() {
               Resources
             </TabsTrigger>
             <TabsTrigger value="tools" className="flex items-center gap-1">
-              <Tool className="w-4 h-4" />
+              <Wrench className="w-4 h-4" />
               Tools
             </TabsTrigger>
             <TabsTrigger value="prompts" className="flex items-center gap-1">
