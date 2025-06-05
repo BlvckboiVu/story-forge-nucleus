@@ -1,8 +1,9 @@
-
 import { create } from 'zustand';
-import { devtools } from 'zustand/middleware';
+import { persist } from 'zustand/middleware';
+import { OpenRouterAPI } from '@/services/openrouter';
+import { SecureStorage } from '@/utils/encryption';
 
-interface AIMessage {
+export interface AIMessage {
   id: string;
   role: 'user' | 'assistant';
   content: string;
@@ -10,7 +11,7 @@ interface AIMessage {
   tokens?: number;
 }
 
-interface AIConversation {
+export interface AIConversation {
   id: string;
   title: string;
   messages: AIMessage[];
@@ -32,6 +33,7 @@ interface AIState {
   
   // Context system
   contextEnabled: boolean;
+  isProcessingContext: boolean;
   contextData: {
     recentText: string;
     storyBibleEntries: any[];
@@ -53,18 +55,26 @@ interface AIState {
   setSelectedModel: (model: string) => void;
   setTemperature: (temp: number) => void;
   setMaxTokens: (tokens: number) => void;
+  setApiKey: (key: string) => Promise<void>;
+  getApiKey: () => Promise<string | null>;
   
   // Conversation management
   createConversation: (title?: string) => string;
   deleteConversation: (id: string) => void;
   setActiveConversation: (id: string | null) => void;
+  clearConversation: (id: string) => void;
   addMessage: (conversationId: string, message: Omit<AIMessage, 'id' | 'timestamp'>) => void;
   updateMessage: (conversationId: string, messageId: string, updates: Partial<AIMessage>) => void;
-  clearConversations: () => void;
+  
+  // Message handling
+  sendMessage: (content: string) => Promise<void>;
 }
 
+const api = new OpenRouterAPI();
+const secureStorage = SecureStorage.getInstance();
+
 export const useAIStore = create<AIState>()(
-  devtools(
+  persist(
     (set, get) => ({
       // Initial state
       isCollapsed: false,
@@ -72,17 +82,18 @@ export const useAIStore = create<AIState>()(
       conversations: [],
       activeConversationId: null,
       inputText: '',
-      contextEnabled: true,
+      contextEnabled: false,
+      isProcessingContext: false,
       contextData: {
         recentText: '',
         storyBibleEntries: [],
         sceneSummaries: [],
         tokenCount: 0,
       },
-      selectedModel: 'meta-llama/llama-3.2-3b-instruct:free',
+      selectedModel: 'openai/gpt-3.5-turbo',
       temperature: 0.7,
       maxTokens: 1000,
-      
+
       // Actions
       setCollapsed: (collapsed) => set({ isCollapsed: collapsed }),
       setLoading: (loading) => set({ isLoading: loading }),
@@ -94,73 +105,149 @@ export const useAIStore = create<AIState>()(
       setSelectedModel: (model) => set({ selectedModel: model }),
       setTemperature: (temp) => set({ temperature: temp }),
       setMaxTokens: (tokens) => set({ maxTokens: tokens }),
-      
+
+      setApiKey: async (key) => {
+        await secureStorage.storeApiKey('openrouter', key);
+      },
+
+      getApiKey: async () => {
+        return secureStorage.getApiKey('openrouter');
+      },
+
       // Conversation management
       createConversation: (title = 'New Conversation') => {
-        const id = `conv_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-        const newConversation: AIConversation = {
-          id,
-          title,
-          messages: [],
-          lastActivity: new Date(),
-          contextEnabled: get().contextEnabled,
-        };
-        
+        const id = Date.now().toString();
         set((state) => ({
-          conversations: [newConversation, ...state.conversations],
+          conversations: [
+            ...state.conversations,
+            {
+              id,
+              title,
+              messages: [],
+              lastActivity: new Date(),
+              contextEnabled: state.contextEnabled,
+            }
+          ],
           activeConversationId: id,
         }));
-        
         return id;
       },
-      
-      deleteConversation: (id) => set((state) => ({
-        conversations: state.conversations.filter(conv => conv.id !== id),
-        activeConversationId: state.activeConversationId === id ? null : state.activeConversationId,
-      })),
-      
-      setActiveConversation: (id) => set({ activeConversationId: id }),
-      
-      addMessage: (conversationId, message) => {
-        const messageWithId: AIMessage = {
-          ...message,
-          id: `msg_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-          timestamp: new Date(),
-        };
-        
+
+      deleteConversation: (id) => {
         set((state) => ({
-          conversations: state.conversations.map(conv =>
-            conv.id === conversationId
-              ? {
-                  ...conv,
-                  messages: [...conv.messages, messageWithId],
-                  lastActivity: new Date(),
-                }
-              : conv
+          conversations: state.conversations.filter((c) => c.id !== id),
+          activeConversationId: state.activeConversationId === id ? null : state.activeConversationId,
+        }));
+      },
+
+      setActiveConversation: (id) => {
+        set({ activeConversationId: id });
+      },
+
+      clearConversation: (id) => {
+        set((state) => ({
+          conversations: state.conversations.map((c) =>
+            c.id === id ? { ...c, messages: [] } : c
           ),
         }));
       },
-      
-      updateMessage: (conversationId, messageId, updates) => set((state) => ({
-        conversations: state.conversations.map(conv =>
-          conv.id === conversationId
-            ? {
-                ...conv,
-                messages: conv.messages.map(msg =>
-                  msg.id === messageId ? { ...msg, ...updates } : msg
-                ),
-              }
-            : conv
-        ),
-      })),
-      
-      clearConversations: () => set({
-        conversations: [],
-        activeConversationId: null,
-      }),
+
+      addMessage: (conversationId, message) => {
+        const newMessage = {
+          ...message,
+          id: Date.now().toString(),
+          timestamp: new Date(),
+        };
+
+        set((state) => ({
+          conversations: state.conversations.map((c) =>
+            c.id === conversationId
+              ? {
+                  ...c,
+                  messages: [...c.messages, newMessage],
+                  lastActivity: new Date(),
+                }
+              : c
+          ),
+        }));
+      },
+
+      updateMessage: (conversationId, messageId, updates) => {
+        set((state) => ({
+          conversations: state.conversations.map((c) =>
+            c.id === conversationId
+              ? {
+                  ...c,
+                  messages: c.messages.map((m) =>
+                    m.id === messageId ? { ...m, ...updates } : m
+                  ),
+                }
+              : c
+          ),
+        }));
+      },
+
+      // Message handling
+      sendMessage: async (content) => {
+        const state = get();
+        if (!state.activeConversationId) {
+          state.createConversation();
+        }
+
+        const conversationId = state.activeConversationId!;
+        state.setLoading(true);
+
+        try {
+          // Add user message
+          state.addMessage(conversationId, {
+            role: 'user',
+            content,
+          });
+
+          // Prepare context if enabled
+          let context = '';
+          if (state.contextEnabled) {
+            set({ isProcessingContext: true });
+            // In a real implementation, we would process context here
+            context = `${state.contextData.recentText}\n\n${
+              state.contextData.storyBibleEntries
+                .map((entry) => `${entry.name}: ${entry.description}`)
+                .join('\n\n')
+            }`;
+            set({ isProcessingContext: false });
+          }
+
+          // Get API response
+          const response = await api.sendMessage(content, {
+            model: state.selectedModel,
+            temperature: state.temperature,
+            maxTokens: state.maxTokens,
+            context,
+          });
+
+          // Add AI response
+          state.addMessage(conversationId, {
+            role: 'assistant',
+            content: response.content,
+            tokens: response.tokens,
+          });
+        } catch (error) {
+          console.error('Failed to send message:', error);
+          throw error;
+        } finally {
+          state.setLoading(false);
+        }
+      },
     }),
     {
       name: 'ai-store',
+      partialize: (state) => ({
+        conversations: state.conversations,
+        selectedModel: state.selectedModel,
+        temperature: state.temperature,
+        maxTokens: state.maxTokens,
+        contextEnabled: state.contextEnabled,
+      }),
     }
   )
 );
