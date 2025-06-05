@@ -8,7 +8,7 @@ import { ThemeProvider } from 'next-themes';
 import { Toaster } from './components/ui/toaster';
 import { TooltipProvider } from './components/ui/tooltip';
 import ErrorBoundary from './components/ErrorBoundary';
-import MainLayout from './components/layout/MainLayout';
+import { MainLayout } from './components/layout/MainLayout';
 import './App.css';
 
 // Lazy load pages for better performance

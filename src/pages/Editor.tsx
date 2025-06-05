@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
@@ -22,18 +21,21 @@ export default function Editor() {
   const [saveError, setSaveError] = useState<string | null>(null);
   const { toast } = useToast();
   const { currentProject, projects, setCurrentProject } = useProjects();
-  const { user, isAuthenticated } = useAuth();
+  const { user, loading: authLoading } = useAuth();
+  
+  // Derive isAuthenticated from user and loading state
+  const isAuthenticated = !authLoading && !!user;
   
   // AI Panel state
   const { createConversation, setActiveConversation } = useAIStore();
 
   // Redirect to login if not authenticated
   useEffect(() => {
-    if (!isAuthenticated && !user) {
+    if (!authLoading && !user) {
       navigate('/login');
       return;
     }
-  }, [isAuthenticated, user, navigate]);
+  }, [authLoading, user, navigate]);
 
   // Load draft if documentId is provided
   useEffect(() => {
@@ -285,7 +287,7 @@ export default function Editor() {
   };
 
   // Show loading or authentication required states
-  if (!isAuthenticated || !user) {
+  if (authLoading || !user) {
     return (
       <div className="h-full flex items-center justify-center">
         <div className="text-center">
