@@ -1,41 +1,36 @@
 
-interface EnvironmentConfig {
-  isDevelopment: boolean;
-  isProduction: boolean;
-  apiUrl: string;
-  supabaseUrl: string;
-  supabaseKey: string;
-}
+/**
+ * Environment configuration for the application
+ */
 
-// Environment detection
-const isDevelopment = import.meta.env.DEV;
-const isProduction = import.meta.env.PROD;
-
-// Configuration with fallbacks
-export const environment: EnvironmentConfig = {
-  isDevelopment,
-  isProduction,
+// Get Supabase URL from environment or use default
+const getSupabaseUrl = (): string => {
+  // Check for Vite environment variables first
+  if (typeof window !== 'undefined' && (window as any).__ENV__?.VITE_SUPABASE_URL) {
+    return (window as any).__ENV__.VITE_SUPABASE_URL;
+  }
   
-  // API Configuration - use environment variables in production
-  apiUrl: import.meta.env.VITE_API_URL || (isProduction ? 'https://api.yourdomain.com' : 'http://localhost:3000'),
-  
-  // Supabase Configuration - these should be set via environment variables
-  supabaseUrl: import.meta.env.VITE_SUPABASE_URL || 'https://jpisccbabnzzkrzevetw.supabase.co',
-  supabaseKey: import.meta.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpwaXNjY2JhYm56emtyemV2ZXR3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDc4MjM5NjQsImV4cCI6MjA2MzM5OTk2NH0.wc3BIQQqVxEr_3hA5quy1X_AP0Fc4-bYLceUUQbv8mE',
+  // Use direct project URL as fallback
+  return 'https://jpisccbabnzzkrzevetw.supabase.co';
 };
 
-// Validation for production
-if (isProduction) {
-  const requiredEnvVars = [
-    'VITE_SUPABASE_URL',
-    'VITE_SUPABASE_ANON_KEY'
-  ];
-  
-  const missingVars = requiredEnvVars.filter(
-    varName => !import.meta.env[varName]
-  );
-  
-  if (missingVars.length > 0) {
-    console.warn(`Missing environment variables: ${missingVars.join(', ')}`);
+// Get Supabase anon key from environment or use default
+const getSupabaseKey = (): string => {
+  // Check for Vite environment variables first
+  if (typeof window !== 'undefined' && (window as any).__ENV__?.VITE_SUPABASE_ANON_KEY) {
+    return (window as any).__ENV__.VITE_SUPABASE_ANON_KEY;
   }
-}
+  
+  // Use the anon key as fallback
+  return 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpwaXNjY2JhYm56emtyemV2ZXR3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDc4MjM5NjQsImV4cCI6MjA2MzM5OTk2NH0.wc3BIQQqVxEr_3hA5quy1X_AP0Fc4-bYLceUUQbv8mE';
+};
+
+export const environment = {
+  supabaseUrl: getSupabaseUrl(),
+  supabaseKey: getSupabaseKey(),
+  isProduction: import.meta.env.PROD,
+  isDevelopment: import.meta.env.DEV,
+} as const;
+
+// Export individual values for easier access
+export const { supabaseUrl, supabaseKey, isProduction, isDevelopment } = environment;

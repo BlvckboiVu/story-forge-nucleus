@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
@@ -9,6 +10,7 @@ import { Draft } from '@/lib/db';
 import { draftService } from '@/services/draftService';
 import { useProjects } from '@/contexts/ProjectContext';
 import { useAIStore } from '@/stores/aiStore';
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function Editor() {
   const { documentId } = useParams();
@@ -20,20 +22,29 @@ export default function Editor() {
   const [saveError, setSaveError] = useState<string | null>(null);
   const { toast } = useToast();
   const { currentProject, projects, setCurrentProject } = useProjects();
+  const { user, isAuthenticated } = useAuth();
   
   // AI Panel state
   const { createConversation, setActiveConversation } = useAIStore();
 
+  // Redirect to login if not authenticated
+  useEffect(() => {
+    if (!isAuthenticated && !user) {
+      navigate('/login');
+      return;
+    }
+  }, [isAuthenticated, user, navigate]);
+
   // Load draft if documentId is provided
   useEffect(() => {
-    if (documentId) {
+    if (documentId && isAuthenticated) {
       loadDraft(documentId);
     }
-  }, [documentId]);
+  }, [documentId, isAuthenticated]);
 
   // On mount, if no currentProject, try to set from localStorage
   useEffect(() => {
-    if (!currentProject && projects.length > 0) {
+    if (isAuthenticated && !currentProject && projects.length > 0) {
       const lastProjectId = localStorage.getItem('storyforge_last_project');
       if (lastProjectId) {
         const lastProject = projects.find(p => p.id === lastProjectId);
@@ -45,15 +56,19 @@ export default function Editor() {
         setCurrentProject(projects[0]);
       }
     }
-  }, [currentProject, projects, setCurrentProject]);
+  }, [currentProject, projects, setCurrentProject, isAuthenticated]);
 
   // Initialize AI conversation when draft loads
   useEffect(() => {
-    if (currentDraft) {
-      const conversationId = createConversation(`${currentDraft.title} - Writing Session`);
-      setActiveConversation(conversationId);
+    if (currentDraft && isAuthenticated) {
+      try {
+        const conversationId = createConversation(`${currentDraft.title} - Writing Session`);
+        setActiveConversation(conversationId);
+      } catch (error) {
+        console.error('Failed to create AI conversation:', error);
+      }
     }
-  }, [currentDraft, createConversation, setActiveConversation]);
+  }, [currentDraft, createConversation, setActiveConversation, isAuthenticated]);
 
   const loadDraft = async (id: string) => {
     if (!id?.trim()) {
@@ -268,6 +283,24 @@ export default function Editor() {
       });
     }
   };
+
+  // Show loading or authentication required states
+  if (!isAuthenticated || !user) {
+    return (
+      <div className="h-full flex items-center justify-center">
+        <div className="text-center">
+          <h2 className="text-xl font-semibold mb-2">Authentication Required</h2>
+          <p className="text-muted-foreground mb-4">Please sign in to access the editor.</p>
+          <button
+            className="px-4 py-2 bg-primary text-white rounded"
+            onClick={() => navigate('/login')}
+          >
+            Sign In
+          </button>
+        </div>
+      </div>
+    );
+  }
   
   return (
     <div className="h-full flex overflow-hidden">
