@@ -1,6 +1,7 @@
+
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { User, AuthContextType } from '../types';
-import { supabase, signIn as supabaseSignIn, signUp as supabaseSignUp, signOut as supabaseSignOut, createProfile } from '../lib/supabase';
+import { supabase } from '../lib/supabase';
 import { User as SupabaseUser } from '@supabase/supabase-js';
 
 // Create context with a default value
@@ -30,23 +31,75 @@ const convertSupabaseUser = (supabaseUser: SupabaseUser): User => ({
   isOnline: navigator.onLine
 });
 
+// Sign up function with input validation
+const signUpUser = async (email: string, password: string) => {
+  if (!email || !email.includes('@')) {
+    throw new Error('Valid email is required');
+  }
+  if (!password || password.length < 6) {
+    throw new Error('Password must be at least 6 characters');
+  }
+
+  const { data, error } = await supabase.auth.signUp({
+    email: email.toLowerCase().trim(),
+    password,
+  });
+  
+  if (error) throw error;
+  return data;
+};
+
+// Sign in function with input validation
+const signInUser = async (email: string, password: string) => {
+  if (!email || !email.includes('@')) {
+    throw new Error('Valid email is required');
+  }
+  if (!password) {
+    throw new Error('Password is required');
+  }
+
+  const { data, error } = await supabase.auth.signInWithPassword({
+    email: email.toLowerCase().trim(),
+    password,
+  });
+  
+  if (error) throw error;
+  return data;
+};
+
+// Sign out function
+const signOutUser = async () => {
+  const { error } = await supabase.auth.signOut();
+  if (error) throw error;
+};
+
+// Create profile function
+const createProfile = async (id: string, email: string) => {
+  const { error } = await supabase.from('profiles').insert([
+    {
+      id,
+      email,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    },
+  ]);
+  if (error) throw error;
+};
+
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [isOffline, setIsOffline] = useState(!navigator.onLine);
 
   // Handle online/offline status
   useEffect(() => {
     const handleOnline = () => {
-      setIsOffline(false);
       if (user) {
         setUser({ ...user, isOnline: true });
       }
     };
 
     const handleOffline = () => {
-      setIsOffline(true);
       if (user) {
         setUser({ ...user, isOnline: false });
       }
@@ -81,6 +134,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       }
     };
     checkUser();
+    
     // Set up auth state change listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (session?.user) {
@@ -91,6 +145,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       }
       setLoading(false);
     });
+    
     return () => { subscription.unsubscribe(); };
   }, []);
 
@@ -99,7 +154,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     setLoading(true);
     setError(null);
     try {
-      const data = await supabaseSignUp(email, password);
+      const data = await signUpUser(email, password);
       console.log('Supabase signUp result:', data);
       if (data.user) {
         const convertedUser = convertSupabaseUser(data.user);
@@ -132,7 +187,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     setLoading(true);
     setError(null);
     try {
-      const data = await supabaseSignIn(email, password);
+      const data = await signInUser(email, password);
       if (data.user) {
         const convertedUser = convertSupabaseUser(data.user);
         setUser(convertedUser);
@@ -173,7 +228,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const guestPassword = crypto.randomUUID().slice(0, 16);
       
       try {
-        const result = await supabaseSignUp(guestEmail, guestPassword);
+        const result = await signUpUser(guestEmail, guestPassword);
         if (result?.user) {
           const convertedUser = convertSupabaseUser(result.user);
           convertedUser.role = 'guest';
@@ -214,7 +269,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     setError(null);
     
     try {
-      await supabaseSignOut();
+      await signOutUser();
       localStorage.removeItem('storyforge_user');
       setUser(null);
     } catch (e) {
