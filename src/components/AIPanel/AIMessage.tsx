@@ -6,7 +6,6 @@ import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { AIMessage as AIMessageType } from '@/stores/aiStore';
 import { motion } from 'framer-motion';
-import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '@/components/ui/tooltip';
 
 interface AIMessageProps {
   message: AIMessageType;
@@ -74,40 +73,30 @@ const AIMessage = React.memo(({ message, onInsert }: AIMessageProps) => {
               </div>
               <span className="font-medium text-sm text-purple-700 dark:text-purple-300">Assistant</span>
             </div>
-            <TooltipProvider>
-              <div className="flex gap-1">
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-6 w-6 hover:bg-white/50 dark:hover:bg-gray-800/50"
-                      onClick={handleCopy}
-                      aria-label="Copy message"
-                    >
-                      <Copy className="h-3 w-3" />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>Copy to clipboard</TooltipContent>
-                </Tooltip>
-                {onInsert && (
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-6 w-6 hover:bg-white/50 dark:hover:bg-gray-800/50"
-                        onClick={handleInsert}
-                        aria-label="Insert into document"
-                      >
-                        <Plus className="h-3 w-3" />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>Insert into document</TooltipContent>
-                  </Tooltip>
-                )}
-              </div>
-            </TooltipProvider>
+            <div className="flex gap-1">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-6 w-6 hover:bg-white/50 dark:hover:bg-gray-800/50"
+                onClick={handleCopy}
+                aria-label="Copy message"
+                title="Copy to clipboard"
+              >
+                <Copy className="h-3 w-3" />
+              </Button>
+              {onInsert && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-6 w-6 hover:bg-white/50 dark:hover:bg-gray-800/50"
+                  onClick={handleInsert}
+                  aria-label="Insert into document"
+                  title="Insert into document"
+                >
+                  <Plus className="h-3 w-3" />
+                </Button>
+              )}
+            </div>
           </div>
           <div className="text-sm text-purple-800 dark:text-purple-200 whitespace-pre-wrap leading-relaxed">
             {message.content}

@@ -6,7 +6,6 @@ import { AuthProvider } from './contexts/AuthContext';
 import { ProjectProvider } from './contexts/ProjectContext';
 import { ThemeProvider } from 'next-themes';
 import { Toaster } from './components/ui/toaster';
-import { TooltipProvider } from './components/ui/tooltip';
 import ErrorBoundary from './components/ErrorBoundary';
 import { MainLayout } from './components/layout/MainLayout';
 import './App.css';
@@ -59,43 +58,41 @@ function App() {
   return (
     <ErrorBoundary>
       <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-        <TooltipProvider>
-          <QueryClientProvider client={queryClient}>
-            <AuthProvider>
-              <ProjectProvider>
-                <BrowserRouter>
-                  <div className="min-h-screen bg-background">
-                    <Suspense fallback={<PageLoader />}>
-                      <Routes>
-                        {/* Public routes */}
-                        <Route path="/" element={<Index />} />
-                        <Route path="/login" element={<Login />} />
-                        <Route path="/signup" element={<Signup />} />
-                        <Route path="/auth-error" element={<AuthError />} />
-                        
-                        {/* Protected app routes */}
-                        <Route path="/app" element={<ProtectedLayout />}>
-                          <Route index element={<Navigate to="/app/dashboard" replace />} />
-                          <Route path="dashboard" element={<Dashboard />} />
-                          <Route path="editor" element={<Editor />} />
-                          <Route path="editor/:documentId" element={<Editor />} />
-                          <Route path="profile" element={<Profile />} />
-                          <Route path="settings" element={<Settings />} />
-                          <Route path="story-bible" element={<StoryBible />} />
-                          <Route path="mcp" element={<MCP />} />
-                        </Route>
-                        
-                        {/* Catch all route */}
-                        <Route path="*" element={<NotFound />} />
-                      </Routes>
-                    </Suspense>
-                    <Toaster />
-                  </div>
-                </BrowserRouter>
-              </ProjectProvider>
-            </AuthProvider>
-          </QueryClientProvider>
-        </TooltipProvider>
+        <QueryClientProvider client={queryClient}>
+          <AuthProvider>
+            <ProjectProvider>
+              <BrowserRouter>
+                <div className="min-h-screen bg-background">
+                  <Suspense fallback={<PageLoader />}>
+                    <Routes>
+                      {/* Public routes */}
+                      <Route path="/" element={<Index />} />
+                      <Route path="/login" element={<Login />} />
+                      <Route path="/signup" element={<Signup />} />
+                      <Route path="/auth-error" element={<AuthError />} />
+                      
+                      {/* Protected app routes */}
+                      <Route path="/app" element={<ProtectedLayout />}>
+                        <Route index element={<Navigate to="/app/dashboard" replace />} />
+                        <Route path="dashboard" element={<Dashboard />} />
+                        <Route path="editor" element={<Editor />} />
+                        <Route path="editor/:documentId" element={<Editor />} />
+                        <Route path="profile" element={<Profile />} />
+                        <Route path="settings" element={<Settings />} />
+                        <Route path="story-bible" element={<StoryBible />} />
+                        <Route path="mcp" element={<MCP />} />
+                      </Route>
+                      
+                      {/* Catch all route */}
+                      <Route path="*" element={<NotFound />} />
+                    </Routes>
+                  </Suspense>
+                  <Toaster />
+                </div>
+              </BrowserRouter>
+            </ProjectProvider>
+          </AuthProvider>
+        </QueryClientProvider>
       </ThemeProvider>
     </ErrorBoundary>
   );
