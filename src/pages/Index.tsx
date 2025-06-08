@@ -81,7 +81,7 @@ const Index = () => {
 
   const handleJoyrideCallback = (data: CallBackProps) => {
     const { status } = data;
-    if (status === STATUS.FINISHED || status === STATUS.SKIPPED) {
+    if ([STATUS.FINISHED, STATUS.SKIPPED].includes(status)) {
       setRunTour(false);
       localStorage.setItem('storyforge_tour_completed', 'true');
       setShowFeedback(true);
@@ -272,7 +272,7 @@ const Index = () => {
           </motion.div>
         </div>
 
-        {/* Hero Visual - Improved Editor Preview */}
+        {/* Enhanced Editor Preview */}
         <motion.div
           style={{ y: y1 }}
           className="max-w-5xl mx-auto mt-12 relative"
