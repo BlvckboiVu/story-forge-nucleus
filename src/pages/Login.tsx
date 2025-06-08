@@ -1,4 +1,5 @@
-import { useState } from 'react';
+
+import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -14,12 +15,19 @@ export default function Login() {
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
-  const { signIn, guestLogin, error } = useAuth();
+  const { signIn, guestLogin, user, loading } = useAuth();
+
+  // Redirect to editor if already authenticated
+  useEffect(() => {
+    if (!loading && user) {
+      navigate('/app/editor', { replace: true });
+    }
+  }, [user, loading, navigate]);
 
   const handleEmailSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!email || !password) {
+    if (!email.trim() || !password.trim()) {
       toast({
         title: "Missing information",
         description: "Please enter both email and password",
@@ -30,12 +38,12 @@ export default function Login() {
     
     try {
       setIsLoading(true);
-      await signIn(email, password);
+      await signIn(email.trim(), password);
       toast({
         title: "Login successful",
         description: "Welcome back to StoryForge",
       });
-      navigate('/app/dashboard');
+      navigate('/app/editor', { replace: true });
     } catch (error) {
       toast({
         title: "Login failed",
@@ -55,7 +63,7 @@ export default function Login() {
         title: "Logged in as guest",
         description: "You're now using StoryForge as a guest user",
       });
-      navigate('/app/dashboard');
+      navigate('/app/editor', { replace: true });
     } catch (error: any) {
       let description = "Could not create guest account";
       if (typeof error?.message === 'string' && error.message.toLowerCase().includes('rate limit')) {
@@ -71,21 +79,33 @@ export default function Login() {
     }
   };
 
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 via-white to-blue-50">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background p-4">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 via-white to-blue-50 p-4">
       <div className="w-full max-w-md">
         <div className="mb-8 text-center">
-          <Link to="/" className="inline-flex items-center gap-2 mb-4">
-            <BookOpen size={48} className="text-primary" />
-            <span className="text-3xl font-bold">StoryForge</span>
+          <Link to="/" className="inline-flex items-center gap-2 mb-6">
+            <div className="w-12 h-12 bg-gradient-to-br from-blue-600 to-purple-600 rounded-xl flex items-center justify-center">
+              <BookOpen size={24} className="text-white" />
+            </div>
+            <span className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+              StoryForge
+            </span>
           </Link>
-          <p className="text-muted-foreground">Your writing journey begins here</p>
+          <p className="text-gray-600">Welcome back to your writing journey</p>
         </div>
       
-        <Card>
-          <CardHeader>
-            <CardTitle>Sign In</CardTitle>
-            <CardDescription>Enter your credentials to access your account</CardDescription>
+        <Card className="shadow-xl border-0">
+          <CardHeader className="text-center pb-6">
+            <CardTitle className="text-2xl">Sign In</CardTitle>
+            <CardDescription>Continue your writing journey</CardDescription>
           </CardHeader>
           <form onSubmit={handleEmailSignIn}>
             <CardContent className="space-y-4">
@@ -98,6 +118,7 @@ export default function Login() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
+                  className="h-12"
                 />
               </div>
               <div className="space-y-2">
@@ -113,11 +134,16 @@ export default function Login() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
+                  className="h-12"
                 />
               </div>
             </CardContent>
             <CardFooter className="flex flex-col space-y-4">
-              <Button type="submit" className="w-full" disabled={isLoading}>
+              <Button 
+                type="submit" 
+                className="w-full h-12 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700" 
+                disabled={isLoading}
+              >
                 {isLoading ? "Signing in..." : "Sign In"}
               </Button>
               <div className="relative w-full">
@@ -130,8 +156,8 @@ export default function Login() {
               </div>
               <Button 
                 type="button" 
-                variant="secondary" 
-                className="w-full"
+                variant="outline" 
+                className="w-full h-12"
                 onClick={handleGuestLogin}
                 disabled={isLoading}
               >
@@ -139,17 +165,13 @@ export default function Login() {
               </Button>
               <div className="text-center text-sm">
                 Don't have an account?{" "}
-                <Link to="/signup" className="text-primary hover:underline">
+                <Link to="/signup" className="text-primary hover:underline font-medium">
                   Sign up
                 </Link>
               </div>
             </CardFooter>
           </form>
         </Card>
-        {/* Show AuthContext error if present */}
-        {error && (
-          <div className="text-red-500 text-sm text-center mb-2">{error}</div>
-        )}
       </div>
     </div>
   );

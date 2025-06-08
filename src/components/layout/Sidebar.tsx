@@ -16,7 +16,9 @@ import {
   Settings,
   User,
   Book,
-  LogOut
+  LogOut,
+  Zap,
+  Coins
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -30,7 +32,9 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
   const navigation = [
     { name: 'Dashboard', href: '/app/dashboard', icon: Home },
     { name: 'Editor', href: '/app/editor', icon: PenTool },
-    { name: 'Story Bible', href: '/app/story-bible', icon: Book },
+    { name: 'Bible Library', href: '/app/story-bible', icon: Book },
+    { name: 'Sandbox', href: '/app/sandbox', icon: Zap },
+    { name: 'Tokens', href: '/app/tokens', icon: Coins },
     { name: 'Profile', href: '/app/profile', icon: User },
     { name: 'Settings', href: '/app/settings', icon: Settings },
   ];
