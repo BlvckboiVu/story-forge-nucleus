@@ -81,7 +81,7 @@ const Index = () => {
 
   const handleJoyrideCallback = (data: CallBackProps) => {
     const { status } = data;
-    if ([STATUS.FINISHED, STATUS.SKIPPED].includes(status)) {
+    if (status === STATUS.FINISHED || status === STATUS.SKIPPED) {
       setRunTour(false);
       localStorage.setItem('storyforge_tour_completed', 'true');
       setShowFeedback(true);
