@@ -120,11 +120,11 @@ export default function Dashboard() {
   const completedProjects = projects.filter(p => p.status === 'completed').length;
   
   return (
-    <div className="h-full overflow-hidden">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
+    <div className="h-full flex flex-col p-4 max-h-screen overflow-hidden">
+      {/* Compact Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-4 shrink-0">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Dashboard</h1>
+          <h1 className="text-xl font-bold">Dashboard</h1>
           <p className="text-sm text-muted-foreground">
             Welcome back{user?.email ? `, ${user.email.split('@')[0]}` : ''}!
           </p>
@@ -135,22 +135,22 @@ export default function Dashboard() {
         </Button>
       </div>
 
-      {/* Main Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 h-[calc(100vh-12rem)]">
+      {/* Main Grid - Fits in remaining viewport */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-3 flex-1 min-h-0">
         {/* Projects Section */}
         <div className="lg:col-span-4">
-          <Card className="h-full">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-lg flex items-center gap-2">
-                <FileText className="h-5 w-5" />
+          <Card className="h-full flex flex-col">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base flex items-center gap-2">
+                <FileText className="h-4 w-4" />
                 Projects
               </CardTitle>
             </CardHeader>
-            <CardContent className="p-0">
-              <div className="max-h-[300px] overflow-y-auto">
+            <CardContent className="p-0 flex-1 min-h-0">
+              <div className="h-full overflow-y-auto">
                 {projects.length === 0 ? (
-                  <div className="p-4 text-center text-muted-foreground">
-                    <FileText className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                  <div className="p-3 text-center text-muted-foreground">
+                    <FileText className="h-6 w-6 mx-auto mb-2 opacity-50" />
                     <p className="text-sm">No projects yet</p>
                     <p className="text-xs">Create your first project to get started</p>
                   </div>
@@ -159,7 +159,7 @@ export default function Dashboard() {
                     {projects.map((project) => (
                       <div
                         key={project.id}
-                        className="p-3 hover:bg-accent cursor-pointer border-b border-border/50 last:border-b-0"
+                        className="p-2 hover:bg-accent cursor-pointer border-b border-border/50 last:border-b-0"
                         onClick={() => handleProjectClick(project.id)}
                       >
                         <div className="flex items-center justify-between">
@@ -200,42 +200,42 @@ export default function Dashboard() {
         {/* Stats Section */}
         <div className="lg:col-span-3">
           <Card className="h-full">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-lg flex items-center gap-2">
-                <TrendingUp className="h-5 w-5" />
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base flex items-center gap-2">
+                <TrendingUp className="h-4 w-4" />
                 Stats
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-2 gap-3">
-                <div className="text-center p-3 bg-accent rounded-lg">
-                  <div className="text-xl font-bold">{projects.length}</div>
+            <CardContent className="space-y-3">
+              <div className="grid grid-cols-2 gap-2">
+                <div className="text-center p-2 bg-accent rounded-lg">
+                  <div className="text-lg font-bold">{projects.length}</div>
                   <div className="text-xs text-muted-foreground">Projects</div>
                 </div>
-                <div className="text-center p-3 bg-accent rounded-lg">
-                  <div className="text-xl font-bold">{recentDrafts.length}</div>
+                <div className="text-center p-2 bg-accent rounded-lg">
+                  <div className="text-lg font-bold">{recentDrafts.length}</div>
                   <div className="text-xs text-muted-foreground">Drafts</div>
                 </div>
-                <div className="text-center p-3 bg-accent rounded-lg">
-                  <div className="text-xl font-bold">{totalWords.toLocaleString()}</div>
+                <div className="text-center p-2 bg-accent rounded-lg">
+                  <div className="text-lg font-bold">{totalWords.toLocaleString()}</div>
                   <div className="text-xs text-muted-foreground">Words</div>
                 </div>
-                <div className="text-center p-3 bg-accent rounded-lg">
-                  <div className="text-xl font-bold">{completedProjects}</div>
+                <div className="text-center p-2 bg-accent rounded-lg">
+                  <div className="text-lg font-bold">{completedProjects}</div>
                   <div className="text-xs text-muted-foreground">Completed</div>
                 </div>
               </div>
               
               <div className="space-y-2">
                 <div className="flex items-center gap-2 text-sm">
-                  <Clock className="h-4 w-4 text-muted-foreground" />
-                  <span>This week: {recentDrafts.filter(d => 
+                  <Clock className="h-3 w-3 text-muted-foreground" />
+                  <span className="text-xs">This week: {recentDrafts.filter(d => 
                     new Date(d.updatedAt).getTime() > Date.now() - 7 * 24 * 60 * 60 * 1000
                   ).length} drafts updated</span>
                 </div>
                 <div className="flex items-center gap-2 text-sm">
-                  <Target className="h-4 w-4 text-muted-foreground" />
-                  <span>Word goal: {currentProject?.wordCountGoal?.toLocaleString() || 'Not set'}</span>
+                  <Target className="h-3 w-3 text-muted-foreground" />
+                  <span className="text-xs">Goal: {currentProject?.wordCountGoal?.toLocaleString() || 'Not set'}</span>
                 </div>
               </div>
             </CardContent>
@@ -243,18 +243,18 @@ export default function Dashboard() {
         </div>
 
         {/* Right Column */}
-        <div className="lg:col-span-5 space-y-4">
+        <div className="lg:col-span-5 space-y-3 flex flex-col min-h-0">
           {/* Sandbox */}
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-lg flex items-center gap-2">
-                <Zap className="h-5 w-5" />
+          <Card className="flex-1">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base flex items-center gap-2">
+                <Zap className="h-4 w-4" />
                 Sandbox
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-center py-6 text-muted-foreground">
-                <Zap className="h-8 w-8 mx-auto mb-2 opacity-50" />
+              <div className="text-center py-4 text-muted-foreground">
+                <Zap className="h-6 w-6 mx-auto mb-2 opacity-50" />
                 <p className="text-sm font-medium">Coming Soon</p>
                 <p className="text-xs">Experimental features will appear here</p>
               </div>
@@ -262,16 +262,16 @@ export default function Dashboard() {
           </Card>
 
           {/* Story Bible Library */}
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-lg flex items-center gap-2">
-                <Book className="h-5 w-5" />
+          <Card className="flex-1">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base flex items-center gap-2">
+                <Book className="h-4 w-4" />
                 Bible Library
               </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="text-center py-4 text-muted-foreground">
-                <Book className="h-6 w-6 mx-auto mb-2 opacity-50" />
+                <Book className="h-5 w-5 mx-auto mb-2 opacity-50" />
                 <p className="text-xs">No story bibles created yet</p>
                 {currentProject && (
                   <Button 
@@ -288,16 +288,16 @@ export default function Dashboard() {
           </Card>
 
           {/* Token Shop */}
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-lg flex items-center gap-2">
-                <Coins className="h-5 w-5" />
+          <Card className="flex-1">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base flex items-center gap-2">
+                <Coins className="h-4 w-4" />
                 Token Shop
               </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="text-center py-4 text-muted-foreground">
-                <Coins className="h-6 w-6 mx-auto mb-2 opacity-50" />
+                <Coins className="h-5 w-5 mx-auto mb-2 opacity-50" />
                 <p className="text-sm font-medium">Coming Soon</p>
                 <p className="text-xs">AI tokens and credits will be available here</p>
               </div>

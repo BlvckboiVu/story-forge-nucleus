@@ -1,98 +1,124 @@
 
-import React from 'react';
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-} from "@/components/ui/sheet"
-import { Separator } from "@/components/ui/separator"
-import { NavLink } from 'react-router-dom';
-import { useAuth } from '@/contexts/AuthContext';
-import {
-  Home,
-  PenTool,
-  Settings,
-  User,
+import { Link, useLocation } from 'react-router-dom';
+import { 
+  LayoutDashboard, 
+  PenTool, 
+  User, 
+  Settings, 
   Book,
-  LogOut,
   Zap,
   Coins
 } from 'lucide-react';
+import {
+  Sidebar as ShadcnSidebar,
+  SidebarContent,
+  SidebarFooter,
+  SidebarGroup,
+  SidebarGroupContent,
+  SidebarHeader,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+  SidebarTrigger,
+} from '@/components/ui/sidebar';
+import { Button } from '@/components/ui/button';
+import { useAuth } from '@/contexts/AuthContext';
 
-interface SidebarProps {
-  isOpen: boolean;
-  onClose: () => void;
-}
+const menuItems = [
+  {
+    title: 'Dashboard',
+    url: '/app/dashboard',
+    icon: LayoutDashboard,
+  },
+  {
+    title: 'Editor',
+    url: '/app/editor',
+    icon: PenTool,
+  },
+  {
+    title: 'Bible Library',
+    url: '/app/story-bible',
+    icon: Book,
+  },
+  {
+    title: 'Sandbox',
+    url: '/app/sandbox',
+    icon: Zap,
+  },
+  {
+    title: 'Tokens',
+    url: '/app/tokens',
+    icon: Coins,
+  },
+  {
+    title: 'Profile',
+    url: '/app/profile',
+    icon: User,
+  },
+  {
+    title: 'Settings',
+    url: '/app/settings',
+    icon: Settings,
+  },
+];
 
-const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
-  const { user, signOut } = useAuth();
+export function Sidebar() {
+  const location = useLocation();
+  const { signOut } = useAuth();
 
-  const navigation = [
-    { name: 'Dashboard', href: '/app/dashboard', icon: Home },
-    { name: 'Editor', href: '/app/editor', icon: PenTool },
-    { name: 'Bible Library', href: '/app/story-bible', icon: Book },
-    { name: 'Sandbox', href: '/app/sandbox', icon: Zap },
-    { name: 'Tokens', href: '/app/tokens', icon: Coins },
-    { name: 'Profile', href: '/app/profile', icon: User },
-    { name: 'Settings', href: '/app/settings', icon: Settings },
-  ];
-
-  const handleLogout = async () => {
+  const handleSignOut = async () => {
     try {
       await signOut();
-      onClose();
     } catch (error) {
       console.error('Error signing out:', error);
     }
   };
 
   return (
-    <Sheet open={isOpen} onOpenChange={onClose}>
-      <SheetContent side="left" className="w-full sm:w-64">
-        <SheetHeader className="text-left">
-          <SheetTitle>Menu</SheetTitle>
-          <SheetDescription>
-            Navigate your writing journey.
-          </SheetDescription>
-        </SheetHeader>
-        <Separator className="my-4" />
-        <nav className="flex flex-col space-y-2">
-          {navigation.map((item) => (
-            <NavLink
-              key={item.name}
-              to={item.href}
-              className={({ isActive }) =>
-                `flex items-center space-x-2 rounded-md p-2 text-sm font-medium transition-colors hover:bg-secondary hover:text-foreground ${
-                  isActive ? 'bg-secondary text-foreground' : 'text-muted-foreground'
-                }`
-              }
-              onClick={onClose}
-            >
-              <item.icon className="h-4 w-4" />
-              <span>{item.name}</span>
-            </NavLink>
-          ))}
-        </nav>
-        <Separator className="my-4" />
-        {user && (
-          <div className="mt-auto">
-            <p className="text-sm text-muted-foreground mb-2">
-              Logged in as {user.email}
-            </p>
-            <button
-              className="w-full rounded-md bg-destructive px-4 py-2 text-sm font-medium text-white hover:bg-destructive/90 focus:outline-none focus:ring-2 focus:ring-destructive focus:ring-offset-1 disabled:pointer-events-none disabled:opacity-50 flex items-center justify-center gap-2"
-              onClick={handleLogout}
-            >
-              <LogOut className="h-4 w-4" />
-              Logout
-            </button>
+    <ShadcnSidebar>
+      <SidebarHeader className="border-b border-sidebar-border p-4">
+        <div className="flex items-center gap-2">
+          <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-purple-600 rounded-lg flex items-center justify-center">
+            <PenTool className="w-5 h-5 text-white" />
           </div>
-        )}
-      </SheetContent>
-    </Sheet>
-  );
-};
+          <span className="text-lg font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+            StoryForge
+          </span>
+        </div>
+        <SidebarTrigger className="ml-auto" />
+      </SidebarHeader>
+      
+      <SidebarContent>
+        <SidebarGroup>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {menuItems.map((item) => (
+                <SidebarMenuItem key={item.title}>
+                  <SidebarMenuButton 
+                    asChild 
+                    isActive={location.pathname === item.url}
+                  >
+                    <Link to={item.url}>
+                      <item.icon className="w-4 h-4" />
+                      <span>{item.title}</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+      </SidebarContent>
 
-export default Sidebar;
+      <SidebarFooter className="p-4 border-t border-sidebar-border">
+        <Button 
+          variant="ghost" 
+          onClick={handleSignOut}
+          className="w-full justify-start"
+        >
+          Sign Out
+        </Button>
+      </SidebarFooter>
+    </ShadcnSidebar>
+  );
+}

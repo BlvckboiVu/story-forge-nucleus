@@ -302,7 +302,7 @@ export default function Editor() {
   }
   
   return (
-    <div className="h-full flex flex-col overflow-hidden">
+    <div className="h-full flex flex-col">
       {!currentProject ? (
         <div className="flex-1 flex items-center justify-center">
           <div className="text-center">
@@ -315,15 +315,15 @@ export default function Editor() {
         </div>
       ) : (
         <>
-          {/* Unified Header - Under 100px */}
-          <div className="h-16 border-b border-border flex items-center justify-between px-4 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+          {/* Single Merged Header - 70px */}
+          <div className="h-[70px] border-b border-border flex items-center justify-between px-6 bg-background shrink-0">
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-2">
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={() => setDraftModalOpen(true)}
-                  className="h-8"
+                  className="h-9"
                 >
                   <FolderOpen className="mr-2 h-4 w-4" />
                   Open
@@ -332,7 +332,7 @@ export default function Editor() {
                   variant="ghost"
                   size="sm"
                   onClick={handleNewDraft}
-                  className="h-8"
+                  className="h-9"
                 >
                   <FilePlus className="mr-2 h-4 w-4" />
                   New
@@ -340,7 +340,7 @@ export default function Editor() {
               </div>
               
               {currentDraft && (
-                <div className="flex items-center gap-2 text-sm">
+                <div className="flex items-center gap-3 text-sm">
                   <span className="font-medium">{currentDraft.title}</span>
                   <span className="text-muted-foreground">•</span>
                   <span className="text-muted-foreground">{currentDraft.wordCount.toLocaleString()} words</span>
@@ -358,16 +358,16 @@ export default function Editor() {
               {saveError && (
                 <span className="text-sm text-destructive">Save Error</span>
               )}
-              <Button variant="ghost" size="sm" className="h-8">
+              <Button variant="ghost" size="sm" className="h-9">
                 <MoreVertical className="h-4 w-4" />
               </Button>
             </div>
           </div>
 
-          {/* Main Editor Area */}
-          <div className="flex-1 flex overflow-hidden">
+          {/* Main Editor Area - No margins */}
+          <div className="flex-1 flex">
             {/* Editor */}
-            <div className="flex-1 overflow-hidden">
+            <div className="flex-1">
               <RichTextEditor 
                 initialContent={currentDraft?.content || ''} 
                 onSave={handleSaveDraft}
