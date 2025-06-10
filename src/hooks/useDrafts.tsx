@@ -13,11 +13,13 @@ interface CreateDraftData {
   title: string;
   content: string;
   projectId: string;
+  wordCount?: number;
 }
 
 interface UpdateDraftData {
   title?: string;
   content?: string;
+  wordCount?: number;
 }
 
 export function useDrafts(projectId?: string) {
@@ -57,7 +59,11 @@ export function useDrafts(projectId?: string) {
     setError(null);
     
     try {
-      const newDraft = await createDraftDb(data);
+      const draftData = {
+        ...data,
+        wordCount: data.wordCount || 0
+      };
+      const newDraft = await createDraftDb(draftData);
       setDrafts(prev => [newDraft, ...prev]);
       toast({
         title: 'Draft created',

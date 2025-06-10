@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Layout } from '@/components/layout/Layout';
@@ -20,11 +21,7 @@ export default function Signup() {
     setError('');
 
     try {
-      await signUp({
-        displayName,
-        email,
-        password,
-      });
+      await signUp(email, password);
       navigate('/app/dashboard');
     } catch (err) {
       setError('Failed to create account');
@@ -32,7 +29,7 @@ export default function Signup() {
   };
 
   return (
-    <Layout mode="contained">
+    <Layout mode="contained" showNavigation={false}>
       <div className="flex items-center justify-center min-h-[calc(100vh-4rem)]">
         <Card className="w-full max-w-md p-6">
           <div className="space-y-6">

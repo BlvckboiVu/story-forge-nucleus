@@ -1,4 +1,3 @@
-
 // Base type with common fields
 export interface BaseEntity {
   id: string;
@@ -27,6 +26,14 @@ export interface Project extends BaseEntity {
   wordCountGoal?: number;
   deadline?: Date;
   status: 'planning' | 'writing' | 'editing' | 'completed';
+}
+
+// Draft type (for writing drafts)
+export interface Draft extends BaseEntity {
+  projectId: string;
+  title: string;
+  content: string;
+  wordCount: number;
 }
 
 // Document type (generic document in a project)
@@ -69,8 +76,8 @@ export interface Character extends BaseEntity {
   imageUrl?: string;
 }
 
-// Setting type (locations in the story)
-export interface Setting extends BaseEntity {
+// Setting type (locations in the story) - renamed from Setting to Location for clarity
+export interface Location extends BaseEntity {
   projectId: string;
   name: string;
   description?: string;
@@ -79,6 +86,15 @@ export interface Setting extends BaseEntity {
   culture?: string;
   map?: string; // URL to map image
   notes?: string;
+}
+
+// Lore type (for world-building information)
+export interface Lore extends BaseEntity {
+  projectId: string;
+  title: string;
+  content: string;
+  category?: 'history' | 'culture' | 'technology' | 'magic' | 'politics' | 'other';
+  tags?: string[];
 }
 
 // Note type (for research, ideas, etc.)

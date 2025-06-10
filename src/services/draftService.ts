@@ -1,4 +1,5 @@
-import { Draft, createDraft, updateDraft, getDraft } from '@/lib/db';
+
+import { Draft, createDraft, updateDraft, getDrafts, deleteDraft } from '@/lib/db';
 import { sanitizeHtml, sanitizeText, validateInput, VALIDATION_PATTERNS } from '@/utils/security';
 
 export interface CreateDraftRequest {
@@ -158,7 +159,7 @@ class DraftService {
   async getDraftsByProject(projectId: string): Promise<Draft[]> {
     try {
       this.validateProjectId(projectId);
-      return await getDraft(projectId);
+      return await getDrafts(projectId);
     } catch (error) {
       console.error('Failed to get drafts:', error);
       throw error instanceof Error ? error : new Error('Failed to retrieve drafts');

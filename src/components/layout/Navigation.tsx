@@ -1,9 +1,9 @@
+
 import * as React from 'react';
-import { usePathname } from 'next/navigation';
+import { useLocation } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { useAuth } from '@/contexts/AuthContext';
 import { useProjects } from '@/contexts/ProjectContext';
 import { 
@@ -12,8 +12,6 @@ import {
   BookOpen, 
   Settings, 
   User, 
-  Menu, 
-  X,
   LogOut,
   Plus
 } from 'lucide-react';
@@ -31,8 +29,7 @@ export function Navigation({
 }: NavigationProps) {
   const { user, signOut } = useAuth();
   const { projects, createProject } = useProjects();
-  const [isOpen, setIsOpen] = React.useState(false);
-  const pathname = usePathname();
+  const location = useLocation();
 
   const handleLogout = async () => {
     try {
@@ -67,21 +64,12 @@ export function Navigation({
     <div className="flex flex-col h-full">
       <div className="flex items-center justify-between p-4 border-b">
         <h2 className="text-lg font-semibold">StoryForge</h2>
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => setIsOpen(false)}
-          className="md:hidden"
-          aria-label="Close navigation"
-        >
-          <X className="h-5 w-5" />
-        </Button>
       </div>
 
       <ScrollArea className="flex-1">
         <nav className="p-4 space-y-2">
           {navigationItems.map((item) => {
-            const isActive = pathname === item.href;
+            const isActive = location.pathname === item.href;
             return (
               <Button
                 key={item.name}
@@ -127,31 +115,11 @@ export function Navigation({
   );
 
   return (
-    <>
-      {/* Mobile Navigation */}
-      <Sheet open={isOpen} onOpenChange={setIsOpen}>
-        <SheetTrigger asChild>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="md:hidden"
-            aria-label="Open navigation"
-          >
-            <Menu className="h-5 w-5" />
-          </Button>
-        </SheetTrigger>
-        <SheetContent side="left" className="p-0 w-72">
-          <NavContent />
-        </SheetContent>
-      </Sheet>
-
-      {/* Desktop Navigation */}
-      <aside className={cn(
-        "hidden md:flex md:flex-col md:w-64 md:fixed md:inset-y-0 md:border-r",
-        className
-      )}>
-        <NavContent />
-      </aside>
-    </>
+    <aside className={cn(
+      "hidden md:flex md:flex-col md:w-64 md:fixed md:inset-y-0 md:border-r",
+      className
+    )}>
+      <NavContent />
+    </aside>
   );
-} 
+}

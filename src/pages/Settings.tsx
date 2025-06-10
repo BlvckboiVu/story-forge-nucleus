@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { Layout } from '@/components/layout/Layout';
 import { Button } from '@/components/ui/button';
@@ -10,7 +11,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
 
 export default function Settings() {
-  const { user, updateProfile } = useAuth();
+  const { user } = useAuth();
   const { theme, setTheme } = useTheme();
   const [activeTab, setActiveTab] = useState('account');
   const [displayName, setDisplayName] = useState(user?.displayName || '');
@@ -18,11 +19,8 @@ export default function Settings() {
   const [darkMode, setDarkMode] = useState(theme === 'dark');
 
   const handleUpdateProfile = async () => {
-    if (!user) return;
-    await updateProfile({
-      displayName,
-      email,
-    });
+    // Profile update functionality would be implemented here
+    console.log('Profile update not yet implemented');
   };
 
   const handleThemeChange = (checked: boolean) => {
