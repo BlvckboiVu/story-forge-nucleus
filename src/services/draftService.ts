@@ -1,5 +1,5 @@
 
-import { Draft, createDraft, updateDraft, getDrafts, deleteDraft } from '@/lib/db';
+import { Draft, createDraft, updateDraft, getDrafts, deleteDraft, getDraft } from '@/lib/db';
 import { sanitizeHtml, sanitizeText, validateInput, VALIDATION_PATTERNS } from '@/utils/security';
 
 export interface CreateDraftRequest {

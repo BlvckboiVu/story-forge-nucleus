@@ -63,7 +63,19 @@ export function useDrafts(projectId?: string) {
         ...data,
         wordCount: data.wordCount || 0
       };
-      const newDraft = await createDraftDb(draftData);
+      const newDraftId = await createDraftDb(draftData);
+      
+      // Create the full draft object for state update
+      const newDraft: Draft = {
+        id: newDraftId,
+        title: draftData.title,
+        content: draftData.content,
+        projectId: draftData.projectId,
+        wordCount: draftData.wordCount,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      };
+      
       setDrafts(prev => [newDraft, ...prev]);
       toast({
         title: 'Draft created',
