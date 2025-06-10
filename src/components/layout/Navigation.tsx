@@ -1,6 +1,6 @@
 
 import * as React from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -30,10 +30,12 @@ export function Navigation({
   const { user, signOut } = useAuth();
   const { projects, createProject } = useProjects();
   const location = useLocation();
+  const navigate = useNavigate();
 
   const handleLogout = async () => {
     try {
       await signOut();
+      navigate('/login');
     } catch (error) {
       console.error('Failed to sign out:', error);
     }
@@ -47,6 +49,7 @@ export function Navigation({
         isPublic: false,
         status: 'planning'
       });
+      navigate('/app/editor');
     } catch (error) {
       console.error('Failed to create project:', error);
     }
@@ -56,7 +59,6 @@ export function Navigation({
     { name: 'Dashboard', href: '/app/dashboard', icon: Home },
     { name: 'Editor', href: '/app/editor', icon: FileText },
     { name: 'Story Bible', href: '/app/story-bible', icon: BookOpen },
-    { name: 'Profile', href: '/app/profile', icon: User },
     { name: 'Settings', href: '/app/settings', icon: Settings },
   ];
 
@@ -78,12 +80,10 @@ export function Navigation({
                   "w-full justify-start",
                   isActive && "bg-secondary"
                 )}
-                asChild
+                onClick={() => navigate(item.href)}
               >
-                <a href={item.href}>
-                  <item.icon className="mr-2 h-5 w-5" />
-                  {item.name}
-                </a>
+                <item.icon className="mr-2 h-5 w-5" />
+                {item.name}
               </Button>
             );
           })}
@@ -116,7 +116,7 @@ export function Navigation({
 
   return (
     <aside className={cn(
-      "hidden md:flex md:flex-col md:w-64 md:fixed md:inset-y-0 md:border-r",
+      "hidden md:flex md:flex-col md:w-64 md:fixed md:inset-y-0 md:border-r bg-background",
       className
     )}>
       <NavContent />

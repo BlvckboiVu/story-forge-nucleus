@@ -1,6 +1,8 @@
+
 import * as React from 'react';
 import { cn } from '@/lib/utils';
 import { Navigation } from './Navigation';
+import { MobileNav } from './MobileNav';
 
 type LayoutMode = 'default' | 'full-width' | 'contained' | 'editor';
 
@@ -37,10 +39,22 @@ export function Layout({
   return (
     <div className="min-h-screen bg-background">
       {showNavigation && (
-        <Navigation
-          showEditorPanels={showEditorPanels}
-          onInsertLLMResponse={onInsertLLMResponse}
-        />
+        <>
+          <Navigation
+            showEditorPanels={showEditorPanels}
+            onInsertLLMResponse={onInsertLLMResponse}
+          />
+          
+          {/* Mobile header with navigation */}
+          <header className="md:hidden border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-50">
+            <div className="flex h-14 items-center px-4">
+              <MobileNav />
+              <div className="flex items-center space-x-2 ml-2">
+                <h1 className="font-semibold">StoryForge</h1>
+              </div>
+            </div>
+          </header>
+        </>
       )}
       
       <main className={cn(
@@ -89,4 +103,4 @@ export function LayoutProvider({
       {children}
     </LayoutContext.Provider>
   );
-} 
+}

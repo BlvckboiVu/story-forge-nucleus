@@ -173,6 +173,7 @@ class DraftService {
       }
       
       await deleteDraft(id);
+      console.log(`Draft deleted successfully: ${id}`);
     } catch (error) {
       console.error('Failed to delete draft:', error);
       throw error instanceof Error ? error : new Error('Failed to delete draft');
