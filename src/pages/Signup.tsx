@@ -1,5 +1,4 @@
-
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -16,19 +15,12 @@ export default function Signup() {
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
-  const { signUp, user, loading } = useAuth();
-
-  // Redirect to editor if already authenticated
-  useEffect(() => {
-    if (!loading && user) {
-      navigate('/app/editor', { replace: true });
-    }
-  }, [user, loading, navigate]);
+  const { signUp } = useAuth();
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!email.trim() || !password.trim() || !confirmPassword.trim()) {
+    if (!email || !password || !confirmPassword) {
       toast({
         title: "Missing information",
         description: "Please fill in all fields",
@@ -57,12 +49,12 @@ export default function Signup() {
     
     try {
       setIsLoading(true);
-      await signUp(email.trim(), password);
+      await signUp(email, password);
       toast({
         title: "Account created successfully",
         description: "Welcome to StoryForge!",
       });
-      navigate('/app/editor', { replace: true });
+      navigate('/app/dashboard');
     } catch (error) {
       toast({
         title: "Sign up failed",
@@ -74,33 +66,21 @@ export default function Signup() {
     }
   };
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 via-white to-blue-50">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-      </div>
-    );
-  }
-
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 via-white to-blue-50 p-4">
+    <div className="min-h-screen flex items-center justify-center bg-background p-4">
       <div className="w-full max-w-md">
         <div className="mb-8 text-center">
-          <Link to="/" className="inline-flex items-center gap-2 mb-6">
-            <div className="w-12 h-12 bg-gradient-to-br from-blue-600 to-purple-600 rounded-xl flex items-center justify-center">
-              <BookOpen size={24} className="text-white" />
-            </div>
-            <span className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-              StoryForge
-            </span>
+          <Link to="/" className="inline-flex items-center gap-2 mb-4">
+            <BookOpen size={48} className="text-primary" />
+            <span className="text-3xl font-bold">StoryForge</span>
           </Link>
-          <p className="text-gray-600">Start your writing journey today</p>
+          <p className="text-muted-foreground">Create your writing account</p>
         </div>
       
-        <Card className="shadow-xl border-0">
-          <CardHeader className="text-center pb-6">
-            <CardTitle className="text-2xl">Create Account</CardTitle>
-            <CardDescription>Join thousands of writers worldwide</CardDescription>
+        <Card>
+          <CardHeader>
+            <CardTitle>Create Account</CardTitle>
+            <CardDescription>Sign up to start your writing journey</CardDescription>
           </CardHeader>
           <form onSubmit={handleSignUp}>
             <CardContent className="space-y-4">
@@ -113,7 +93,6 @@ export default function Signup() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
-                  className="h-12"
                 />
               </div>
               <div className="space-y-2">
@@ -125,7 +104,6 @@ export default function Signup() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
-                  className="h-12"
                 />
               </div>
               <div className="space-y-2">
@@ -137,21 +115,16 @@ export default function Signup() {
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   required
-                  className="h-12"
                 />
               </div>
             </CardContent>
             <CardFooter className="flex flex-col space-y-4">
-              <Button 
-                type="submit" 
-                className="w-full h-12 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700" 
-                disabled={isLoading}
-              >
+              <Button type="submit" className="w-full" disabled={isLoading}>
                 {isLoading ? "Creating account..." : "Create Account"}
               </Button>
               <div className="text-center text-sm">
                 Already have an account?{" "}
-                <Link to="/login" className="text-primary hover:underline font-medium">
+                <Link to="/login" className="text-primary hover:underline">
                   Sign in
                 </Link>
               </div>

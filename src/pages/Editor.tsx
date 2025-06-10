@@ -1,7 +1,8 @@
-
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
+import { EditorHeader } from '@/components/editor/EditorHeader';
+import { EditorLayout } from '@/components/editor/EditorLayout';
 import { DraftModal } from '@/components/editor/DraftModal';
 import { AIPanel } from '@/components/AIPanel';
 import { Draft } from '@/lib/db';
@@ -9,9 +10,6 @@ import { draftService } from '@/services/draftService';
 import { useProjects } from '@/contexts/ProjectContext';
 import { useAIStore } from '@/stores/aiStore';
 import { useAuth } from '@/contexts/AuthContext';
-import { Button } from '@/components/ui/button';
-import { FolderOpen, FilePlus, Save, MoreVertical } from 'lucide-react';
-import RichTextEditor from '@/components/editor/RichTextEditor';
 
 export default function Editor() {
   const { documentId } = useParams();
@@ -21,12 +19,14 @@ export default function Editor() {
   const [loading, setLoading] = useState(false);
   const [editorRef, setEditorRef] = useState<any>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
-  const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const { toast } = useToast();
   const { currentProject, projects, setCurrentProject } = useProjects();
   const { user, loading: authLoading } = useAuth();
   
+  // Derive isAuthenticated from user and loading state
   const isAuthenticated = !authLoading && !!user;
+  
+  // AI Panel state
   const { createConversation, setActiveConversation } = useAIStore();
 
   // Redirect to login if not authenticated
@@ -54,6 +54,7 @@ export default function Editor() {
           setCurrentProject(lastProject);
         }
       } else {
+        // If no last project, set the first project as current
         setCurrentProject(projects[0]);
       }
     }
@@ -92,7 +93,7 @@ export default function Editor() {
         toast({
           title: "Draft loaded",
           description: `"${draft.title}" has been opened`,
-          duration: 2000,
+          duration: 3000,
         });
       } else {
         toast({
@@ -147,7 +148,7 @@ export default function Editor() {
       toast({
         title: "Draft created",
         description: `"${title}" has been created`,
-        duration: 2000,
+        duration: 3000,
       });
     } catch (error) {
       console.error("Error creating draft:", error);
@@ -191,8 +192,6 @@ export default function Editor() {
         updatedAt: new Date()
       });
       
-      setLastSaved(new Date());
-      
     } catch (error) {
       console.error("Error saving draft:", error);
       const errorMessage = error instanceof Error ? error.message : "Failed to save draft";
@@ -224,7 +223,7 @@ export default function Editor() {
     toast({
       title: "Draft opened",
       description: `"${draft.title}" has been opened`,
-      duration: 2000,
+      duration: 3000,
     });
   };
 
@@ -287,101 +286,67 @@ export default function Editor() {
     }
   };
 
+  // Show loading or authentication required states
   if (authLoading || !user) {
     return (
       <div className="h-full flex items-center justify-center">
         <div className="text-center">
           <h2 className="text-xl font-semibold mb-2">Authentication Required</h2>
           <p className="text-muted-foreground mb-4">Please sign in to access the editor.</p>
-          <Button onClick={() => navigate('/login')}>
+          <button
+            className="px-4 py-2 bg-primary text-white rounded"
+            onClick={() => navigate('/login')}
+          >
             Sign In
-          </Button>
+          </button>
         </div>
       </div>
     );
   }
   
   return (
-    <div className="h-full flex flex-col">
+    <div className="h-full flex overflow-hidden">
       {!currentProject ? (
         <div className="flex-1 flex items-center justify-center">
           <div className="text-center">
             <h2 className="text-xl font-semibold mb-2">No Project Selected</h2>
             <p className="text-muted-foreground mb-4">Please select or create a project from the dashboard to start writing.</p>
-            <Button onClick={() => navigate('/app/dashboard')}>
+            <button
+              className="px-4 py-2 bg-primary text-white rounded"
+              onClick={() => navigate('/app/dashboard')}
+            >
               Go to Dashboard
-            </Button>
+            </button>
           </div>
         </div>
       ) : (
         <>
-          {/* Single Merged Header - 70px */}
-          <div className="h-[70px] border-b border-border flex items-center justify-between px-6 bg-background shrink-0">
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setDraftModalOpen(true)}
-                  className="h-9"
-                >
-                  <FolderOpen className="mr-2 h-4 w-4" />
-                  Open
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={handleNewDraft}
-                  className="h-9"
-                >
-                  <FilePlus className="mr-2 h-4 w-4" />
-                  New
-                </Button>
-              </div>
-              
-              {currentDraft && (
-                <div className="flex items-center gap-3 text-sm">
-                  <span className="font-medium">{currentDraft.title}</span>
-                  <span className="text-muted-foreground">•</span>
-                  <span className="text-muted-foreground">{currentDraft.wordCount.toLocaleString()} words</span>
-                  {lastSaved && (
-                    <>
-                      <span className="text-muted-foreground">•</span>
-                      <span className="text-muted-foreground">Saved {lastSaved.toLocaleTimeString()}</span>
-                    </>
-                  )}
-                </div>
-              )}
-            </div>
-
-            <div className="flex items-center gap-2">
-              {saveError && (
-                <span className="text-sm text-destructive">Save Error</span>
-              )}
-              <Button variant="ghost" size="sm" className="h-9">
-                <MoreVertical className="h-4 w-4" />
-              </Button>
-            </div>
+          <div className="flex-1 flex flex-col overflow-hidden">
+            <EditorHeader
+              currentDraft={currentDraft}
+              onOpenDraft={() => setDraftModalOpen(true)}
+              onNewDraft={handleNewDraft}
+            />
+            <EditorLayout
+              currentDraft={currentDraft}
+              loading={loading}
+              onSaveDraft={handleSaveDraft}
+              onOpenDraft={() => setDraftModalOpen(true)}
+              onNewDraft={handleNewDraft}
+              onInsertLLMResponse={handleInsertLLMResponse}
+              onEditorReady={setEditorRef}
+            />
           </div>
-
-          {/* Main Editor Area - No margins */}
-          <div className="flex-1 flex">
-            {/* Editor */}
-            <div className="flex-1">
-              <RichTextEditor 
-                initialContent={currentDraft?.content || ''} 
-                onSave={handleSaveDraft}
-                draft={currentDraft}
-                loading={loading}
-                onEditorReady={setEditorRef}
-                isFocusMode={false}
-                onToggleFocus={() => {}}
-              />
+          
+          <AIPanel onInsertResponse={handleInsertLLMResponse} />
+          
+          {saveError && (
+            <div className="fixed bottom-4 left-4 right-4 z-50 bg-red-50 dark:bg-red-900/50 border border-red-200 dark:border-red-800 rounded-lg p-3">
+              <p className="text-sm text-red-800 dark:text-red-200">
+                Save Error: {saveError}
+              </p>
             </div>
-            
-            {/* AI Panel */}
-            <AIPanel onInsertResponse={handleInsertLLMResponse} />
-          </div>
+          )}
           
           <DraftModal 
             isOpen={draftModalOpen}
