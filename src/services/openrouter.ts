@@ -1,5 +1,5 @@
-
 import { SecureStorage } from '@/utils/encryption';
+import { RateLimiter } from '@/utils/security';
 
 interface OpenRouterMessage {
   role: 'system' | 'user' | 'assistant';
@@ -29,56 +29,40 @@ interface OpenRouterResponse {
   };
 }
 
+export const OPTIMIZED_MODELS = {
+  STANDARD: 'openai/gpt-3.5-turbo',
+  LOW_TOKEN: 'meta-llama/llama-2-7b-chat',
+  FAST: 'anthropic/claude-3-haiku',
+} as const;
+
 class OpenRouterService {
   private baseUrl = 'https://openrouter.ai/api/v1';
   private secureStorage = SecureStorage.getInstance();
   private abortController: AbortController | null = null;
   private requestQueue: Map<string, Promise<any>> = new Map();
-  private rateLimitState = {
-    requestCount: 0,
-    windowStart: Date.now(),
-    isThrottled: false,
-  };
+  private cache = new Map<string, { response: string; timestamp: number }>();
+  private rateLimiter = new RateLimiter(20, 60000); // 20 requests per minute
+  private readonly cacheTimeout = 10 * 60 * 1000; // 10 minutes
+  private readonly maxCacheSize = 50;
 
   constructor() {
     this.secureStorage.initialize();
   }
 
-  // Debounced request to prevent spam
-  private debounce<T extends (...args: any[]) => any>(
-    func: T,
-    delay: number
-  ): (...args: Parameters<T>) => Promise<ReturnType<T>> {
-    let timeoutId: NodeJS.Timeout;
-    return (...args: Parameters<T>) => {
-      return new Promise((resolve) => {
-        clearTimeout(timeoutId);
-        timeoutId = setTimeout(() => resolve(func(...args)), delay);
-      });
-    };
+  private getCacheKey(prompt: string, model: string): string {
+    return btoa(`${prompt.slice(0, 100)}:${model}`).slice(0, 32);
   }
 
-  // Rate limiting with exponential backoff
-  private async checkRateLimit(): Promise<void> {
-    const now = Date.now();
-    const windowDuration = 60000; // 1 minute window
-    const maxRequests = 20; // Max requests per window
+  private pruneCache(): void {
+    if (this.cache.size <= this.maxCacheSize) return;
 
-    // Reset window if it's been more than 1 minute
-    if (now - this.rateLimitState.windowStart > windowDuration) {
-      this.rateLimitState.requestCount = 0;
-      this.rateLimitState.windowStart = now;
-      this.rateLimitState.isThrottled = false;
+    const entries = Array.from(this.cache.entries());
+    entries.sort((a, b) => a[1].timestamp - b[1].timestamp);
+    
+    // Remove oldest 10 entries
+    for (let i = 0; i < 10 && i < entries.length; i++) {
+      this.cache.delete(entries[i][0]);
     }
-
-    // Check if we're hitting rate limits
-    if (this.rateLimitState.requestCount >= maxRequests) {
-      this.rateLimitState.isThrottled = true;
-      const waitTime = windowDuration - (now - this.rateLimitState.windowStart);
-      throw new Error(`Rate limit exceeded. Please wait ${Math.ceil(waitTime / 1000)} seconds.`);
-    }
-
-    this.rateLimitState.requestCount++;
   }
 
   // Get API key with validation
@@ -127,7 +111,7 @@ class OpenRouterService {
     }
   }
 
-  // Generate completion with retry logic
+  // Generate completion with retry logic and caching
   async generateCompletion(
     messages: OpenRouterMessage[],
     options: {
@@ -137,17 +121,31 @@ class OpenRouterService {
       stream?: boolean;
     } = {}
   ): Promise<OpenRouterResponse> {
-    await this.checkRateLimit();
+    const clientId = 'user'; // In a real app, use user ID
+    if (!this.rateLimiter.isAllowed(clientId)) {
+      throw new Error('Rate limit exceeded. Please wait before making another request.');
+    }
     
     const apiKey = await this.getApiKey();
     
     const requestBody: OpenRouterRequest = {
-      model: options.model || 'meta-llama/llama-3.2-3b-instruct:free',
+      model: options.model || OPTIMIZED_MODELS.STANDARD,
       messages,
       temperature: options.temperature ?? 0.7,
       max_tokens: options.maxTokens ?? 1000,
       stream: options.stream ?? false,
     };
+
+    // Check cache first for non-streaming requests
+    if (!options.stream) {
+      const cacheKey = this.getCacheKey(messages[0].content, requestBody.model);
+      const cached = this.cache.get(cacheKey);
+      
+      if (cached && Date.now() - cached.timestamp < this.cacheTimeout) {
+        console.log('Returning cached response');
+        return JSON.parse(cached.response);
+      }
+    }
 
     // Create new abort controller for this request
     this.abortController = new AbortController();
@@ -164,6 +162,17 @@ class OpenRouterService {
 
     try {
       const result = await requestPromise;
+      
+      // Cache non-streaming responses
+      if (!options.stream) {
+        const cacheKey = this.getCacheKey(messages[0].content, requestBody.model);
+        this.pruneCache();
+        this.cache.set(cacheKey, {
+          response: JSON.stringify(result),
+          timestamp: Date.now(),
+        });
+      }
+      
       return result;
     } finally {
       this.requestQueue.delete(requestKey);
@@ -180,12 +189,15 @@ class OpenRouterService {
       maxTokens?: number;
     } = {}
   ): AsyncGenerator<string, void, unknown> {
-    await this.checkRateLimit();
+    const clientId = 'user';
+    if (!this.rateLimiter.isAllowed(clientId)) {
+      throw new Error('Rate limit exceeded. Please wait before making another request.');
+    }
     
     const apiKey = await this.getApiKey();
     
     const requestBody: OpenRouterRequest = {
-      model: options.model || 'meta-llama/llama-3.2-3b-instruct:free',
+      model: options.model || OPTIMIZED_MODELS.STANDARD,
       messages,
       temperature: options.temperature ?? 0.7,
       max_tokens: options.maxTokens ?? 1000,
@@ -248,92 +260,67 @@ class OpenRouterService {
         }
       }
     } catch (error) {
-      if (error instanceof Error && error.name === 'AbortError') {
-        throw new Error('Request was cancelled');
+      if (error instanceof Error) {
+        if (error.message.includes('401')) {
+          throw new Error('Invalid API key. Please check your OpenRouter API key.');
+        } else if (error.message.includes('429')) {
+          throw new Error('API rate limit exceeded. Please try again later.');
+        } else if (error.message.includes('insufficient_quota')) {
+          throw new Error('API quota exceeded. Please check your OpenRouter account.');
+        }
       }
       throw error;
-    } finally {
-      this.abortController = null;
     }
   }
 
-  // Make HTTP request with retry logic
   private async makeRequest(apiKey: string, requestBody: OpenRouterRequest): Promise<OpenRouterResponse> {
-    const maxRetries = 3;
-    let lastError: Error;
+    const response = await fetch(`${this.baseUrl}/chat/completions`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`,
+        'HTTP-Referer': window.location.origin,
+        'X-Title': 'StoryForge AI Assistant',
+      },
+      body: JSON.stringify(requestBody),
+      signal: this.abortController?.signal,
+    });
 
-    for (let attempt = 0; attempt < maxRetries; attempt++) {
-      try {
-        const response = await fetch(`${this.baseUrl}/chat/completions`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${apiKey}`,
-            'HTTP-Referer': window.location.origin,
-            'X-Title': 'StoryForge AI Assistant',
-          },
-          body: JSON.stringify(requestBody),
-          signal: this.abortController?.signal,
-        });
-
-        if (!response.ok) {
-          const errorData = await response.json().catch(() => ({}));
-          const errorMessage = errorData.error?.message || `HTTP ${response.status}: ${response.statusText}`;
-          
-          // Don't retry client errors (4xx)
-          if (response.status >= 400 && response.status < 500) {
-            throw new Error(errorMessage);
-          }
-          
-          throw new Error(errorMessage);
-        }
-
-        const data: OpenRouterResponse = await response.json();
-        return data;
-      } catch (error) {
-        lastError = error as Error;
-        
-        if (error instanceof Error && error.name === 'AbortError') {
-          throw new Error('Request was cancelled');
-        }
-
-        // Wait before retry with exponential backoff
-        if (attempt < maxRetries - 1) {
-          const delay = Math.pow(2, attempt) * 1000; // 1s, 2s, 4s
-          await new Promise(resolve => setTimeout(resolve, delay));
-        }
-      }
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.error?.message || `HTTP ${response.status}: ${response.statusText}`);
     }
 
-    throw lastError!;
+    return response.json();
   }
 
-  // Get available models
-  async getModels(): Promise<Array<{ id: string; name: string; context_length: number }>> {
-    try {
-      const apiKey = await this.getApiKey();
-      
-      const response = await fetch(`${this.baseUrl}/models`, {
-        headers: {
-          'Authorization': `Bearer ${apiKey}`,
-        },
-      });
+  getCacheStats(): { size: number; maxSize: number } {
+    return {
+      size: this.cache.size,
+      maxSize: this.maxCacheSize,
+    };
+  }
 
-      if (!response.ok) {
-        throw new Error(`Failed to fetch models: ${response.statusText}`);
-      }
+  clearCache(): void {
+    this.cache.clear();
+  }
 
-      const data = await response.json();
-      return data.data || [];
-    } catch (error) {
-      console.error('Failed to fetch models:', error);
-      // Return default models if fetch fails
-      return [
-        { id: 'meta-llama/llama-3.2-3b-instruct:free', name: 'Llama 3.2 3B (Free)', context_length: 131072 },
-        { id: 'meta-llama/llama-3.2-1b-instruct:free', name: 'Llama 3.2 1B (Free)', context_length: 131072 },
-        { id: 'google/gemma-2-9b-it:free', name: 'Gemma 2 9B (Free)', context_length: 8192 },
-      ];
+  // Batch processing for multiple prompts
+  async sendBatchPrompts(
+    prompts: string[], 
+    model: string = OPTIMIZED_MODELS.STANDARD
+  ): Promise<string[]> {
+    if (prompts.length > 5) {
+      throw new Error('Maximum 5 prompts allowed in batch');
     }
+
+    const results = await Promise.allSettled(
+      prompts.map(prompt => this.generateCompletion([{ role: 'user', content: prompt }], { model }))
+    );
+
+    return results.map(result => 
+      result.status === 'fulfilled' ? result.value.choices[0].message.content : `Error: ${result.reason.message}`
+    );
   }
 }
 

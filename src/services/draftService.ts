@@ -1,5 +1,5 @@
-
 import { Draft, createDraft, updateDraft, getDraft } from '@/lib/db';
+import { sanitizeHtml, sanitizeText, validateInput, VALIDATION_PATTERNS } from '@/utils/security';
 
 export interface CreateDraftRequest {
   title: string;
@@ -18,29 +18,16 @@ const VALIDATION_RULES = {
   TITLE_MIN_LENGTH: 1,
   CONTENT_MAX_SIZE: 1000000, // 1MB
   WORD_COUNT_MAX: 50000,
-  UNSAFE_HTML_PATTERN: /<script|javascript:|on\w+=/i,
-  UUID_PATTERN: /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i,
 } as const;
 
 class DraftService {
-  // Enhanced input validation with detailed error messages
   private validateTitle(title: string): void {
     if (!title || typeof title !== 'string') {
       throw new Error('Title is required and must be a string');
     }
     
-    const trimmedTitle = title.trim();
-    if (trimmedTitle.length < VALIDATION_RULES.TITLE_MIN_LENGTH) {
-      throw new Error('Title cannot be empty');
-    }
-    
-    if (trimmedTitle.length > VALIDATION_RULES.TITLE_MAX_LENGTH) {
-      throw new Error(`Title must be less than ${VALIDATION_RULES.TITLE_MAX_LENGTH} characters`);
-    }
-    
-    // Enhanced XSS protection
-    if (VALIDATION_RULES.UNSAFE_HTML_PATTERN.test(title)) {
-      throw new Error('Title contains invalid characters for security reasons');
+    if (!validateInput(title.trim(), VALIDATION_PATTERNS.SAFE_TEXT, VALIDATION_RULES.TITLE_MAX_LENGTH)) {
+      throw new Error('Title contains invalid characters or is too long');
     }
   }
 
@@ -50,28 +37,21 @@ class DraftService {
     }
     
     if (content && content.length > VALIDATION_RULES.CONTENT_MAX_SIZE) {
-      throw new Error(`Content is too large (max ${VALIDATION_RULES.CONTENT_MAX_SIZE / 1000000}MB)`);
-    }
-
-    // Basic HTML sanitization check
-    if (content && VALIDATION_RULES.UNSAFE_HTML_PATTERN.test(content)) {
-      console.warn('Content contains potentially unsafe HTML');
+      throw new Error(`Content exceeds maximum size limit (${VALIDATION_RULES.CONTENT_MAX_SIZE / 1000000}MB)`);
     }
   }
 
   private validateProjectId(projectId: string): void {
     if (!projectId || typeof projectId !== 'string') {
-      throw new Error('Project ID is required and must be a string');
+      throw new Error('Project ID is required');
     }
     
-    const trimmedProjectId = projectId.trim();
-    if (trimmedProjectId.length === 0) {
+    const trimmedId = projectId.trim();
+    if (!trimmedId) {
       throw new Error('Project ID cannot be empty');
     }
     
-    // Allow demo project ID or valid UUID
-    if (trimmedProjectId !== 'demo-project-id' && 
-        !VALIDATION_RULES.UUID_PATTERN.test(trimmedProjectId)) {
+    if (trimmedId !== 'demo-project-id' && !VALIDATION_PATTERNS.UUID.test(trimmedId)) {
       throw new Error('Invalid project ID format');
     }
   }
@@ -90,20 +70,6 @@ class DraftService {
     }
   }
 
-  private validateDraftId(id: string): void {
-    if (!id || typeof id !== 'string') {
-      throw new Error('Draft ID is required and must be a string');
-    }
-    
-    if (id.trim().length === 0) {
-      throw new Error('Draft ID cannot be empty');
-    }
-  }
-
-  private sanitizeTitle(title: string): string {
-    return title.trim().replace(/\s+/g, ' '); // Normalize whitespace
-  }
-
   private calculateWordCount(content: string): number {
     if (!content) return 0;
     
@@ -118,7 +84,7 @@ class DraftService {
       this.validateTitle(request.title);
       this.validateProjectId(request.projectId);
 
-      const sanitizedTitle = this.sanitizeTitle(request.title);
+      const sanitizedTitle = sanitizeText(request.title, VALIDATION_RULES.TITLE_MAX_LENGTH);
       
       const newDraft: Omit<Draft, 'id' | 'createdAt' | 'updatedAt'> = {
         projectId: request.projectId,
@@ -138,18 +104,20 @@ class DraftService {
 
   async updateDraft(id: string, updates: UpdateDraftRequest): Promise<void> {
     try {
-      this.validateDraftId(id);
+      if (!id?.trim()) {
+        throw new Error('Draft ID is required');
+      }
 
       const processedUpdates: Partial<Draft> = {};
 
       if (updates.title !== undefined) {
         this.validateTitle(updates.title);
-        processedUpdates.title = this.sanitizeTitle(updates.title);
+        processedUpdates.title = sanitizeText(updates.title, VALIDATION_RULES.TITLE_MAX_LENGTH);
       }
 
       if (updates.content !== undefined) {
         this.validateContent(updates.content);
-        processedUpdates.content = updates.content;
+        processedUpdates.content = sanitizeHtml(updates.content);
         
         // Auto-calculate word count if not provided
         if (updates.wordCount === undefined) {
@@ -172,7 +140,9 @@ class DraftService {
 
   async getDraft(id: string): Promise<Draft | null> {
     try {
-      this.validateDraftId(id);
+      if (!id?.trim()) {
+        throw new Error('Draft ID is required');
+      }
       
       const draft = await getDraft(id);
       if (draft) {
@@ -182,6 +152,29 @@ class DraftService {
     } catch (error) {
       console.error('Failed to get draft:', error);
       throw error instanceof Error ? error : new Error('Failed to retrieve draft');
+    }
+  }
+
+  async getDraftsByProject(projectId: string): Promise<Draft[]> {
+    try {
+      this.validateProjectId(projectId);
+      return await getDraft(projectId);
+    } catch (error) {
+      console.error('Failed to get drafts:', error);
+      throw error instanceof Error ? error : new Error('Failed to retrieve drafts');
+    }
+  }
+
+  async deleteDraft(id: string): Promise<void> {
+    try {
+      if (!id?.trim()) {
+        throw new Error('Draft ID is required');
+      }
+      
+      await deleteDraft(id);
+    } catch (error) {
+      console.error('Failed to delete draft:', error);
+      throw error instanceof Error ? error : new Error('Failed to delete draft');
     }
   }
 }

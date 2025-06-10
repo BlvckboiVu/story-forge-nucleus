@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback } from 'react';
 import { useProjects } from '@/contexts/ProjectContext';
 import { Button } from '@/components/ui/button';
@@ -17,6 +16,10 @@ import {
   updateStoryBibleEntry,
   deleteStoryBibleEntry
 } from '@/lib/storyBibleDb';
+import { useNavigate } from 'react-router-dom';
+import { Layout } from '@/components/layout/Layout';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Character, Location, Lore } from '@/types';
 
 const TYPE_COLORS = {
   Character: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200',
@@ -37,6 +40,11 @@ export default function StoryBible() {
   const [hasMore, setHasMore] = useState(true);
   const [offset, setOffset] = useState(0);
   const { toast } = useToast();
+  const navigate = useNavigate();
+  const [characters, setCharacters] = useState<Character[]>([]);
+  const [locations, setLocations] = useState<Location[]>([]);
+  const [lore, setLore] = useState<Lore[]>([]);
+  const [activeTab, setActiveTab] = useState('characters');
 
   // Set current project if none selected
   useEffect(() => {
@@ -52,6 +60,18 @@ export default function StoryBible() {
       }
     }
   }, [currentProject, projects, setCurrentProject]);
+
+  useEffect(() => {
+    if (!currentProject) {
+      navigate('/app/dashboard');
+      return;
+    }
+    loadStoryBibleData();
+  }, [currentProject, navigate]);
+
+  const loadStoryBibleData = async () => {
+    // Implementation for loading story bible data
+  };
 
   const loadEntries = useCallback(async (reset = false) => {
     if (loading || !currentProject) return;
@@ -194,6 +214,18 @@ export default function StoryBible() {
     </Card>
   );
 
+  const handleCreateCharacter = () => {
+    // Implementation for creating a new character
+  };
+
+  const handleCreateLocation = () => {
+    // Implementation for creating a new location
+  };
+
+  const handleCreateLore = () => {
+    // Implementation for creating new lore
+  };
+
   if (!currentProject) {
     return (
       <div className="flex-1 flex items-center justify-center">
@@ -207,110 +239,67 @@ export default function StoryBible() {
   }
 
   return (
-    <div className="flex flex-col h-full bg-white dark:bg-gray-900">
-      {/* Header */}
-      <div className="border-b border-gray-200 dark:border-gray-700 p-6">
+    <Layout mode="contained">
+      <div className="space-y-6">
         <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold flex items-center gap-3">
-              <Book className="h-6 w-6" />
-              Story Bible
-            </h1>
-            <p className="text-muted-foreground mt-1">
-              Manage characters, locations, lore, and more for "{currentProject.title}"
-            </p>
-          </div>
-          <Button
-            onClick={() => {
-              setSelectedEntry(null);
-              setModalOpen(true);
-            }}
-            className="gap-2"
-          >
-            <Plus className="h-4 w-4" />
-            New Entry
+          <h1 className="text-3xl font-bold">Story Bible</h1>
+          <Button onClick={() => {
+            switch (activeTab) {
+              case 'characters':
+                handleCreateCharacter();
+                break;
+              case 'locations':
+                handleCreateLocation();
+                break;
+              case 'lore':
+                handleCreateLore();
+                break;
+            }
+          }}>
+            Add {activeTab.charAt(0).toUpperCase() + activeTab.slice(1, -1)}
           </Button>
         </div>
-      </div>
 
-      {/* Controls */}
-      <div className="p-6 border-b border-gray-200 dark:border-gray-700">
-        <div className="flex flex-col sm:flex-row gap-4">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Search entries by name or tags..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-9"
-            />
-          </div>
-          <div className="flex items-center gap-2 sm:w-48">
-            <Filter className="h-4 w-4 text-muted-foreground" />
-            <Select
-              value={typeFilter}
-              onValueChange={(value: StoryBibleEntry['type'] | 'all') => setTypeFilter(value)}
-            >
-              <SelectTrigger className="w-full">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Types</SelectItem>
-                <SelectItem value="Character">Character</SelectItem>
-                <SelectItem value="Location">Location</SelectItem>
-                <SelectItem value="Lore">Lore</SelectItem>
-                <SelectItem value="Item">Item</SelectItem>
-                <SelectItem value="Custom">Custom</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
-      </div>
+        <Tabs value={activeTab} onValueChange={setActiveTab}>
+          <TabsList>
+            <TabsTrigger value="characters">Characters</TabsTrigger>
+            <TabsTrigger value="locations">Locations</TabsTrigger>
+            <TabsTrigger value="lore">Lore</TabsTrigger>
+          </TabsList>
 
-      {/* Content */}
-      <div className="flex-1 overflow-hidden">
-        <ScrollArea className="h-full">
-          <div className="p-6">
-            {entries.length === 0 && !loading ? (
-              <div className="text-center py-16">
-                <Book className="h-16 w-16 mx-auto mb-4 text-muted-foreground opacity-50" />
-                <h3 className="text-lg font-semibold mb-2">No Story Bible Entries</h3>
-                <p className="text-muted-foreground mb-6">
-                  Start building your story world by creating your first entry.
-                </p>
-                <Button
-                  onClick={() => {
-                    setSelectedEntry(null);
-                    setModalOpen(true);
-                  }}
-                  className="gap-2"
-                >
-                  <Plus className="h-4 w-4" />
-                  Create First Entry
-                </Button>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                {entries.map(entry => (
-                  <EntryCard key={entry.id} entry={entry} />
-                ))}
-              </div>
-            )}
-            
-            {hasMore && entries.length > 0 && (
-              <div className="text-center mt-8">
-                <Button
-                  variant="outline"
-                  onClick={() => loadEntries()}
-                  disabled={loading}
-                  className="gap-2"
-                >
-                  {loading ? 'Loading...' : 'Load More Entries'}
-                </Button>
-              </div>
-            )}
-          </div>
-        </ScrollArea>
+          <TabsContent value="characters" className="space-y-4">
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              {characters.map((character) => (
+                <Card key={character.id} className="p-4">
+                  <h3 className="font-semibold">{character.name}</h3>
+                  <p className="text-sm text-muted-foreground">{character.description}</p>
+                </Card>
+              ))}
+            </div>
+          </TabsContent>
+
+          <TabsContent value="locations" className="space-y-4">
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              {locations.map((location) => (
+                <Card key={location.id} className="p-4">
+                  <h3 className="font-semibold">{location.name}</h3>
+                  <p className="text-sm text-muted-foreground">{location.description}</p>
+                </Card>
+              ))}
+            </div>
+          </TabsContent>
+
+          <TabsContent value="lore" className="space-y-4">
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              {lore.map((item) => (
+                <Card key={item.id} className="p-4">
+                  <h3 className="font-semibold">{item.title}</h3>
+                  <p className="text-sm text-muted-foreground">{item.description}</p>
+                </Card>
+              ))}
+            </div>
+          </TabsContent>
+        </Tabs>
       </div>
 
       <StoryBibleModal
@@ -324,6 +313,6 @@ export default function StoryBible() {
         entry={selectedEntry}
         projectId={currentProject.id}
       />
-    </div>
+    </Layout>
   );
 }

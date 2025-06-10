@@ -1,112 +1,57 @@
 import { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
+import { Layout } from '@/components/layout/Layout';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
-import { BookOpen } from 'lucide-react';
 
 export default function Login() {
+  const navigate = useNavigate();
+  const { signIn } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const { toast } = useToast();
-  const navigate = useNavigate();
-  const { signIn, guestLogin, error } = useAuth();
+  const [error, setError] = useState('');
 
-  const handleEmailSignIn = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (!email || !password) {
-      toast({
-        title: "Missing information",
-        description: "Please enter both email and password",
-        variant: "destructive",
-      });
-      return;
-    }
-    
-    try {
-      setIsLoading(true);
-      await signIn(email, password);
-      toast({
-        title: "Login successful",
-        description: "Welcome back to StoryForge",
-      });
-      navigate('/app/dashboard');
-    } catch (error) {
-      toast({
-        title: "Login failed",
-        description: "Invalid email or password",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
+    setError('');
 
-  const handleGuestLogin = async () => {
     try {
-      setIsLoading(true);
-      await guestLogin();
-      toast({
-        title: "Logged in as guest",
-        description: "You're now using StoryForge as a guest user",
-      });
+      await signIn(email, password);
       navigate('/app/dashboard');
-    } catch (error: any) {
-      let description = "Could not create guest account";
-      if (typeof error?.message === 'string' && error.message.toLowerCase().includes('rate limit')) {
-        description = "Supabase rate limit hit. Using local guest mode. Data will not sync to cloud.";
-      }
-      toast({
-        title: "Guest login failed",
-        description,
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
+    } catch (err) {
+      setError('Invalid email or password');
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background p-4">
-      <div className="w-full max-w-md">
-        <div className="mb-8 text-center">
-          <Link to="/" className="inline-flex items-center gap-2 mb-4">
-            <BookOpen size={48} className="text-primary" />
-            <span className="text-3xl font-bold">StoryForge</span>
-          </Link>
-          <p className="text-muted-foreground">Your writing journey begins here</p>
-        </div>
-      
-        <Card>
-          <CardHeader>
-            <CardTitle>Sign In</CardTitle>
-            <CardDescription>Enter your credentials to access your account</CardDescription>
-          </CardHeader>
-          <form onSubmit={handleEmailSignIn}>
-            <CardContent className="space-y-4">
+    <Layout mode="contained">
+      <div className="flex items-center justify-center min-h-[calc(100vh-4rem)]">
+        <Card className="w-full max-w-md p-6">
+          <div className="space-y-6">
+            <div className="space-y-2 text-center">
+              <h1 className="text-3xl font-bold">Welcome Back</h1>
+              <p className="text-muted-foreground">
+                Sign in to your account to continue
+              </p>
+            </div>
+
+            <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
                 <Input
                   id="email"
                   type="email"
-                  placeholder="yourname@example.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
                 />
               </div>
+
               <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="password">Password</Label>
-                  <a href="#" className="text-sm text-primary hover:underline">
-                    Forgot password?
-                  </a>
-                </div>
+                <Label htmlFor="password">Password</Label>
                 <Input
                   id="password"
                   type="password"
@@ -115,42 +60,31 @@ export default function Login() {
                   required
                 />
               </div>
-            </CardContent>
-            <CardFooter className="flex flex-col space-y-4">
-              <Button type="submit" className="w-full" disabled={isLoading}>
-                {isLoading ? "Signing in..." : "Sign In"}
+
+              {error && (
+                <p className="text-sm text-red-500">{error}</p>
+              )}
+
+              <Button type="submit" className="w-full">
+                Sign In
               </Button>
-              <div className="relative w-full">
-                <div className="absolute inset-0 flex items-center">
-                  <span className="w-full border-t" />
-                </div>
-                <div className="relative flex justify-center text-xs uppercase">
-                  <span className="bg-background px-2 text-muted-foreground">Or continue with</span>
-                </div>
-              </div>
-              <Button 
-                type="button" 
-                variant="secondary" 
-                className="w-full"
-                onClick={handleGuestLogin}
-                disabled={isLoading}
-              >
-                Continue as Guest
-              </Button>
-              <div className="text-center text-sm">
-                Don't have an account?{" "}
-                <Link to="/signup" className="text-primary hover:underline">
+            </form>
+
+            <div className="text-center text-sm">
+              <p className="text-muted-foreground">
+                Don't have an account?{' '}
+                <Button
+                  variant="link"
+                  className="p-0"
+                  onClick={() => navigate('/signup')}
+                >
                   Sign up
-                </Link>
-              </div>
-            </CardFooter>
-          </form>
+                </Button>
+              </p>
+            </div>
+          </div>
         </Card>
-        {/* Show AuthContext error if present */}
-        {error && (
-          <div className="text-red-500 text-sm text-center mb-2">{error}</div>
-        )}
       </div>
-    </div>
+    </Layout>
   );
 }

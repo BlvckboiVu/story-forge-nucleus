@@ -1,159 +1,117 @@
+import { useState } from 'react';
+import { Layout } from '@/components/layout/Layout';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
-import { Separator } from '@/components/ui/separator';
-import { useToast } from '@/hooks/use-toast';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useAuth } from '@/contexts/AuthContext';
+import { useTheme } from '@/contexts/ThemeContext';
 
 export default function Settings() {
-  const { toast } = useToast();
-  
-  const handleSaveSettings = () => {
-    toast({
-      title: "Settings saved",
-      description: "Your settings have been updated successfully",
+  const { user, updateProfile } = useAuth();
+  const { theme, setTheme } = useTheme();
+  const [activeTab, setActiveTab] = useState('account');
+  const [displayName, setDisplayName] = useState(user?.displayName || '');
+  const [email, setEmail] = useState(user?.email || '');
+  const [darkMode, setDarkMode] = useState(theme === 'dark');
+
+  const handleUpdateProfile = async () => {
+    if (!user) return;
+    await updateProfile({
+      displayName,
+      email,
     });
   };
-  
+
+  const handleThemeChange = (checked: boolean) => {
+    setDarkMode(checked);
+    setTheme(checked ? 'dark' : 'light');
+  };
+
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">Settings</h1>
-        <p className="text-muted-foreground">
-          Manage your app preferences and account settings
-        </p>
+    <Layout mode="contained">
+      <div className="space-y-6">
+        <h1 className="text-3xl font-bold">Settings</h1>
+
+        <Tabs value={activeTab} onValueChange={setActiveTab}>
+          <TabsList>
+            <TabsTrigger value="account">Account</TabsTrigger>
+            <TabsTrigger value="appearance">Appearance</TabsTrigger>
+            <TabsTrigger value="notifications">Notifications</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="account" className="space-y-4">
+            <Card className="p-6">
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="displayName">Display Name</Label>
+                  <Input
+                    id="displayName"
+                    value={displayName}
+                    onChange={(e) => setDisplayName(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="email">Email</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                  />
+                </div>
+                <Button onClick={handleUpdateProfile}>Save Changes</Button>
+              </div>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="appearance" className="space-y-4">
+            <Card className="p-6">
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <Label>Dark Mode</Label>
+                    <p className="text-sm text-muted-foreground">
+                      Toggle dark mode for the application
+                    </p>
+                  </div>
+                  <Switch
+                    checked={darkMode}
+                    onCheckedChange={handleThemeChange}
+                  />
+                </div>
+              </div>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="notifications" className="space-y-4">
+            <Card className="p-6">
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <Label>Email Notifications</Label>
+                    <p className="text-sm text-muted-foreground">
+                      Receive email notifications for important updates
+                    </p>
+                  </div>
+                  <Switch />
+                </div>
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <Label>Push Notifications</Label>
+                    <p className="text-sm text-muted-foreground">
+                      Receive push notifications in your browser
+                    </p>
+                  </div>
+                  <Switch />
+                </div>
+              </div>
+            </Card>
+          </TabsContent>
+        </Tabs>
       </div>
-      
-      <Separator />
-      
-      <div className="grid gap-6 md:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle>Appearance</CardTitle>
-            <CardDescription>
-              Customize how the application looks and feels
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div className="space-y-0.5">
-                <Label htmlFor="dark-mode">Dark Mode</Label>
-                <p className="text-sm text-muted-foreground">
-                  Enable dark mode for the application
-                </p>
-              </div>
-              <Switch id="dark-mode" />
-            </div>
-            
-            <div className="flex items-center justify-between">
-              <div className="space-y-0.5">
-                <Label htmlFor="focus-mode">Focus Mode</Label>
-                <p className="text-sm text-muted-foreground">
-                  Hide distractions while writing
-                </p>
-              </div>
-              <Switch id="focus-mode" />
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardHeader>
-            <CardTitle>Editor Settings</CardTitle>
-            <CardDescription>
-              Customize your writing experience
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div className="space-y-0.5">
-                <Label htmlFor="auto-save">Auto Save</Label>
-                <p className="text-sm text-muted-foreground">
-                  Automatically save your work while typing
-                </p>
-              </div>
-              <Switch id="auto-save" defaultChecked />
-            </div>
-            
-            <div className="flex items-center justify-between">
-              <div className="space-y-0.5">
-                <Label htmlFor="spell-check">Spell Check</Label>
-                <p className="text-sm text-muted-foreground">
-                  Enable spell checking while you write
-                </p>
-              </div>
-              <Switch id="spell-check" defaultChecked />
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardHeader>
-            <CardTitle>Notifications</CardTitle>
-            <CardDescription>
-              Manage your notification preferences
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div className="space-y-0.5">
-                <Label htmlFor="writing-reminders">Writing Reminders</Label>
-                <p className="text-sm text-muted-foreground">
-                  Get reminders to write regularly
-                </p>
-              </div>
-              <Switch id="writing-reminders" />
-            </div>
-            
-            <div className="flex items-center justify-between">
-              <div className="space-y-0.5">
-                <Label htmlFor="goal-notifications">Goal Notifications</Label>
-                <p className="text-sm text-muted-foreground">
-                  Be notified when you reach writing goals
-                </p>
-              </div>
-              <Switch id="goal-notifications" defaultChecked />
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardHeader>
-            <CardTitle>Account</CardTitle>
-            <CardDescription>
-              Manage your account preferences
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div className="space-y-0.5">
-                <Label htmlFor="cloud-sync">Cloud Sync</Label>
-                <p className="text-sm text-muted-foreground">
-                  Sync your work across devices
-                </p>
-              </div>
-              <Switch id="cloud-sync" defaultChecked />
-            </div>
-            
-            <div className="flex items-center justify-between">
-              <div className="space-y-0.5">
-                <Label htmlFor="data-collection">Data Collection</Label>
-                <p className="text-sm text-muted-foreground">
-                  Allow anonymous usage data collection
-                </p>
-              </div>
-              <Switch id="data-collection" />
-            </div>
-          </CardContent>
-          <CardFooter>
-            <Button variant="destructive" className="w-full">Delete Account</Button>
-          </CardFooter>
-        </Card>
-      </div>
-      
-      <div className="flex justify-end">
-        <Button onClick={handleSaveSettings}>Save Changes</Button>
-      </div>
-    </div>
+    </Layout>
   );
 }
