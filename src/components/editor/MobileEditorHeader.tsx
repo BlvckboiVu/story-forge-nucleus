@@ -32,10 +32,7 @@ export const MobileEditorHeader = ({
   return (
     <div className="flex items-center justify-between p-2 sm:p-3 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 min-h-[56px]">
       <div className="flex items-center gap-2 flex-1 min-w-0">
-        <MobileNav 
-          showEditorPanels={true} 
-          onInsertLLMResponse={onInsertLLMResponse}
-        />
+        <MobileNav />
         <div className="flex flex-col min-w-0 flex-1">
           <h1 className="text-sm sm:text-base font-semibold text-gray-900 dark:text-gray-100 truncate">
             {currentDraft ? currentDraft.title : "New Draft"}
