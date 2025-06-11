@@ -1,3 +1,5 @@
+// AISettings.tsx
+// Settings panel for the AI Assistant, including API key, model, temperature, and max tokens
 
 import React from 'react';
 import { Button } from '@/components/ui/button';
@@ -17,7 +19,12 @@ import {
 } from '@/components/ui/sheet';
 import { motion } from 'framer-motion';
 
+/**
+ * AISettings - React memoized component for the AI settings panel
+ * Handles API key input, model selection, temperature, and max tokens
+ */
 const AISettings = React.memo(() => {
+  // State and store hooks for model, temperature, tokens, and API key
   const {
     selectedModel,
     temperature,
@@ -33,6 +40,7 @@ const AISettings = React.memo(() => {
   const [apiKey, setApiKeyLocal] = React.useState('');
   const [isLoading, setIsLoading] = React.useState(false);
 
+  // Load API key on mount
   React.useEffect(() => {
     const loadApiKey = async () => {
       try {
@@ -45,6 +53,9 @@ const AISettings = React.memo(() => {
     loadApiKey();
   }, [getApiKey]);
 
+  /**
+   * Save the API key to the store and show a toast
+   */
   const handleSaveApiKey = React.useCallback(async () => {
     if (!apiKey.trim()) {
       toast({

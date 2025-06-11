@@ -1,3 +1,5 @@
+// AIPanel.tsx
+// Main AI Assistant panel for chat-based interaction, context, and settings
 
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -11,11 +13,20 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { TooltipProvider } from '@/components/ui/tooltip';
 
+/**
+ * Props for the AIPanel component
+ * @property onInsertResponse - Callback to insert AI response into the document
+ */
 interface AIPanelProps {
   onInsertResponse?: (text: string) => void;
 }
 
+/**
+ * AIPanel - React memoized component for the AI chat assistant panel
+ * Handles panel collapse, context, messages, and settings
+ */
 const AIPanel = React.memo(({ onInsertResponse }: AIPanelProps) => {
+  // State and store hooks for panel state, loading, context, and conversations
   const {
     isCollapsed,
     isLoading,
@@ -56,14 +67,17 @@ const AIPanel = React.memo(({ onInsertResponse }: AIPanelProps) => {
 
   return (
     <TooltipProvider>
+      {/* Animated panel container */}
       <motion.div
         className="h-full bg-gradient-to-b from-background to-muted/20 border-l border-border/50 flex flex-col shadow-lg"
         initial={isCollapsed ? "collapsed" : "expanded"}
         animate={isCollapsed ? "collapsed" : "expanded"}
         variants={variants}
       >
+        {/* Panel header with collapse/expand and context toggle */}
         <AIHeader />
 
+        {/* Only show chat and settings if not collapsed */}
         {!isCollapsed && (
           <AnimatePresence mode="wait">
             <motion.div
@@ -73,6 +87,7 @@ const AIPanel = React.memo(({ onInsertResponse }: AIPanelProps) => {
               transition={{ duration: 0.2 }}
               className="flex-1 flex flex-col min-h-0"
             >
+              {/* Smart context summary if enabled */}
               {contextEnabled && <AIContext />}
 
               {/* Messages Area */}
@@ -104,6 +119,7 @@ const AIPanel = React.memo(({ onInsertResponse }: AIPanelProps) => {
                         position: 'relative',
                       }}
                     >
+                      {/* Virtualized message list for performance */}
                       {virtualizer.getVirtualItems().map((virtualRow) => (
                         <div
                           key={virtualRow.key}

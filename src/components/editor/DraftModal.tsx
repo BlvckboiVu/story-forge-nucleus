@@ -1,3 +1,6 @@
+// DraftModal.tsx
+// Modal dialog for creating, opening, and listing recent drafts in the editor
+
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
@@ -7,6 +10,14 @@ import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
 import { formatDistanceToNow } from 'date-fns';
 
+/**
+ * Props for the DraftModal component
+ * @property isOpen - Whether the modal is open
+ * @property onClose - Callback to close the modal
+ * @property onCreateDraft - Callback to create a new draft
+ * @property onOpenDraft - Callback to open a selected draft
+ * @property projectId - Optional project ID for filtering drafts
+ */
 interface DraftModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -15,6 +26,10 @@ interface DraftModalProps {
   projectId?: string;
 }
 
+/**
+ * DraftModal - Modal dialog for creating and opening drafts
+ * Handles draft creation, validation, and listing recent drafts
+ */
 export function DraftModal({ isOpen, onClose, onCreateDraft, onOpenDraft, projectId }: DraftModalProps) {
   const [title, setTitle] = useState('');
   const [drafts, setDrafts] = useState<Draft[]>([]);
@@ -22,6 +37,7 @@ export function DraftModal({ isOpen, onClose, onCreateDraft, onOpenDraft, projec
   const [isCreating, setIsCreating] = useState(false);
   const { toast } = useToast();
 
+  // Load drafts when modal opens and projectId changes
   useEffect(() => {
     if (isOpen && projectId) {
       loadDrafts();
@@ -36,6 +52,9 @@ export function DraftModal({ isOpen, onClose, onCreateDraft, onOpenDraft, projec
     }
   }, [isOpen]);
 
+  /**
+   * Load drafts for the current project
+   */
   const loadDrafts = async () => {
     if (!projectId) return;
 
@@ -56,6 +75,9 @@ export function DraftModal({ isOpen, onClose, onCreateDraft, onOpenDraft, projec
     }
   };
 
+  /**
+   * Handle creating a new draft with validation
+   */
   const handleCreateDraft = async () => {
     const trimmedTitle = title.trim();
     
@@ -97,6 +119,9 @@ export function DraftModal({ isOpen, onClose, onCreateDraft, onOpenDraft, projec
     }
   };
 
+  /**
+   * Handle opening a selected draft
+   */
   const handleOpenDraft = (draft: Draft) => {
     try {
       onOpenDraft(draft);
@@ -112,6 +137,9 @@ export function DraftModal({ isOpen, onClose, onCreateDraft, onOpenDraft, projec
     }
   };
 
+  /**
+   * Handle Enter key for creating draft
+   */
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();

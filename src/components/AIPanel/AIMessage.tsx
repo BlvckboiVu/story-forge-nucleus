@@ -1,3 +1,5 @@
+// AIMessage.tsx
+// Message bubble for the AI Assistant panel, showing user and assistant messages
 
 import React from 'react';
 import { Button } from '@/components/ui/button';
@@ -7,14 +9,26 @@ import { cn } from '@/lib/utils';
 import { AIMessage as AIMessageType } from '@/stores/aiStore';
 import { motion } from 'framer-motion';
 
+/**
+ * Props for the AIMessage component
+ * @property message - The message object to display
+ * @property onInsert - Optional callback to insert message content into the document
+ */
 interface AIMessageProps {
   message: AIMessageType;
   onInsert?: (text: string) => void;
 }
 
+/**
+ * AIMessage - React memoized component for displaying a single chat message
+ * Handles copy and insert actions for assistant messages
+ */
 const AIMessage = React.memo(({ message, onInsert }: AIMessageProps) => {
   const { toast } = useToast();
 
+  /**
+   * Copy the message content to clipboard and show a toast
+   */
   const handleCopy = React.useCallback(async () => {
     try {
       await navigator.clipboard.writeText(message.content);
@@ -31,6 +45,9 @@ const AIMessage = React.memo(({ message, onInsert }: AIMessageProps) => {
     }
   }, [message.content, toast]);
 
+  /**
+   * Insert the message content into the document and show a toast
+   */
   const handleInsert = React.useCallback(() => {
     if (onInsert) {
       onInsert(message.content);

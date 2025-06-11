@@ -1,4 +1,3 @@
-
 import { useEffect, useRef, useState, useCallback } from 'react';
 import ReactQuill, { Quill } from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
@@ -15,6 +14,9 @@ import { useProjects } from '@/contexts/ProjectContext';
 import { StoryBibleEntry, getStoryBibleEntriesByProject } from '@/lib/storyBibleDb';
 import { debouncedHighlight, registerStoryBibleFormat, HighlightMatch } from '@/utils/highlighting';
 
+// RichTextEditor.tsx
+// Main rich text editor component for writing, editing, and formatting story drafts
+
 interface RichTextEditorProps {
   initialContent?: string;
   onSave: (content: string) => void;
@@ -24,6 +26,9 @@ interface RichTextEditorProps {
   isFocusMode?: boolean;
   onToggleFocus?: () => void;
   isMobile?: boolean;
+  onWordCountChange?: (count: number) => void;
+  onCurrentPageChange?: (page: number) => void;
+  onUnsavedChangesChange?: (unsaved: boolean) => void;
 }
 
 const WORD_LIMIT = 50000;
@@ -53,6 +58,9 @@ const RichTextEditor = ({
   isFocusMode = false,
   onToggleFocus,
   isMobile = false,
+  onWordCountChange,
+  onCurrentPageChange,
+  onUnsavedChangesChange,
 }: RichTextEditorProps) => {
   const [content, setContent] = useState(initialContent);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
@@ -361,6 +369,17 @@ const RichTextEditor = ({
       '--page-height': `${pageHeight}px`,
     } as any)
   };
+
+  // Notify parent of word count and page changes
+  useEffect(() => {
+    if (onWordCountChange) onWordCountChange(wordCount);
+  }, [wordCount, onWordCountChange]);
+  useEffect(() => {
+    if (onCurrentPageChange) onCurrentPageChange(currentPage);
+  }, [currentPage, onCurrentPageChange]);
+  useEffect(() => {
+    if (onUnsavedChangesChange) onUnsavedChangesChange(hasUnsavedChanges);
+  }, [hasUnsavedChanges, onUnsavedChangesChange]);
 
   if (editorError) {
     return (

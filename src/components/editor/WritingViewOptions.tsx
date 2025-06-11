@@ -1,3 +1,5 @@
+// WritingViewOptions.tsx
+// Popover for selecting writing mode (scroll/page) and page size in the editor
 
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
@@ -6,6 +8,13 @@ import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Settings2, BookOpen, Scroll } from 'lucide-react';
 
+/**
+ * Props for the WritingViewOptions component
+ * @property viewMode - Current writing mode ('scroll' or 'page')
+ * @property onViewModeChange - Callback to change the writing mode
+ * @property pageHeight - Current page height (for page mode)
+ * @property onPageHeightChange - Callback to change the page height
+ */
 interface WritingViewOptionsProps {
   viewMode: 'scroll' | 'page';
   onViewModeChange: (mode: 'scroll' | 'page') => void;
@@ -13,6 +22,10 @@ interface WritingViewOptionsProps {
   onPageHeightChange?: (height: number) => void;
 }
 
+/**
+ * WritingViewOptions - Popover for selecting writing mode and page size
+ * Allows toggling between scroll and page view, and selecting page size in page mode.
+ */
 export const WritingViewOptions = ({
   viewMode,
   onViewModeChange,

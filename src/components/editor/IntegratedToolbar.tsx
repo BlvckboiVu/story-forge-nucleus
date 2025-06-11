@@ -1,3 +1,5 @@
+// IntegratedToolbar.tsx
+// Custom toolbar for the rich text editor, providing formatting, font, alignment, and view options
 
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -20,6 +22,19 @@ import {
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { useState, useEffect } from 'react';
 
+/**
+ * Props for the IntegratedToolbar component
+ * @property selectedFont - The currently selected font
+ * @property onFontChange - Callback to change the font
+ * @property isFocusMode - Whether the editor is in focus mode
+ * @property onToggleFocus - Callback to toggle focus mode
+ * @property onSave - Callback to save the document
+ * @property hasUnsavedChanges - Whether there are unsaved changes
+ * @property onFormatClick - Callback for formatting actions
+ * @property isMobile - Whether the toolbar is in mobile mode
+ * @property extraActions - Additional actions to render
+ * @property editorRef - Ref to the editor instance
+ */
 interface IntegratedToolbarProps {
   selectedFont: string;
   onFontChange: (font: string) => void;
@@ -45,6 +60,10 @@ const fonts = [
   { value: 'Palatino', label: 'Palatino' },
 ];
 
+/**
+ * IntegratedToolbar - Custom toolbar for the rich text editor
+ * Provides formatting, font, alignment, and view options for desktop and mobile
+ */
 export const IntegratedToolbar = ({
   selectedFont,
   onFontChange,
@@ -57,6 +76,7 @@ export const IntegratedToolbar = ({
   extraActions,
   editorRef,
 }: IntegratedToolbarProps) => {
+  // State for font popover and active formats
   const [fontPopoverOpen, setFontPopoverOpen] = useState(false);
   const [activeFormats, setActiveFormats] = useState<Record<string, boolean>>({});
 
@@ -100,6 +120,7 @@ export const IntegratedToolbar = ({
     }
   }, [editorRef]);
 
+  // Formatting, alignment, and list button configs
   const formatButtons = [
     { format: 'bold', icon: Bold, label: 'Bold (Ctrl+B)' },
     { format: 'italic', icon: Italic, label: 'Italic (Ctrl+I)' },

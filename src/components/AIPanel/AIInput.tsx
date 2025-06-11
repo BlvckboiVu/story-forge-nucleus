@@ -1,3 +1,5 @@
+// AIInput.tsx
+// Input area for the AI Assistant panel, allowing users to type and send prompts
 
 import React from 'react';
 import { Button } from '@/components/ui/button';
@@ -6,18 +8,32 @@ import { Send, Loader2 } from 'lucide-react';
 import { useAIStore } from '@/stores/aiStore';
 import { motion } from 'framer-motion';
 
+/**
+ * Props for the AIInput component
+ * @property isLoading - Whether the input is disabled/loading
+ */
 interface AIInputProps {
   isLoading: boolean;
 }
 
+/**
+ * AIInput - React memoized component for the AI input area
+ * Handles prompt input, submission, and loading state
+ */
 const AIInput = React.memo(({ isLoading }: AIInputProps) => {
   const { sendMessage } = useAIStore();
   const [localInput, setLocalInput] = React.useState('');
 
+  /**
+   * Handle input change in the textarea
+   */
   const handleInputChange = React.useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setLocalInput(e.target.value);
   }, []);
 
+  /**
+   * Handle prompt submission (button click or Enter)
+   */
   const handleSubmit = React.useCallback(async () => {
     if (!localInput.trim() || isLoading) return;
     
@@ -29,6 +45,9 @@ const AIInput = React.memo(({ isLoading }: AIInputProps) => {
     }
   }, [localInput, isLoading, sendMessage]);
 
+  /**
+   * Handle Enter key for submission, Shift+Enter for new line
+   */
   const handleKeyDown = React.useCallback((e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();

@@ -1,3 +1,6 @@
+// OutlinePanel.tsx
+// Interactive panel for managing a hierarchical story outline (chapters, sections, etc.)
+// Allows adding, editing, deleting, and nesting outline items with collapsible UI
 
 import { useState } from 'react';
 import { Card } from '@/components/ui/card';
@@ -14,10 +17,18 @@ interface OutlineItem {
   children?: OutlineItem[];
 }
 
+/**
+ * Props for the OutlinePanel component
+ * @property className - Optional additional class names for the panel
+ */
 interface OutlinePanelProps {
   className?: string;
 }
 
+/**
+ * OutlinePanel - Displays and manages a hierarchical story outline (chapters, sections, etc.)
+ * Users can add, edit, delete, and nest outline items. Items are collapsible and editable inline.
+ */
 export default function OutlinePanel({ className }: OutlinePanelProps) {
   const [outline, setOutline] = useState<OutlineItem[]>([
     {

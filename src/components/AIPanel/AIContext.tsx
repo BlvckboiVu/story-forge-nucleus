@@ -1,3 +1,5 @@
+// AIContext.tsx
+// Context summary panel for the AI Assistant, showing recent text, story bible, and scene summaries
 
 import React from 'react';
 import { useAIStore } from '@/stores/aiStore';
@@ -7,10 +9,16 @@ import { Badge } from '@/components/ui/badge';
 import { Loader2, Brain, FileText, BookOpen } from 'lucide-react';
 import { motion } from 'framer-motion';
 
+/**
+ * AIContext - React memoized component for displaying the current context summary
+ * Shows recent text, story bible entries, scene summaries, and token count
+ */
 const AIContext = React.memo(() => {
+  // Get context data and processing state from the AI store
   const { contextData, isProcessingContext } = useAIStore();
   const { recentText, storyBibleEntries, sceneSummaries, tokenCount } = contextData;
 
+  // Show loading indicator if context is being processed
   if (isProcessingContext) {
     return (
       <motion.div 

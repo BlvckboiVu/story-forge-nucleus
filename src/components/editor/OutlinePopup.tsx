@@ -1,3 +1,5 @@
+// OutlinePopup.tsx
+// Button and dialog for displaying the OutlinePanel in a modal popup
 
 import { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
@@ -5,10 +7,17 @@ import { Button } from '@/components/ui/button';
 import { BookOpen } from 'lucide-react';
 import OutlinePanel from './OutlinePanel';
 
+/**
+ * Props for the OutlinePopup component
+ * @property className - Optional additional class names for the button
+ */
 interface OutlinePopupProps {
   className?: string;
 }
 
+/**
+ * OutlinePopup - Renders a button that opens the OutlinePanel in a modal dialog
+ */
 export default function OutlinePopup({ className }: OutlinePopupProps) {
   const [isOpen, setIsOpen] = useState(false);
 

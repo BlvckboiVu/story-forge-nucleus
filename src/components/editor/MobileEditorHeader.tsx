@@ -1,3 +1,5 @@
+// MobileEditorHeader.tsx
+// Header for the mobile editor view, showing draft title, navigation, and actions
 
 import { Button } from '@/components/ui/button';
 import { FilePlus, FolderOpen, Eye, EyeOff } from 'lucide-react';
@@ -5,6 +7,15 @@ import { DarkModeToggle } from '@/components/ui/DarkModeToggle';
 import { MobileNav } from '@/components/layout/MobileNav';
 import { Draft } from '@/lib/db';
 
+/**
+ * Props for the MobileEditorHeader component
+ * @property currentDraft - The current draft object (or null)
+ * @property onOpenDraft - Callback to open the draft modal
+ * @property onNewDraft - Callback to create a new draft
+ * @property onInsertLLMResponse - Optional callback to insert LLM response
+ * @property isFullscreen - Whether the editor is in fullscreen/focus mode
+ * @property onToggleFullscreen - Callback to toggle fullscreen mode
+ */
 interface MobileEditorHeaderProps {
   currentDraft: Draft | null;
   onOpenDraft: () => void;
@@ -14,6 +25,9 @@ interface MobileEditorHeaderProps {
   onToggleFullscreen?: () => void;
 }
 
+/**
+ * MobileEditorHeader - Header for the mobile editor, showing draft title, navigation, and actions
+ */
 export const MobileEditorHeader = ({ 
   currentDraft, 
   onOpenDraft, 

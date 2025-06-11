@@ -1,3 +1,5 @@
+// AIHeader.tsx
+// Header for the AI Assistant panel, including collapse/expand, context toggle, and conversation actions
 
 import React from 'react';
 import { Button } from '@/components/ui/button';
@@ -12,7 +14,12 @@ import {
 } from '@/components/ui/tooltip';
 import { motion } from 'framer-motion';
 
+/**
+ * AIHeader - React memoized component for the AI panel header
+ * Handles collapse/expand, context mode toggle, and conversation actions
+ */
 const AIHeader = React.memo(() => {
+  // State and store hooks for panel state, context, and conversations
   const {
     isCollapsed,
     setCollapsed,
@@ -25,10 +32,14 @@ const AIHeader = React.memo(() => {
   } = useAIStore();
   const { toast } = useToast();
 
+  // Get the current conversation object
   const currentConversation = React.useMemo(() => {
     return conversations.find(c => c.id === activeConversationId);
   }, [conversations, activeConversationId]);
 
+  /**
+   * Clear the current conversation and show a toast
+   */
   const handleClearConversation = React.useCallback(() => {
     if (!activeConversationId) return;
     
@@ -39,6 +50,9 @@ const AIHeader = React.memo(() => {
     });
   }, [activeConversationId, clearConversation, toast]);
 
+  /**
+   * Start a new conversation and show a toast
+   */
   const handleNewConversation = React.useCallback(() => {
     createConversation();
     toast({
@@ -50,6 +64,7 @@ const AIHeader = React.memo(() => {
   return (
     <div className="p-4 border-b border-border/50 bg-gradient-to-r from-blue-50/50 to-purple-50/50 dark:from-blue-950/20 dark:to-purple-950/20">
       <div className="flex items-center justify-between mb-3">
+        {/* Panel title and collapse/expand button */}
         <motion.h3 
           className="font-semibold text-sm bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent"
           initial={{ opacity: 0 }}
@@ -84,6 +99,7 @@ const AIHeader = React.memo(() => {
         </Tooltip>
       </div>
 
+      {/* Context mode toggle and conversation actions */}
       {!isCollapsed && (
         <motion.div
           initial={{ opacity: 0, y: -10 }}
@@ -115,6 +131,7 @@ const AIHeader = React.memo(() => {
           </div>
 
           <div className="flex gap-1">
+            {/* New conversation button */}
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button
@@ -132,6 +149,7 @@ const AIHeader = React.memo(() => {
               </TooltipContent>
             </Tooltip>
 
+            {/* Clear conversation button */}
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button
