@@ -1,81 +1,12 @@
 
 import db from '@/lib/db';
-import { EnhancedOutline, OutlinePart, OutlineChapter, OutlineScene } from '@/types/outline';
-import { sanitizeHtml, sanitizeText } from './security';
-
-const MAX_SCENES_PER_PROJECT = 100;
-const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
-
-class OutlineCache {
-  private cache = new Map<string, { data: any; timestamp: number }>();
-
-  get<T>(key: string): T | null {
-    const item = this.cache.get(key);
-    if (!item || Date.now() - item.timestamp > CACHE_TTL) {
-      this.cache.delete(key);
-      return null;
-    }
-    return item.data;
-  }
-
-  set<T>(key: string, data: T): void {
-    this.cache.set(key, { data, timestamp: Date.now() });
-  }
-
-  invalidate(pattern: string): void {
-    for (const key of this.cache.keys()) {
-      if (key.includes(pattern)) {
-        this.cache.delete(key);
-      }
-    }
-  }
-}
+import { EnhancedOutline } from '@/types/outline';
+import { OutlineValidation } from './outline/outlineValidation';
+import { OutlineCache } from './outline/outlineCache';
 
 const outlineCache = new OutlineCache();
 
 export class EnhancedOutlineService {
-  private static validateOutlineData(data: Partial<EnhancedOutline>): void {
-    if (data.title && data.title.length > 200) {
-      throw new Error('Outline title must be less than 200 characters');
-    }
-
-    if (data.totalScenes && data.totalScenes > MAX_SCENES_PER_PROJECT) {
-      throw new Error(`Maximum ${MAX_SCENES_PER_PROJECT} scenes allowed per project`);
-    }
-  }
-
-  private static countTotalScenes(parts: OutlinePart[]): number {
-    return parts.reduce((total, part) => 
-      total + part.chapters.reduce((chapterTotal, chapter) => 
-        chapterTotal + chapter.scenes.length, 0), 0);
-  }
-
-  private static sanitizeOutline(outline: EnhancedOutline): EnhancedOutline {
-    return {
-      ...outline,
-      title: sanitizeText(outline.title, 200),
-      parts: outline.parts.map(part => ({
-        ...part,
-        title: sanitizeText(part.title, 100),
-        summary: part.summary ? sanitizeHtml(part.summary) : undefined,
-        notes: part.notes ? sanitizeHtml(part.notes) : undefined,
-        chapters: part.chapters.map(chapter => ({
-          ...chapter,
-          title: sanitizeText(chapter.title, 100),
-          summary: chapter.summary ? sanitizeHtml(chapter.summary) : undefined,
-          notes: chapter.notes ? sanitizeHtml(chapter.notes) : undefined,
-          scenes: chapter.scenes.map(scene => ({
-            ...scene,
-            title: sanitizeText(scene.title, 100),
-            summary: scene.summary ? sanitizeHtml(scene.summary) : undefined,
-            notes: scene.notes ? sanitizeHtml(scene.notes) : undefined,
-            content: scene.content ? sanitizeHtml(scene.content) : undefined,
-          }))
-        }))
-      }))
-    };
-  }
-
   static async getOutline(id: string): Promise<EnhancedOutline | null> {
     if (!id?.trim()) throw new Error('Outline ID is required');
 
@@ -87,22 +18,21 @@ export class EnhancedOutlineService {
       const outline = await db.outlines.get(id);
       if (!outline) return null;
 
-      // Parse the structure from string to hierarchical format
       const enhancedOutline: EnhancedOutline = {
         id: outline.id,
         projectId: outline.projectId,
         title: outline.title,
         parts: JSON.parse(outline.structure || '[]'),
         totalScenes: 0,
-        maxScenes: MAX_SCENES_PER_PROJECT,
+        maxScenes: OutlineValidation.getMaxScenes(),
         structure: 'custom',
         createdAt: outline.createdAt,
         updatedAt: outline.updatedAt,
       };
 
-      enhancedOutline.totalScenes = this.countTotalScenes(enhancedOutline.parts);
+      enhancedOutline.totalScenes = OutlineValidation.countTotalScenes(enhancedOutline.parts);
       
-      const sanitized = this.sanitizeOutline(enhancedOutline);
+      const sanitized = OutlineValidation.sanitizeOutline(enhancedOutline);
       outlineCache.set(cacheKey, sanitized);
       return sanitized;
     } catch (error) {
@@ -112,14 +42,14 @@ export class EnhancedOutlineService {
   }
 
   static async createOutline(data: Omit<EnhancedOutline, 'id' | 'createdAt' | 'updatedAt' | 'totalScenes'>): Promise<string> {
-    this.validateOutlineData(data);
+    OutlineValidation.validateOutlineData(data);
 
-    const totalScenes = this.countTotalScenes(data.parts);
-    if (totalScenes > MAX_SCENES_PER_PROJECT) {
-      throw new Error(`Cannot create outline with ${totalScenes} scenes. Maximum is ${MAX_SCENES_PER_PROJECT}.`);
+    const totalScenes = OutlineValidation.countTotalScenes(data.parts);
+    if (totalScenes > OutlineValidation.getMaxScenes()) {
+      throw new Error(`Cannot create outline with ${totalScenes} scenes. Maximum is ${OutlineValidation.getMaxScenes()}.`);
     }
 
-    const sanitizedData = this.sanitizeOutline({
+    const sanitizedData = OutlineValidation.sanitizeOutline({
       ...data,
       id: crypto.randomUUID(),
       totalScenes,
@@ -147,21 +77,21 @@ export class EnhancedOutlineService {
 
   static async updateOutline(id: string, updates: Partial<EnhancedOutline>): Promise<void> {
     if (!id?.trim()) throw new Error('Outline ID is required');
-    this.validateOutlineData(updates);
+    OutlineValidation.validateOutlineData(updates);
 
     const existingOutline = await this.getOutline(id);
     if (!existingOutline) throw new Error('Outline not found');
 
     const updatedParts = updates.parts || existingOutline.parts;
-    const totalScenes = this.countTotalScenes(updatedParts);
+    const totalScenes = OutlineValidation.countTotalScenes(updatedParts);
 
-    if (totalScenes > MAX_SCENES_PER_PROJECT) {
-      throw new Error(`Cannot update outline. Scene count would be ${totalScenes}, maximum is ${MAX_SCENES_PER_PROJECT}.`);
+    if (totalScenes > OutlineValidation.getMaxScenes()) {
+      throw new Error(`Cannot update outline. Scene count would be ${totalScenes}, maximum is ${OutlineValidation.getMaxScenes()}.`);
     }
 
     const sanitizedUpdates = {
-      title: updates.title ? sanitizeText(updates.title, 200) : undefined,
-      structure: updates.parts ? JSON.stringify(this.sanitizeOutline({ ...existingOutline, parts: updates.parts }).parts) : undefined,
+      title: updates.title ? OutlineValidation.sanitizeOutline({ ...existingOutline, title: updates.title }).title : undefined,
+      structure: updates.parts ? JSON.stringify(OutlineValidation.sanitizeOutline({ ...existingOutline, parts: updates.parts }).parts) : undefined,
       updatedAt: new Date(),
     };
 
@@ -218,10 +148,10 @@ export class EnhancedOutlineService {
   }
 
   static getMaxScenes(): number {
-    return MAX_SCENES_PER_PROJECT;
+    return OutlineValidation.getMaxScenes();
   }
 
   static validateSceneCount(currentCount: number, additional: number = 1): boolean {
-    return (currentCount + additional) <= MAX_SCENES_PER_PROJECT;
+    return OutlineValidation.validateSceneCount(currentCount, additional);
   }
 }
