@@ -16,22 +16,26 @@ interface Project {
 
 interface ProjectContextType {
   projects: Project[];
+  currentProject: Project | null;
   loading: boolean;
   error: string | null;
   createProject: (projectData: Omit<Project, 'id' | 'createdAt' | 'updatedAt' | 'userId'>) => Promise<Project>;
   updateProject: (id: string, updates: Partial<Project>) => Promise<void>;
   deleteProject: (id: string) => Promise<void>;
   getProject: (id: string) => Project | undefined;
+  setCurrentProject: (project: Project | null) => void;
 }
 
 const ProjectContext = createContext<ProjectContextType>({
   projects: [],
+  currentProject: null,
   loading: false,
   error: null,
   createProject: async () => ({ id: '', title: '', description: '', isPublic: false, status: 'planning', createdAt: new Date(), updatedAt: new Date(), userId: '' }),
   updateProject: async () => {},
   deleteProject: async () => {},
   getProject: () => undefined,
+  setCurrentProject: () => {},
 });
 
 interface ProjectProviderProps {
@@ -40,6 +44,7 @@ interface ProjectProviderProps {
 
 export const ProjectProvider: React.FC<ProjectProviderProps> = ({ children }) => {
   const [projects, setProjects] = useState<Project[]>([]);
+  const [currentProject, setCurrentProject] = useState<Project | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { user } = useAuth();
@@ -57,6 +62,11 @@ export const ProjectProvider: React.FC<ProjectProviderProps> = ({ children }) =>
             updatedAt: new Date(p.updatedAt),
           }));
           setProjects(parsedProjects);
+          
+          // Set current project to first project if none selected
+          if (!currentProject && parsedProjects.length > 0) {
+            setCurrentProject(parsedProjects[0]);
+          }
         } catch (err) {
           console.error('Failed to load projects:', err);
           setError('Failed to load projects');
@@ -64,6 +74,7 @@ export const ProjectProvider: React.FC<ProjectProviderProps> = ({ children }) =>
       }
     } else {
       setProjects([]);
+      setCurrentProject(null);
     }
   }, [user]);
 
@@ -91,6 +102,9 @@ export const ProjectProvider: React.FC<ProjectProviderProps> = ({ children }) =>
       const updatedProjects = [...projects, newProject];
       setProjects(updatedProjects);
       saveProjects(updatedProjects);
+      
+      // Set as current project
+      setCurrentProject(newProject);
       
       toast({
         title: 'Project created',
@@ -126,6 +140,11 @@ export const ProjectProvider: React.FC<ProjectProviderProps> = ({ children }) =>
       setProjects(updatedProjects);
       saveProjects(updatedProjects);
       
+      // Update current project if it's the one being updated
+      if (currentProject?.id === id) {
+        setCurrentProject({ ...currentProject, ...updates, updatedAt: new Date() });
+      }
+      
       toast({
         title: 'Project updated',
         description: 'Project has been updated successfully.',
@@ -153,6 +172,11 @@ export const ProjectProvider: React.FC<ProjectProviderProps> = ({ children }) =>
       setProjects(updatedProjects);
       saveProjects(updatedProjects);
       
+      // Clear current project if it's the one being deleted
+      if (currentProject?.id === id) {
+        setCurrentProject(updatedProjects.length > 0 ? updatedProjects[0] : null);
+      }
+      
       toast({
         title: 'Project deleted',
         description: 'Project has been deleted successfully.',
@@ -177,12 +201,14 @@ export const ProjectProvider: React.FC<ProjectProviderProps> = ({ children }) =>
 
   const value = {
     projects,
+    currentProject,
     loading,
     error,
     createProject,
     updateProject,
     deleteProject,
     getProject,
+    setCurrentProject,
   };
 
   return <ProjectContext.Provider value={value}>{children}</ProjectContext.Provider>;
