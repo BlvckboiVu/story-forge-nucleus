@@ -16,17 +16,12 @@ interface LayoutProps {
   onInsertLLMResponse?: (text: string) => void;
 }
 
-function LayoutContent({
+function DesktopLayoutContent({
   children,
   mode = 'default',
   className,
-  showNavigation = true,
 }: LayoutProps) {
-  const isMobile = useIsMobile();
-  
-  // Only use sidebar when not mobile and navigation is shown
-  const sidebarContext = !isMobile && showNavigation ? useSidebar() : null;
-  const sidebarState = sidebarContext?.state;
+  const { state } = useSidebar();
 
   const getLayoutClasses = () => {
     switch (mode) {
@@ -41,26 +36,8 @@ function LayoutContent({
     }
   };
 
-  if (!showNavigation || isMobile) {
-    return (
-      <div className="min-h-screen bg-background w-full max-w-full overflow-hidden">
-        <main className={cn("flex-1 w-full", getLayoutClasses(), className)}>
-          {mode === 'editor' ? (
-            <div className="w-full h-full overflow-hidden">
-              {children}
-            </div>
-          ) : (
-            <div className="container py-3 sm:py-6 w-full max-w-full px-3 sm:px-4 h-full overflow-auto">
-              {children}
-            </div>
-          )}
-        </main>
-      </div>
-    );
-  }
-
   return (
-    <div className={cn("sidebar-layout w-full")} data-sidebar-collapsed={sidebarState === 'collapsed'}>
+    <div className={cn("sidebar-layout w-full")} data-sidebar-collapsed={state === 'collapsed'}>
       <AppSidebar />
       <SidebarInset className="main-content">
         <main className={cn("w-full h-full", getLayoutClasses(), className)}>
@@ -79,6 +56,41 @@ function LayoutContent({
   );
 }
 
+function MobileLayoutContent({
+  children,
+  mode = 'default',
+  className,
+}: LayoutProps) {
+  const getLayoutClasses = () => {
+    switch (mode) {
+      case 'full-width':
+        return 'w-full max-w-full';
+      case 'contained':
+        return 'max-w-7xl mx-auto w-full';
+      case 'editor':
+        return 'w-full max-w-full h-full min-h-0';
+      default:
+        return 'max-w-5xl mx-auto w-full';
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-background w-full max-w-full overflow-hidden">
+      <main className={cn("flex-1 w-full", getLayoutClasses(), className)}>
+        {mode === 'editor' ? (
+          <div className="w-full h-full overflow-hidden">
+            {children}
+          </div>
+        ) : (
+          <div className="container py-3 sm:py-6 w-full max-w-full px-3 sm:px-4 h-full overflow-auto">
+            {children}
+          </div>
+        )}
+      </main>
+    </div>
+  );
+}
+
 export function Layout({
   children,
   mode = 'default',
@@ -89,9 +101,10 @@ export function Layout({
 }: LayoutProps) {
   const isMobile = useIsMobile();
 
+  // If mobile or navigation is disabled, use mobile layout (no sidebar)
   if (isMobile || !showNavigation) {
     return (
-      <LayoutContent 
+      <MobileLayoutContent 
         children={children}
         mode={mode}
         className={className}
@@ -102,9 +115,10 @@ export function Layout({
     );
   }
 
+  // Desktop with navigation enabled - wrap in SidebarProvider
   return (
     <SidebarProvider>
-      <LayoutContent 
+      <DesktopLayoutContent 
         children={children}
         mode={mode}
         className={className}
