@@ -1,3 +1,4 @@
+
 import { useEffect, useRef, useState, useCallback } from 'react';
 import ReactQuill, { Quill } from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
@@ -10,7 +11,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { useEditorContent } from '@/hooks/useEditorContent';
 import { useEditorScroll } from '@/hooks/useEditorScroll';
 import { Button } from '@/components/ui/button';
-import { Save } from 'lucide-react';
+import { AlertTriangle, RefreshCw } from 'lucide-react';
 import { useProjects } from '@/contexts/ProjectContext';
 import { StoryBibleEntry, getStoryBibleEntriesByProject } from '@/lib/storyBibleDb';
 import { debouncedHighlight, registerStoryBibleFormat, HighlightMatch } from '@/utils/highlighting';
@@ -72,30 +73,47 @@ const RichTextEditor = ({
   const [storyBibleEntries, setStoryBibleEntries] = useState<StoryBibleEntry[]>([]);
   const [highlightMatches, setHighlightMatches] = useState<HighlightMatch[]>([]);
   const [editorError, setEditorError] = useState<string | null>(null);
-  const [isSaving, setIsSaving] = useState(false);
+  const [isRecovering, setIsRecovering] = useState(false);
   const { toast } = useToast();
   const editorRef = useRef<ReactQuill>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const { currentProject } = useProjects();
   const deviceIsMobile = useIsMobile();
 
-  const { stats, updateWordCount } = useEnhancedWordCount({
+  const { stats, updateWordCount, getWarningLevel } = useEnhancedWordCount({
     warningThreshold: 45000,
     limitThreshold: WORD_LIMIT,
   });
 
-  const { content, hasUnsavedChanges, setHasUnsavedChanges, handleChange } = useEditorContent({
+  const { 
+    content, 
+    isValid, 
+    validationErrors, 
+    validationWarnings, 
+    hasUnsavedChanges, 
+    setHasUnsavedChanges, 
+    handleChange,
+    resetToLastValid 
+  } = useEditorContent({
     initialContent,
     onContentChange,
     onWordCountChange: (count) => {
-      updateWordCount(initialContent);
+      updateWordCount(content);
       if (onWordCountChange) onWordCountChange(count);
     },
+    validateOnChange: true,
+    maxLength: 5000000
   });
 
-  const { handleCursorScroll } = useEditorScroll({ editorRef, containerRef });
+  const { handleCursorScroll } = useEditorScroll({ 
+    editorRef, 
+    containerRef,
+    onScrollPositionChange: (position) => {
+      // Could save scroll position for restoration
+    }
+  });
 
-  // Register custom Quill format
+  // Register custom Quill format with error handling
   useEffect(() => {
     try {
       if (Quill) {
@@ -107,7 +125,7 @@ const RichTextEditor = ({
     }
   }, []);
 
-  // Load Story Bible entries
+  // Load Story Bible entries with error handling
   useEffect(() => {
     const loadStoryBibleEntries = async () => {
       if (!currentProject) return;
@@ -149,26 +167,72 @@ const RichTextEditor = ({
     }
   }, [storyBibleEntries, isFocusMode]);
 
-  const handleSaveContent = (contentToSave: string) => {
+  const handleSaveContent = useCallback(async (contentToSave: string) => {
     try {
-      onSave(contentToSave);
+      if (!isValid) {
+        throw new Error('Cannot save invalid content');
+      }
+      
+      await onSave(contentToSave);
       setHasUnsavedChanges(false);
       setEditorError(null);
     } catch (error) {
       console.error('Save failed:', error);
-      setEditorError('Failed to save content');
+      const errorMessage = error instanceof Error ? error.message : 'Failed to save content';
+      setEditorError(errorMessage);
+      throw error; // Re-throw for the autosave hook to handle
     }
-  };
+  }, [isValid, onSave, setHasUnsavedChanges]);
 
-  const { clearAutoSave } = useEnhancedAutoSave({
+  const { isSaving, saveError, clearAutoSave } = useEnhancedAutoSave({
     content,
     hasUnsavedChanges,
     onSave: handleSaveContent,
-    onSaveStateChange: setIsSaving,
+    onSaveStateChange: () => {},
+    interval: 10000,
+    retryAttempts: 3,
+    retryDelay: 1000
   });
 
-  const handleFontChange = (fontFamily: string) => {
-    if (!fontFamily?.trim()) return;
+  const handleRecovery = useCallback(async () => {
+    setIsRecovering(true);
+    try {
+      resetToLastValid();
+      setEditorError(null);
+      toast({
+        title: "Content recovered",
+        description: "Reverted to last valid content",
+      });
+    } catch (error) {
+      console.error('Recovery failed:', error);
+      toast({
+        title: "Recovery failed",
+        description: "Unable to recover content",
+        variant: "destructive",
+      });
+    } finally {
+      setIsRecovering(false);
+    }
+  }, [resetToLastValid, toast]);
+
+  const handleEditorError = useCallback((error: Error) => {
+    console.error('Editor error:', error);
+    setEditorError(error.message);
+    
+    toast({
+      title: "Editor Error",
+      description: error.message,
+      variant: "destructive",
+      duration: 5000,
+    });
+  }, [toast]);
+
+  // Enhanced font change with validation
+  const handleFontChange = useCallback((fontFamily: string) => {
+    if (!fontFamily?.trim()) {
+      handleEditorError(new Error('Invalid font family'));
+      return;
+    }
     
     try {
       const quill = editorRef.current?.getEditor();
@@ -177,17 +241,22 @@ const RichTextEditor = ({
         editor.style.fontFamily = fontFamily;
       }
     } catch (error) {
-      console.error('Font change failed:', error);
+      handleEditorError(error as Error);
     }
-  };
+  }, [handleEditorError]);
 
-  const handleFormatClick = (format: string, value?: any) => {
+  // Enhanced format handling with validation
+  const handleFormatClick = useCallback((format: string, value?: any) => {
     try {
       const quill = editorRef.current?.getEditor();
-      if (!quill) return;
+      if (!quill) {
+        throw new Error('Editor not available');
+      }
 
       const range = quill.getSelection();
-      if (!range) return;
+      if (!range) {
+        throw new Error('No text selected');
+      }
 
       switch (format) {
         case 'bold':
@@ -221,12 +290,11 @@ const RichTextEditor = ({
           console.warn(`Unknown format: ${format}`);
       }
     } catch (error) {
-      console.error('Format failed:', error);
-      setEditorError('Formatting operation failed');
+      handleEditorError(error as Error);
     }
-  };
+  }, [handleEditorError]);
 
-  const handleToggleFocus = () => {
+  const handleToggleFocus = useCallback(() => {
     try {
       if (onToggleFocus) {
         onToggleFocus();
@@ -237,51 +305,87 @@ const RichTextEditor = ({
         duration: 2000,
       });
     } catch (error) {
-      console.error('Focus toggle failed:', error);
+      handleEditorError(error as Error);
     }
-  };
+  }, [isFocusMode, onToggleFocus, toast, handleEditorError]);
 
-  // Notify parent of changes
+  // Notify parent of changes with error handling
   useEffect(() => {
-    if (onWordCountChange) onWordCountChange(stats.words);
+    try {
+      if (onWordCountChange) onWordCountChange(stats.words);
+    } catch (error) {
+      console.error('Word count notification failed:', error);
+    }
   }, [stats.words, onWordCountChange]);
+
   useEffect(() => {
-    if (onCurrentPageChange) onCurrentPageChange(stats.pages);
+    try {
+      if (onCurrentPageChange) onCurrentPageChange(stats.pages);
+    } catch (error) {
+      console.error('Page count notification failed:', error);
+    }
   }, [stats.pages, onCurrentPageChange]);
+
   useEffect(() => {
-    if (onUnsavedChangesChange) onUnsavedChangesChange(hasUnsavedChanges);
+    try {
+      if (onUnsavedChangesChange) onUnsavedChangesChange(hasUnsavedChanges);
+    } catch (error) {
+      console.error('Unsaved changes notification failed:', error);
+    }
   }, [hasUnsavedChanges, onUnsavedChangesChange]);
 
-  if (editorError) {
+  // Error display component
+  if (editorError && !isValid) {
     return (
       <div className="flex flex-col items-center justify-center h-full p-6 text-center">
         <div className="text-red-500 mb-4">
+          <AlertTriangle className="h-12 w-12 mx-auto mb-2" />
           <h3 className="text-lg font-semibold">Editor Error</h3>
-          <p className="text-sm">{editorError}</p>
+          <p className="text-sm mb-4">{editorError}</p>
+          {validationErrors.length > 0 && (
+            <div className="text-xs text-left bg-red-50 p-2 rounded mb-4">
+              <strong>Validation Errors:</strong>
+              <ul className="list-disc list-inside mt-1">
+                {validationErrors.map((error, index) => (
+                  <li key={index}>{error}</li>
+                ))}
+              </ul>
+            </div>
+          )}
         </div>
-        <Button
-          onClick={() => {
-            setEditorError(null);
-            window.location.reload();
-          }}
-          variant="outline"
-        >
-          Reload Editor
-        </Button>
+        <div className="flex gap-2">
+          <Button
+            onClick={handleRecovery}
+            disabled={isRecovering}
+            variant="outline"
+          >
+            <RefreshCw className={`h-4 w-4 mr-2 ${isRecovering ? 'animate-spin' : ''}`} />
+            Recover Content
+          </Button>
+          <Button
+            onClick={() => {
+              setEditorError(null);
+              window.location.reload();
+            }}
+            variant="outline"
+          >
+            Reload Editor
+          </Button>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="w-full h-full flex flex-col overflow-hidden">
-      {/* Enhanced toolbar - no save button */}
+    <div className="w-full h-full flex flex-col overflow-hidden" role="application" aria-label="Rich text editor">
+      {/* Enhanced toolbar */}
       <div className="flex-shrink-0">
         <EnhancedToolbar
           selectedFont="Inter"
           onFontChange={handleFontChange}
           isFocusMode={isFocusMode}
           onToggleFocus={handleToggleFocus}
-          onSave={() => {}} // Empty function since save is removed
+          onSave={() => {}}
           hasUnsavedChanges={hasUnsavedChanges}
           onFormatClick={handleFormatClick}
           isMobile={isMobile || deviceIsMobile}
@@ -290,13 +394,23 @@ const RichTextEditor = ({
         />
       </div>
 
+      {/* Validation warnings */}
+      {validationWarnings.length > 0 && (
+        <div className="flex-shrink-0 bg-yellow-50 border-l-4 border-yellow-400 p-2">
+          <div className="flex">
+            <AlertTriangle className="h-4 w-4 text-yellow-400 mr-2 flex-shrink-0 mt-0.5" />
+            <div className="text-sm text-yellow-700">
+              <strong>Warning:</strong> {validationWarnings[0]}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Editor content area */}
       <div 
         ref={containerRef}
         className="flex-1 w-full overflow-hidden"
-        style={{ 
-          backgroundColor: '#ffffff'
-        }}
+        style={{ backgroundColor: '#ffffff' }}
       >
         <ReactQuill
           ref={editorRef}
@@ -318,20 +432,27 @@ const RichTextEditor = ({
         />
       </div>
       
-      {/* Status bar */}
+      {/* Enhanced status bar */}
       {!isFocusMode && (
         <div className="flex-shrink-0">
           <div className="flex items-center justify-between px-4 py-3 bg-gray-50 dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700">
             <div className="flex items-center gap-4 text-sm text-gray-600 dark:text-gray-400 overflow-hidden">
-              <span className={`flex-shrink-0 font-medium ${stats.words > 50000 ? 'text-red-600' : stats.words > 45000 ? 'text-yellow-600' : 'text-gray-700 dark:text-gray-300'}`}>
+              <span className={`flex-shrink-0 font-medium ${
+                getWarningLevel() === 'danger' ? 'text-red-600' : 
+                getWarningLevel() === 'warning' ? 'text-yellow-600' : 
+                'text-gray-700 dark:text-gray-300'
+              }`}>
                 {stats.words.toLocaleString()} words
               </span>
               <span className="flex-shrink-0 text-gray-600 dark:text-gray-400">Page {stats.pages}</span>
+              <span className="flex-shrink-0 text-gray-600 dark:text-gray-400">{stats.readingTime} min read</span>
+              
               {highlightMatches.length > 0 && (
                 <span className="text-blue-600 dark:text-blue-400 flex-shrink-0 hidden sm:inline">
                   {highlightMatches.length} Story Bible {highlightMatches.length === 1 ? 'reference' : 'references'}
                 </span>
               )}
+              
               {hasUnsavedChanges && (
                 <span className="flex items-center gap-2 text-amber-600 dark:text-amber-400 flex-shrink-0">
                   <div className="w-2 h-2 bg-amber-500 rounded-full animate-pulse"></div>
@@ -339,11 +460,28 @@ const RichTextEditor = ({
                   <span className="sm:hidden font-medium">Unsaved</span>
                 </span>
               )}
+              
               {isSaving && (
                 <span className="flex items-center gap-2 text-blue-600 dark:text-blue-400 flex-shrink-0">
                   <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
                   <span className="hidden sm:inline font-medium">Saving...</span>
                   <span className="sm:hidden font-medium">Saving</span>
+                </span>
+              )}
+
+              {saveError && (
+                <span className="flex items-center gap-2 text-red-600 dark:text-red-400 flex-shrink-0">
+                  <AlertTriangle className="h-3 w-3" />
+                  <span className="hidden sm:inline font-medium">Save failed</span>
+                  <span className="sm:hidden font-medium">Error</span>
+                </span>
+              )}
+
+              {!isValid && (
+                <span className="flex items-center gap-2 text-red-600 dark:text-red-400 flex-shrink-0">
+                  <AlertTriangle className="h-3 w-3" />
+                  <span className="hidden sm:inline font-medium">Invalid content</span>
+                  <span className="sm:hidden font-medium">Invalid</span>
                 </span>
               )}
             </div>

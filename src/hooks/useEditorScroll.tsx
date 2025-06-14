@@ -1,72 +1,100 @@
 
-import { useCallback, useEffect } from 'react';
-import ReactQuill from 'react-quill';
+import { useCallback, useRef, useEffect } from 'react';
+import { throttle } from 'lodash';
 
-interface UseEditorScrollProps {
-  editorRef: React.RefObject<ReactQuill>;
+interface UseEditorScrollOptions {
+  editorRef: React.RefObject<any>;
   containerRef: React.RefObject<HTMLDivElement>;
+  onScrollPositionChange?: (position: number) => void;
+  throttleMs?: number;
 }
 
-export const useEditorScroll = ({ editorRef, containerRef }: UseEditorScrollProps) => {
-  const handleCursorScroll = useCallback(() => {
-    const quill = editorRef.current?.getEditor();
+export function useEditorScroll({
+  editorRef,
+  containerRef,
+  onScrollPositionChange,
+  throttleMs = 100
+}: UseEditorScrollOptions) {
+  const scrollPositionRef = useRef(0);
+
+  const throttledScrollHandler = useCallback(
+    throttle((scrollTop: number) => {
+      scrollPositionRef.current = scrollTop;
+      onScrollPositionChange?.(scrollTop);
+    }, throttleMs),
+    [onScrollPositionChange, throttleMs]
+  );
+
+  const handleScroll = useCallback((event: Event) => {
+    const target = event.target as HTMLElement;
+    if (target) {
+      throttledScrollHandler(target.scrollTop);
+    }
+  }, [throttledScrollHandler]);
+
+  const scrollToPosition = useCallback((position: number) => {
     const container = containerRef.current;
-    if (!quill || !container) return;
+    if (container) {
+      container.scrollTop = position;
+      scrollPositionRef.current = position;
+    }
+  }, [containerRef]);
+
+  const scrollToTop = useCallback(() => {
+    scrollToPosition(0);
+  }, [scrollToPosition]);
+
+  const scrollToBottom = useCallback(() => {
+    const container = containerRef.current;
+    if (container) {
+      scrollToPosition(container.scrollHeight);
+    }
+  }, [containerRef, scrollToPosition]);
+
+  const handleCursorScroll = useCallback(() => {
+    const quill = editorRef.current?.getEditor?.();
+    if (!quill) return;
 
     const selection = quill.getSelection();
     if (!selection) return;
 
-    try {
-      const bounds = quill.getBounds(selection.index);
-      const containerRect = container.getBoundingClientRect();
-      const editorRect = quill.root.getBoundingClientRect();
-      
-      const cursorTop = editorRect.top + bounds.top - containerRect.top;
-      const cursorBottom = cursorTop + bounds.height;
-      
-      const scrollThreshold = containerRect.height - 100;
-      const topThreshold = 50;
-      
-      if (cursorBottom > scrollThreshold) {
-        const targetScrollTop = container.scrollTop + (cursorBottom - scrollThreshold) + 50;
-        container.scrollTo({
-          top: targetScrollTop,
-          behavior: 'smooth'
-        });
-      } else if (cursorTop < topThreshold) {
-        const targetScrollTop = Math.max(0, container.scrollTop - (topThreshold - cursorTop) - 50);
-        container.scrollTo({
-          top: targetScrollTop,
-          behavior: 'smooth'
-        });
-      }
-    } catch (error) {
-      console.error('Error handling cursor scroll:', error);
+    const bounds = quill.getBounds(selection.index);
+    const container = containerRef.current;
+    
+    if (!container || !bounds) return;
+
+    const containerRect = container.getBoundingClientRect();
+    const scrollTop = container.scrollTop;
+    const viewportHeight = containerRect.height;
+    
+    const elementTop = bounds.top + scrollTop;
+    const elementBottom = elementTop + bounds.height;
+    
+    // Scroll if cursor is outside viewport
+    if (elementTop < scrollTop) {
+      scrollToPosition(elementTop - 50); // 50px padding
+    } else if (elementBottom > scrollTop + viewportHeight) {
+      scrollToPosition(elementBottom - viewportHeight + 50);
     }
-  }, [editorRef, containerRef]);
+  }, [editorRef, containerRef, scrollToPosition]);
 
   useEffect(() => {
-    const quill = editorRef.current?.getEditor();
-    if (!quill) return;
+    const container = containerRef.current;
+    if (!container) return;
 
-    const handleSelectionChange = () => {
-      handleCursorScroll();
-    };
-
-    const handleTextChange = () => {
-      setTimeout(() => {
-        handleCursorScroll();
-      }, 50);
-    };
-
-    quill.on('selection-change', handleSelectionChange);
-    quill.on('text-change', handleTextChange);
-
+    container.addEventListener('scroll', handleScroll, { passive: true });
+    
     return () => {
-      quill.off('selection-change', handleSelectionChange);
-      quill.off('text-change', handleTextChange);
+      container.removeEventListener('scroll', handleScroll);
+      throttledScrollHandler.cancel();
     };
-  }, [handleCursorScroll, editorRef]);
+  }, [containerRef, handleScroll, throttledScrollHandler]);
 
-  return { handleCursorScroll };
-};
+  return {
+    scrollPosition: scrollPositionRef.current,
+    scrollToPosition,
+    scrollToTop,
+    scrollToBottom,
+    handleCursorScroll
+  };
+}

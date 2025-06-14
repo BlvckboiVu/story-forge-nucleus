@@ -1,176 +1,127 @@
 
-import { useEffect, useRef, useCallback } from 'react';
-import { useToast } from '@/hooks/use-toast';
-import { useTranslation } from 'react-i18next';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { useToast } from './use-toast';
+import { validateEditorContent } from '@/utils/editorValidation';
 
-interface UseEnhancedAutoSaveOptions {
+interface AutoSaveOptions {
   content: string;
   hasUnsavedChanges: boolean;
-  onSave: (content: string) => Promise<void> | void;
+  onSave: (content: string) => void;
+  onSaveStateChange?: (saving: boolean) => void;
   interval?: number;
-  debounceMs?: number;
-  enableAutoSave?: boolean;
-  onSaveStateChange?: (isSaving: boolean) => void;
-  onErrorStateChange?: (hasError: boolean) => void;
+  retryAttempts?: number;
+  retryDelay?: number;
 }
 
-export const useEnhancedAutoSave = ({ 
-  content, 
-  hasUnsavedChanges, 
-  onSave, 
-  interval = 30000,
-  debounceMs = 2000,
-  enableAutoSave = true,
+export function useEnhancedAutoSave({
+  content,
+  hasUnsavedChanges,
+  onSave,
   onSaveStateChange,
-  onErrorStateChange
-}: UseEnhancedAutoSaveOptions) => {
+  interval = 10000, // 10 seconds
+  retryAttempts = 3,
+  retryDelay = 1000
+}: AutoSaveOptions) {
+  const [isSaving, setIsSaving] = useState(false);
+  const [lastSaveTime, setLastSaveTime] = useState<Date | null>(null);
+  const [saveError, setSaveError] = useState<string | null>(null);
   const { toast } = useToast();
-  const { t } = useTranslation();
-  const autoSaveTimeoutRef = useRef<NodeJS.Timeout>();
-  const debounceTimeoutRef = useRef<NodeJS.Timeout>();
-  const lastSavedContentRef = useRef<string>(content);
-  const isSavingRef = useRef<boolean>(false);
-  const hasErrorRef = useRef<boolean>(false);
-  const saveAttemptsRef = useRef<number>(0);
-  const lastSaveTimeRef = useRef<Date | null>(null);
+  
+  const saveTimeoutRef = useRef<NodeJS.Timeout>();
+  const retryCountRef = useRef(0);
 
-  // Enhanced save function with retry logic and error handling
-  const performSave = useCallback(async (contentToSave: string, isManual = false) => {
-    if (isSavingRef.current || !contentToSave.trim()) {
-      return { success: false, error: 'Already saving or empty content' };
-    }
+  const performSave = useCallback(async (contentToSave: string) => {
+    if (isSaving) return;
 
-    // Don't save if content hasn't actually changed (unless manual)
-    if (!isManual && contentToSave === lastSavedContentRef.current) {
-      return { success: true, error: null };
-    }
-
-    isSavingRef.current = true;
+    setIsSaving(true);
+    setSaveError(null);
     onSaveStateChange?.(true);
-    
+
     try {
-      await onSave(contentToSave);
-      lastSavedContentRef.current = contentToSave;
-      lastSaveTimeRef.current = new Date();
-      saveAttemptsRef.current = 0;
-      hasErrorRef.current = false;
-      onErrorStateChange?.(false);
+      // Validate content before saving
+      const validation = validateEditorContent(contentToSave);
       
-      if (isManual) {
+      if (!validation.isValid) {
+        throw new Error(`Content validation failed: ${validation.errors.join(', ')}`);
+      }
+
+      // Show warnings if any
+      if (validation.warnings.length > 0) {
         toast({
-          title: t('saved', 'Saved'),
-          description: t('draftSavedSuccessfully', 'Draft saved successfully'),
+          title: "Content Warning",
+          description: validation.warnings[0],
+          variant: "default",
+          duration: 3000,
+        });
+      }
+
+      // Save with sanitized content
+      await onSave(validation.sanitizedContent || contentToSave);
+      
+      setLastSaveTime(new Date());
+      retryCountRef.current = 0;
+      
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Save failed';
+      setSaveError(errorMessage);
+      
+      // Retry logic
+      if (retryCountRef.current < retryAttempts) {
+        retryCountRef.current++;
+        setTimeout(() => {
+          performSave(contentToSave);
+        }, retryDelay * retryCountRef.current);
+        
+        toast({
+          title: `Save failed (attempt ${retryCountRef.current}/${retryAttempts})`,
+          description: "Retrying automatically...",
+          variant: "destructive",
           duration: 2000,
         });
       } else {
         toast({
-          title: t('autoSaved', 'Auto-saved'),
-          description: t('draftAutoSavedSuccessfully', 'Draft auto-saved successfully'),
-          duration: 1500,
+          title: "Save failed",
+          description: errorMessage,
+          variant: "destructive",
+          duration: 5000,
         });
       }
-      
-      return { success: true, error: null };
-    } catch (error) {
-      saveAttemptsRef.current++;
-      hasErrorRef.current = true;
-      onErrorStateChange?.(true);
-      
-      const errorMessage = error instanceof Error ? error.message : t('unknownError', 'Unknown error');
-      
-      console.error('Save failed:', error);
-      toast({
-        title: isManual ? t('saveFailedTitle', 'Save Failed') : t('autoSaveFailedTitle', 'Auto-save Failed'),
-        description: `${t('saveFailedDescription', 'Failed to save')}: ${errorMessage}`,
-        variant: "destructive",
-        duration: 4000,
-      });
-      
-      // Retry logic for auto-save
-      if (!isManual && saveAttemptsRef.current < 3) {
-        setTimeout(() => {
-          if (hasUnsavedChanges) {
-            performSave(contentToSave, false);
-          }
-        }, Math.pow(2, saveAttemptsRef.current) * 1000); // Exponential backoff
-      }
-      
-      return { success: false, error: errorMessage };
     } finally {
-      isSavingRef.current = false;
+      setIsSaving(false);
       onSaveStateChange?.(false);
     }
-  }, [onSave, hasUnsavedChanges, onSaveStateChange, onErrorStateChange, toast, t]);
+  }, [isSaving, onSave, onSaveStateChange, retryAttempts, retryDelay, toast]);
 
-  // Debounced auto-save - triggers after user stops typing
+  // Auto-save effect
   useEffect(() => {
-    if (!enableAutoSave) return;
-    
-    if (hasUnsavedChanges && content !== lastSavedContentRef.current) {
-      if (debounceTimeoutRef.current) {
-        clearTimeout(debounceTimeoutRef.current);
-      }
-      
-      debounceTimeoutRef.current = setTimeout(() => {
-        performSave(content, false);
-      }, debounceMs);
+    if (!hasUnsavedChanges || !content.trim()) return;
+
+    if (saveTimeoutRef.current) {
+      clearTimeout(saveTimeoutRef.current);
     }
 
-    return () => {
-      if (debounceTimeoutRef.current) {
-        clearTimeout(debounceTimeoutRef.current);
-      }
-    };
-  }, [content, hasUnsavedChanges, enableAutoSave, performSave, debounceMs]);
-
-  // Interval-based auto-save - backup mechanism
-  useEffect(() => {
-    if (!enableAutoSave) return;
-    
-    if (hasUnsavedChanges && !hasErrorRef.current) {
-      autoSaveTimeoutRef.current = setTimeout(() => {
-        performSave(content, false);
-      }, interval);
-    }
+    saveTimeoutRef.current = setTimeout(() => {
+      performSave(content);
+    }, interval);
 
     return () => {
-      if (autoSaveTimeoutRef.current) {
-        clearTimeout(autoSaveTimeoutRef.current);
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
       }
     };
-  }, [hasUnsavedChanges, enableAutoSave, performSave, interval, content]);
+  }, [content, hasUnsavedChanges, interval, performSave]);
 
-  // Clear all pending saves
   const clearAutoSave = useCallback(() => {
-    if (autoSaveTimeoutRef.current) {
-      clearTimeout(autoSaveTimeoutRef.current);
-    }
-    if (debounceTimeoutRef.current) {
-      clearTimeout(debounceTimeoutRef.current);
+    if (saveTimeoutRef.current) {
+      clearTimeout(saveTimeoutRef.current);
     }
   }, []);
 
-  // Force immediate save
-  const forceSave = useCallback(async () => {
-    clearAutoSave();
-    return await performSave(content, true);
-  }, [clearAutoSave, performSave, content]);
-
-  // Get save status info
-  const getSaveStatus = useCallback(() => ({
-    isSaving: isSavingRef.current,
-    hasError: hasErrorRef.current,
-    lastSaveTime: lastSaveTimeRef.current,
-    saveAttempts: saveAttemptsRef.current,
-    hasUnsavedChanges: content !== lastSavedContentRef.current,
-  }), [content]);
-
-  return { 
-    clearAutoSave, 
-    forceSave,
-    getSaveStatus,
-    isSaving: isSavingRef.current,
-    hasError: hasErrorRef.current,
-    lastSaveTime: lastSaveTimeRef.current,
+  return {
+    isSaving,
+    lastSaveTime,
+    saveError,
+    clearAutoSave,
+    manualSave: () => performSave(content)
   };
-};
+}

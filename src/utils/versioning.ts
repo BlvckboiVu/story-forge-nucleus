@@ -1,19 +1,21 @@
 
 import { Draft } from '@/lib/db';
 import { createVersion, DocumentVersion } from '@/lib/versioning';
-import { sanitizeHtml } from './sanitize';
+import { validateEditorContent } from './editorValidation';
 
 interface VersionMetadata {
   font: string;
   viewMode: 'normal' | 'focus' | 'page';
   wordCount: number;
   timestamp: Date;
+  isValid?: boolean;
+  validationErrors?: string[];
 }
 
 /**
- * Creates a new document version with sanitized content and metadata
+ * Creates a new document version with validated and sanitized content
  * @param draft - The draft document to create a version for
- * @param content - Raw content to be sanitized and stored
+ * @param content - Raw content to be validated, sanitized and stored
  * @param metadata - Version metadata including font, view mode, etc.
  * @returns Promise resolving to the created document version
  */
@@ -22,7 +24,14 @@ export async function createDocumentVersion(
   content: string,
   metadata: VersionMetadata
 ): Promise<DocumentVersion> {
-  const sanitizedContent = sanitizeHtml(content);
+  // Validate and sanitize content before creating version
+  const validation = validateEditorContent(content);
+  
+  if (!validation.isValid) {
+    throw new Error(`Cannot create version with invalid content: ${validation.errors.join(', ')}`);
+  }
+  
+  const sanitizedContent = validation.sanitizedContent || content;
   
   const versionId = await createVersion(
     draft.id,
@@ -31,10 +40,12 @@ export async function createDocumentVersion(
     {
       font: metadata.font,
       viewMode: metadata.viewMode,
+      isValid: validation.isValid,
+      validationErrors: validation.errors,
+      validationWarnings: validation.warnings,
     }
   );
   
-  // Return the full document version object
   return {
     id: versionId,
     draftId: draft.id,
@@ -44,6 +55,8 @@ export async function createDocumentVersion(
     metadata: {
       font: metadata.font,
       viewMode: metadata.viewMode,
+      isValid: validation.isValid,
+      validationErrors: validation.errors,
     }
   };
 }
