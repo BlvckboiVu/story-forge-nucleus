@@ -20,6 +20,7 @@ export default function Editor() {
   const { projectId } = useParams();
   const { projects, currentProject } = useProjects();
   const { drafts, loading, error } = useOptimizedDrafts(projectId || '');
+  
   const [currentDraft, setCurrentDraft] = useState<Draft | null>(null);
   const [outline, setOutline] = useState<EnhancedOutline | null>(null);
   const [showOutline, setShowOutline] = useState(false);
@@ -238,7 +239,6 @@ export default function Editor() {
     );
   }
 
-  // Use initial content from offline state if available
   const initialContent = (editorState?.unsavedContent && offlineCurrentDraft === currentDraft?.id) 
     ? editorState.unsavedContent 
     : currentDraft?.content || '';
@@ -246,7 +246,7 @@ export default function Editor() {
   return (
     <Layout mode="editor" showNavigation={true}>
       <div className="h-full w-full flex flex-col overflow-hidden">
-        {/* Enhanced Editor Header with view options and focus mode */}
+        {/* Consolidated Editor Header */}
         <EditorHeader
           currentDraft={currentDraft}
           onOpenDraft={handleOpenDraft}

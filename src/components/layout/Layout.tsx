@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { cn } from '@/lib/utils';
-import { SidebarProvider, SidebarInset, SidebarTrigger } from '@/components/ui/sidebar';
+import { SidebarProvider, SidebarInset, SidebarTrigger, useSidebar } from '@/components/ui/sidebar';
 import { AppSidebar } from './AppSidebar';
 import { MobileNav } from './MobileNav';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -16,15 +16,14 @@ interface LayoutProps {
   onInsertLLMResponse?: (text: string) => void;
 }
 
-export function Layout({
+function LayoutContent({
   children,
   mode = 'default',
   className,
   showNavigation = true,
-  showEditorPanels = false,
-  onInsertLLMResponse
 }: LayoutProps) {
   const isMobile = useIsMobile();
+  const { state } = useSidebar();
 
   const getLayoutClasses = () => {
     switch (mode) {
@@ -54,16 +53,7 @@ export function Layout({
   if (isMobile) {
     return (
       <div className="min-h-screen bg-background w-full max-w-full overflow-hidden">
-        <header className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-50 w-full flex-shrink-0">
-          <div className="flex h-12 sm:h-14 items-center px-3 sm:px-4 w-full">
-            <MobileNav />
-            <div className="flex items-center space-x-2 ml-2">
-              <h1 className="font-semibold text-sm sm:text-base">StoryForge</h1>
-            </div>
-          </div>
-        </header>
-        
-        <main className={cn("w-full", getLayoutClasses(), className)} style={{ height: 'calc(100vh - 3rem)' }}>
+        <main className={cn("w-full h-screen", getLayoutClasses(), className)}>
           {mode === 'editor' ? (
             <div className="w-full h-full overflow-hidden">
               {children}
@@ -79,29 +69,42 @@ export function Layout({
   }
 
   return (
-    <SidebarProvider>
-      <div className="sidebar-layout w-full">
-        <AppSidebar />
-        <SidebarInset className="main-content">
-          <header className="flex h-12 lg:h-16 shrink-0 items-center gap-2 border-b px-3 lg:px-4 w-full">
-            <SidebarTrigger className="-ml-1" />
-            <div className="flex items-center gap-2">
-              <h1 className="font-semibold text-sm lg:text-base">StoryForge</h1>
+    <div className={cn("sidebar-layout w-full", state === 'collapsed' && 'data-sidebar-collapsed')} data-sidebar-collapsed={state === 'collapsed'}>
+      <AppSidebar />
+      <SidebarInset className="main-content">
+        <main className={cn("w-full h-full", getLayoutClasses(), className)}>
+          {mode === 'editor' ? (
+            <div className="w-full h-full overflow-hidden">
+              {children}
             </div>
-          </header>
-          <main className={cn("w-full", getLayoutClasses(), className)}>
-            {mode === 'editor' ? (
-              <div className="w-full h-full overflow-hidden">
-                {children}
-              </div>
-            ) : (
-              <div className="p-3 lg:p-4 w-full h-full overflow-auto">
-                {children}
-              </div>
-            )}
-          </main>
-        </SidebarInset>
-      </div>
+          ) : (
+            <div className="p-3 lg:p-4 w-full h-full overflow-auto">
+              {children}
+            </div>
+          )}
+        </main>
+      </SidebarInset>
+    </div>
+  );
+}
+
+export function Layout({
+  children,
+  mode = 'default',
+  className,
+  showNavigation = true,
+  showEditorPanels = false,
+  onInsertLLMResponse
+}: LayoutProps) {
+  const isMobile = useIsMobile();
+
+  if (isMobile || !showNavigation) {
+    return <LayoutContent {...props} />;
+  }
+
+  return (
+    <SidebarProvider>
+      <LayoutContent {...props} />
     </SidebarProvider>
   );
 }

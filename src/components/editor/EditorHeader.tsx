@@ -1,14 +1,14 @@
 
-// EditorHeader.tsx
-// Enhanced header with view options, focus mode, and proper spacing
-
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { PenTool, FolderOpen, FilePlus, Save, Maximize2, Minimize2 } from 'lucide-react';
+import { PenTool, FolderOpen, FilePlus, Save, Maximize2, Minimize2, Menu } from 'lucide-react';
 import { StoryBibleDrawer } from '../StoryBibleDrawer';
 import { useProjects } from '@/contexts/ProjectContext';
 import OutlinePopup from './OutlinePopup';
 import { WritingViewOptions } from './WritingViewOptions';
+import { MobileNav } from '../layout/MobileNav';
+import { SidebarTrigger } from '@/components/ui/sidebar';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface EditorHeaderProps {
   currentDraft: { title: string } | null;
@@ -19,7 +19,6 @@ interface EditorHeaderProps {
   hasUnsavedChanges: boolean;
   loading: boolean;
   onSave: () => void;
-  // New props for view options and focus mode
   viewMode?: 'scroll' | 'page';
   onViewModeChange?: (mode: 'scroll' | 'page') => void;
   pageHeight?: number;
@@ -27,8 +26,6 @@ interface EditorHeaderProps {
   isFocusMode?: boolean;
   onToggleFocus?: () => void;
 }
-
-const WORD_LIMIT = 50000;
 
 export const EditorHeader = ({
   currentDraft,
@@ -47,91 +44,116 @@ export const EditorHeader = ({
   onToggleFocus = () => {}
 }: EditorHeaderProps) => {
   const { currentProject } = useProjects();
+  const isMobile = useIsMobile();
 
   return (
-    <header className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 px-3 sm:px-4 lg:px-6 py-3 lg:py-4">
-      <div className="flex items-center justify-between gap-2 sm:gap-3 lg:gap-4">
-        {/* Left: Project and Draft Title */}
-        <div className="flex items-center gap-2 sm:gap-4 lg:gap-6 min-w-0 flex-1">
+    <header className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 px-2 sm:px-4 lg:px-6 py-2 lg:py-3">
+      <div className="flex items-center justify-between gap-2 sm:gap-3">
+        {/* Left: Navigation and Project Info */}
+        <div className="flex items-center gap-2 sm:gap-4 min-w-0 flex-1">
+          {isMobile ? (
+            <MobileNav />
+          ) : (
+            <SidebarTrigger className="h-8 w-8 lg:h-9 lg:w-9" />
+          )}
+          
           <div className="flex items-center gap-2 lg:gap-3 min-w-0">
             <PenTool className="h-4 w-4 lg:h-5 lg:w-5 text-primary flex-shrink-0" />
-            <h1 className="text-base lg:text-lg font-semibold hidden sm:block">Story Forge</h1>
-          </div>
-          {currentDraft && (
-            <div className="text-xs sm:text-sm text-muted-foreground truncate">
-              <span className="hidden md:inline">Editing: </span>
-              <span className="font-medium text-foreground">{currentDraft.title}</span>
+            <div className="min-w-0 flex flex-col">
+              <h1 className="text-sm lg:text-lg font-semibold">StoryForge</h1>
+              {currentDraft && (
+                <div className="text-xs text-muted-foreground truncate">
+                  <span className="font-medium text-foreground">{currentDraft.title}</span>
+                </div>
+              )}
             </div>
-          )}
+          </div>
         </div>
 
-        {/* Center: Navigation/Actions - Hidden on mobile, selective on tablet */}
-        <div className="hidden md:flex items-center gap-2 lg:gap-3 flex-shrink-0">
+        {/* Center: Quick Actions - Hidden on mobile */}
+        <div className="hidden lg:flex items-center gap-2">
           {currentProject && <StoryBibleDrawer projectId={currentProject.id} />}
           <OutlinePopup />
-          <Button onClick={onOpenDraft} variant="outline" size="sm" className="gap-2 hidden lg:flex">
-            <FolderOpen className="h-4 w-4" /> 
-            <span className="hidden xl:inline">Open</span>
-          </Button>
-          <Button onClick={onNewDraft} variant="outline" size="sm" className="gap-2 hidden lg:flex">
-            <FilePlus className="h-4 w-4" /> 
-            <span className="hidden xl:inline">New</span>
-          </Button>
         </div>
 
-        {/* Right: View Options, Focus Mode, and Save */}
-        <div className="flex items-center gap-1 sm:gap-2 lg:gap-3 flex-shrink-0">
-          {/* View Options - Hidden on mobile */}
-          <div className="hidden lg:block">
-            <WritingViewOptions
-              viewMode={viewMode}
-              onViewModeChange={onViewModeChange}
-              pageHeight={pageHeight}
-              onPageHeightChange={onPageHeightChange}
-            />
-          </div>
+        {/* Right: View Options and Actions */}
+        <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
+          {/* Mobile Action Buttons */}
+          {isMobile && (
+            <>
+              <Button onClick={onOpenDraft} variant="ghost" size="sm" className="h-8 w-8 p-0">
+                <FolderOpen className="h-4 w-4" />
+              </Button>
+              <Button onClick={onNewDraft} variant="ghost" size="sm" className="h-8 w-8 p-0">
+                <FilePlus className="h-4 w-4" />
+              </Button>
+            </>
+          )}
+
+          {/* Desktop Action Buttons */}
+          {!isMobile && (
+            <>
+              <Button onClick={onOpenDraft} variant="outline" size="sm" className="hidden xl:flex gap-2">
+                <FolderOpen className="h-4 w-4" />
+                <span>Open</span>
+              </Button>
+              <Button onClick={onNewDraft} variant="outline" size="sm" className="hidden xl:flex gap-2">
+                <FilePlus className="h-4 w-4" />
+                <span>New</span>
+              </Button>
+
+              {/* View Options - Desktop only */}
+              <div className="hidden lg:block">
+                <WritingViewOptions
+                  viewMode={viewMode}
+                  onViewModeChange={onViewModeChange}
+                  pageHeight={pageHeight}
+                  onPageHeightChange={onPageHeightChange}
+                />
+              </div>
+            </>
+          )}
 
           {/* Focus Mode Toggle */}
           <Button
             variant="ghost"
             size="sm"
             onClick={onToggleFocus}
-            className="h-8 px-2 sm:h-9 sm:px-3 text-xs sm:text-sm font-medium text-gray-600 hover:text-gray-800 hover:bg-gray-100"
+            className="h-8 w-8 sm:w-auto sm:px-3 p-0 sm:p-2"
           >
             {isFocusMode ? (
               <>
-                <Minimize2 className="h-3 w-3 sm:h-4 sm:w-4 sm:mr-2" />
-                <span className="hidden sm:inline">Exit Focus</span>
+                <Minimize2 className="h-4 w-4" />
+                <span className="hidden sm:ml-2 sm:inline">Exit Focus</span>
               </>
             ) : (
               <>
-                <Maximize2 className="h-3 w-3 sm:h-4 sm:w-4 sm:mr-2" />
-                <span className="hidden sm:inline">Focus Mode</span>
+                <Maximize2 className="h-4 w-4" />
+                <span className="hidden sm:ml-2 sm:inline">Focus</span>
               </>
             )}
           </Button>
 
-          {/* Status Info - Only unsaved indicator, responsive */}
-          <div className="flex items-center gap-2 text-xs sm:text-sm">
+          {/* Status and Save */}
+          <div className="flex items-center gap-1 sm:gap-2">
             {hasUnsavedChanges && (
               <span className="text-orange-600 dark:text-orange-400 text-xs">
-                <span className="hidden sm:inline">• Unsaved</span>
+                <span className="hidden sm:inline">Unsaved</span>
                 <span className="sm:hidden">•</span>
               </span>
             )}
+            
+            <Button
+              onClick={onSave}
+              disabled={loading || !hasUnsavedChanges}
+              variant="default"
+              size="sm"
+              className={`h-8 w-8 p-0 ${hasUnsavedChanges ? 'bg-blue-600 hover:bg-blue-700' : ''}`}
+              title="Save"
+            >
+              <Save className="h-4 w-4" />
+            </Button>
           </div>
-
-          {/* Save Button - Icon only */}
-          <Button
-            onClick={onSave}
-            disabled={loading || !hasUnsavedChanges}
-            variant="default"
-            size="sm"
-            className={`h-8 w-8 sm:h-9 sm:w-9 p-0 ${hasUnsavedChanges ? 'bg-blue-600 hover:bg-blue-700' : ''}`}
-            title="Save"
-          >
-            <Save className="h-3 w-3 sm:h-4 sm:w-4" />
-          </Button>
         </div>
       </div>
     </header>
