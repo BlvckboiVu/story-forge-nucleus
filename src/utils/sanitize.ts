@@ -20,11 +20,11 @@ const ALLOWED_ATTRS = [
 export function sanitizeHtml(html: string): string {
   return DOMPurify.sanitize(html, {
     ALLOWED_TAGS,
-    ALLOWED_ATTRS,
+    ALLOWED_ATTR: ALLOWED_ATTRS,
     ALLOW_DATA_ATTR: true,
     ALLOW_ARIA_ATTR: true,
     ALLOW_UNKNOWN_PROTOCOLS: false,
     FORBID_TAGS: ['script', 'style', 'iframe', 'object', 'embed'],
     FORBID_ATTR: ['onerror', 'onload', 'onclick', 'onmouseover'],
   });
-} 
+}

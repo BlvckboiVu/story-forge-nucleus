@@ -1,3 +1,4 @@
+
 import Dexie, { Table } from 'dexie';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -13,6 +14,8 @@ export interface DocumentVersion {
     comment?: string;
     tags?: string[];
     isAutoSave?: boolean;
+    font?: string;
+    viewMode?: string;
   };
 }
 
@@ -44,7 +47,14 @@ class VersioningDB extends Dexie {
 // Initialize the database
 const versioningDb = new VersioningDB();
 
-// Version CRUD operations
+/**
+ * Creates a new document version with content and metadata
+ * @param draftId - ID of the draft this version belongs to
+ * @param content - Content of the version
+ * @param wordCount - Word count for the version
+ * @param metadata - Additional metadata for the version
+ * @returns Promise resolving to the created version ID
+ */
 export const createVersion = async (
   draftId: string,
   content: string,
@@ -87,14 +97,29 @@ export const createVersion = async (
   return id;
 };
 
+/**
+ * Retrieves a specific version by ID
+ * @param versionId - ID of the version to retrieve
+ * @returns Promise resolving to the version or undefined if not found
+ */
 export const getVersion = async (versionId: string): Promise<DocumentVersion | undefined> => {
   return await versioningDb.versions.get(versionId);
 };
 
+/**
+ * Retrieves version history for a draft
+ * @param draftId - ID of the draft to get history for
+ * @returns Promise resolving to version history or undefined if not found
+ */
 export const getVersionHistory = async (draftId: string): Promise<VersionHistory | undefined> => {
   return await versioningDb.versionHistory.get({ draftId });
 };
 
+/**
+ * Gets the latest version for a draft
+ * @param draftId - ID of the draft to get latest version for
+ * @returns Promise resolving to the latest version or undefined
+ */
 export const getLatestVersion = async (draftId: string): Promise<DocumentVersion | undefined> => {
   const history = await getVersionHistory(draftId);
   if (!history) return undefined;
@@ -102,6 +127,13 @@ export const getLatestVersion = async (draftId: string): Promise<DocumentVersion
   return await getVersion(history.currentVersionId);
 };
 
+/**
+ * Lists versions for a draft with pagination
+ * @param draftId - ID of the draft to list versions for
+ * @param limit - Maximum number of versions to return
+ * @param offset - Number of versions to skip
+ * @returns Promise resolving to array of versions
+ */
 export const listVersions = async (
   draftId: string,
   limit: number = 10,
@@ -116,6 +148,11 @@ export const listVersions = async (
     .toArray();
 };
 
+/**
+ * Deletes a version and updates version history
+ * @param versionId - ID of the version to delete
+ * @returns Promise that resolves when deletion is complete
+ */
 export const deleteVersion = async (versionId: string): Promise<void> => {
   const version = await getVersion(versionId);
   if (!version) return;
@@ -138,6 +175,11 @@ export const deleteVersion = async (versionId: string): Promise<void> => {
   await versioningDb.versions.delete(versionId);
 };
 
+/**
+ * Restores a version as the current version
+ * @param versionId - ID of the version to restore
+ * @returns Promise that resolves when restoration is complete
+ */
 export const restoreVersion = async (versionId: string): Promise<void> => {
   const version = await getVersion(versionId);
   if (!version) return;
@@ -152,7 +194,13 @@ export const restoreVersion = async (versionId: string): Promise<void> => {
   await versioningDb.versionHistory.put(history);
 };
 
-// Auto-save version (creates a version if content has changed)
+/**
+ * Auto-save version (creates a version if content has changed)
+ * @param draftId - ID of the draft to auto-save
+ * @param content - Content to save
+ * @param wordCount - Word count for the content
+ * @returns Promise resolving to version ID or null if no change
+ */
 export const autoSaveVersion = async (
   draftId: string,
   content: string,
@@ -168,4 +216,4 @@ export const autoSaveVersion = async (
   return await createVersion(draftId, content, wordCount, {
     isAutoSave: true
   });
-}; 
+};

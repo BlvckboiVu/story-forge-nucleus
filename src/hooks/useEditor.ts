@@ -1,7 +1,8 @@
+
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { Draft } from '@/lib/db';
 import { createVersion, DocumentVersion } from '@/lib/versioning';
-import { useToast } from '@/components/ui/use-toast';
+import { useToast } from '@/hooks/use-toast';
 import { useDebounce } from '@/hooks/useDebounce';
 
 interface UseEditorProps {
@@ -36,6 +37,12 @@ interface UseEditorReturn {
 const DEFAULT_AUTO_SAVE_INTERVAL = 30000; // 30 seconds
 const DEFAULT_WORD_LIMIT = 100000;
 
+/**
+ * Custom hook for managing editor state and functionality
+ * Provides comprehensive editor features including auto-save, word counting, and UI state management
+ * @param options - Configuration object for editor behavior
+ * @returns Object with editor state and handler functions
+ */
 export function useEditor({
   initialContent = '',
   draft,
@@ -65,15 +72,15 @@ export function useEditor({
       }
       
       if (draft) {
-        await createVersion({
-          draftId: draft.id,
+        await createVersion(
+          draft.id,
           content,
           wordCount,
-          metadata: {
+          {
             font: selectedFont,
             viewMode,
-          },
-        });
+          }
+        );
       }
       
       setIsDirty(false);
@@ -132,15 +139,15 @@ export function useEditor({
       }
       
       if (draft) {
-        await createVersion({
-          draftId: draft.id,
+        await createVersion(
+          draft.id,
           content,
           wordCount,
-          metadata: {
+          {
             font: selectedFont,
             viewMode,
-          },
-        });
+          }
+        );
       }
       
       setIsDirty(false);
@@ -225,4 +232,4 @@ export function useEditor({
     handleDragLeave,
     handleSelectionChange,
   };
-} 
+}

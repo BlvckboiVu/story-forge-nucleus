@@ -24,16 +24,16 @@ export async function createDocumentVersion(
 ): Promise<DocumentVersion> {
   const sanitizedContent = sanitizeHtml(content);
   
-  return createVersion({
-    draftId: draft.id,
-    content: sanitizedContent,
-    wordCount: metadata.wordCount,
-    metadata: {
+  return await createVersion(
+    draft.id,
+    sanitizedContent,
+    metadata.wordCount,
+    {
       font: metadata.font,
       viewMode: metadata.viewMode,
       timestamp: metadata.timestamp.toISOString(),
-    },
-  });
+    }
+  );
 }
 
 /**
@@ -53,8 +53,8 @@ export function getVersionLabel(version: DocumentVersion): string {
  */
 export function getVersionMetadata(version: DocumentVersion): VersionMetadata {
   return {
-    font: version.metadata.font,
-    viewMode: version.metadata.viewMode,
+    font: version.metadata.font || 'Inter',
+    viewMode: version.metadata.viewMode || 'normal',
     wordCount: version.wordCount,
     timestamp: new Date(version.timestamp),
   };
@@ -88,4 +88,4 @@ export function getVersionDiff(
   const removed = oldWords.filter((word) => !newWords.includes(word)).length;
   
   return { added, removed };
-} 
+}
