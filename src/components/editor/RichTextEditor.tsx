@@ -1,4 +1,3 @@
-
 import { useEffect, useRef, useState, useCallback } from 'react';
 import ReactQuill, { Quill } from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
@@ -10,6 +9,9 @@ import { useEnhancedWordCount } from '@/hooks/useEnhancedWordCount';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useEditorContent } from '@/hooks/useEditorContent';
 import { useEditorScroll } from '@/hooks/useEditorScroll';
+import { usePerformanceMonitoring } from '@/hooks/usePerformanceMonitoring';
+import { useAccessibility } from '@/hooks/useAccessibility';
+import { useAnalytics } from '@/hooks/useAnalytics';
 import { Button } from '@/components/ui/button';
 import { AlertTriangle, RefreshCw } from 'lucide-react';
 import { useProjects } from '@/contexts/ProjectContext';
@@ -80,10 +82,39 @@ const RichTextEditor = ({
   const { currentProject } = useProjects();
   const deviceIsMobile = useIsMobile();
 
+  // Enhanced hooks
   const { stats, updateWordCount, getWarningLevel } = useEnhancedWordCount({
     warningThreshold: 45000,
     limitThreshold: WORD_LIMIT,
   });
+
+  const { 
+    measureRenderTime,
+    measureSaveTime,
+    trackKeystroke,
+    trackContentSize,
+    getPerformanceData 
+  } = usePerformanceMonitoring();
+
+  const { 
+    announce,
+    announceWordCount,
+    announceSaveStatus,
+    announceValidationError,
+    setupKeyboardNavigation 
+  } = useAccessibility({
+    announceChanges: true,
+    keyboardNavigation: true,
+    screenReaderOptimized: true,
+  });
+
+  const {
+    trackEvent,
+    trackError,
+    trackUserAction,
+    trackKeystroke: trackAnalyticsKeystroke,
+    trackWordCount: trackAnalyticsWordCount
+  } = useAnalytics();
 
   const { 
     content, 
@@ -96,9 +127,14 @@ const RichTextEditor = ({
     resetToLastValid 
   } = useEditorContent({
     initialContent,
-    onContentChange,
+    onContentChange: (newContent) => {
+      trackContentSize(newContent);
+      trackAnalyticsWordCount(stats.words);
+      onContentChange?.(newContent);
+    },
     onWordCountChange: (count) => {
       updateWordCount(content);
+      announceWordCount(count);
       if (onWordCountChange) onWordCountChange(count);
     },
     validateOnChange: true,
@@ -218,6 +254,7 @@ const RichTextEditor = ({
   const handleEditorError = useCallback((error: Error) => {
     console.error('Editor error:', error);
     setEditorError(error.message);
+    trackError(error, { component: 'RichTextEditor', draft: draft?.id });
     
     toast({
       title: "Editor Error",
@@ -225,9 +262,47 @@ const RichTextEditor = ({
       variant: "destructive",
       duration: 5000,
     });
-  }, [toast]);
+  }, [toast, trackError, draft?.id]);
 
-  // Enhanced font change with validation
+  // Enhanced content change with performance tracking
+  const handleContentChangeWithTracking = useCallback((value: string) => {
+    measureRenderTime(() => {
+      handleChange(value);
+      trackKeystroke();
+      trackAnalyticsKeystroke();
+    });
+  }, [handleChange, measureRenderTime, trackKeystroke, trackAnalyticsKeystroke]);
+
+  // Enhanced save with performance and accessibility
+  const handleSaveContent = useCallback(async (contentToSave: string) => {
+    try {
+      if (!isValid) {
+        announceValidationError(validationErrors);
+        throw new Error('Cannot save invalid content');
+      }
+      
+      announceSaveStatus('saving');
+      trackUserAction('save_document', { wordCount: stats.words, draftId: draft?.id });
+      
+      await measureSaveTime(async () => {
+        await onSave(contentToSave);
+      });
+      
+      setHasUnsavedChanges(false);
+      setEditorError(null);
+      announceSaveStatus('saved');
+      
+    } catch (error) {
+      console.error('Save failed:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Failed to save content';
+      setEditorError(errorMessage);
+      announceSaveStatus('error');
+      trackError(error as Error, { action: 'save', wordCount: stats.words });
+      throw error;
+    }
+  }, [isValid, validationErrors, stats.words, draft?.id, onSave, setHasUnsavedChanges, 
+      measureSaveTime, announceSaveStatus, announceValidationError, trackUserAction, trackError]);
+
   const handleFontChange = useCallback((fontFamily: string) => {
     if (!fontFamily?.trim()) {
       handleEditorError(new Error('Invalid font family'));
@@ -245,7 +320,14 @@ const RichTextEditor = ({
     }
   }, [handleEditorError]);
 
-  // Enhanced format handling with validation
+  useEffect(() => {
+    const editor = editorRef.current?.getEditor();
+    if (editor) {
+      const cleanup = setupKeyboardNavigation(editor.root);
+      return cleanup;
+    }
+  }, [setupKeyboardNavigation]);
+
   const handleFormatClick = useCallback((format: string, value?: any) => {
     try {
       const quill = editorRef.current?.getEditor();
@@ -258,33 +340,44 @@ const RichTextEditor = ({
         throw new Error('No text selected');
       }
 
+      trackUserAction('format_text', { format, value });
+
       switch (format) {
         case 'bold':
           quill.format('bold', !quill.getFormat(range).bold);
+          announce('Bold formatting toggled');
           break;
         case 'italic':
           quill.format('italic', !quill.getFormat(range).italic);
+          announce('Italic formatting toggled');
           break;
         case 'underline':
           quill.format('underline', !quill.getFormat(range).underline);
+          announce('Underline formatting toggled');
           break;
         case 'strike':
           quill.format('strike', !quill.getFormat(range).strike);
+          announce('Strikethrough formatting toggled');
           break;
         case 'code':
           quill.format('code', !quill.getFormat(range).code);
+          announce('Code formatting toggled');
           break;
         case 'header':
           quill.format('header', value);
+          announce(`Header set to level ${value}`);
           break;
         case 'align':
           quill.format('align', value === 'left' ? false : value);
+          announce(`Text aligned ${value}`);
           break;
         case 'list':
           quill.format('list', value);
+          announce(`List formatting applied: ${value}`);
           break;
         case 'blockquote':
           quill.format('blockquote', !quill.getFormat(range).blockquote);
+          announce('Blockquote formatting toggled');
           break;
         default:
           console.warn(`Unknown format: ${format}`);
@@ -292,7 +385,7 @@ const RichTextEditor = ({
     } catch (error) {
       handleEditorError(error as Error);
     }
-  }, [handleEditorError]);
+  }, [handleEditorError, trackUserAction, announce]);
 
   const handleToggleFocus = useCallback(() => {
     try {
@@ -333,6 +426,18 @@ const RichTextEditor = ({
       console.error('Unsaved changes notification failed:', error);
     }
   }, [hasUnsavedChanges, onUnsavedChangesChange]);
+
+  // Performance monitoring effect
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const perfData = getPerformanceData();
+      if (perfData.trends.performanceScore < 70) {
+        console.warn('Performance degradation detected:', perfData);
+      }
+    }, 30000); // Check every 30 seconds
+
+    return () => clearInterval(interval);
+  }, [getPerformanceData]);
 
   // Error display component
   if (editorError && !isValid) {
@@ -382,9 +487,16 @@ const RichTextEditor = ({
       <div className="flex-shrink-0">
         <EnhancedToolbar
           selectedFont="Inter"
-          onFontChange={handleFontChange}
+          onFontChange={(font) => {
+            trackUserAction('change_font', { font });
+          
+            handleFontChange(font);
+          }}
           isFocusMode={isFocusMode}
-          onToggleFocus={handleToggleFocus}
+          onToggleFocus={() => {
+            trackUserAction('toggle_focus_mode', { enabled: !isFocusMode });
+            onToggleFocus?.();
+          }}
           onSave={() => {}}
           hasUnsavedChanges={hasUnsavedChanges}
           onFormatClick={handleFormatClick}
@@ -416,7 +528,7 @@ const RichTextEditor = ({
           ref={editorRef}
           theme="snow"
           value={content}
-          onChange={handleChange}
+          onChange={handleContentChangeWithTracking}
           modules={modules}
           formats={formats}
           className={`h-full w-full ${isFocusMode ? 'focus-mode' : ''}`}
@@ -432,7 +544,7 @@ const RichTextEditor = ({
         />
       </div>
       
-      {/* Enhanced status bar */}
+      {/* Enhanced status bar with performance indicators */}
       {!isFocusMode && (
         <div className="flex-shrink-0">
           <div className="flex items-center justify-between px-4 py-3 bg-gray-50 dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700">
@@ -484,6 +596,11 @@ const RichTextEditor = ({
                   <span className="sm:hidden font-medium">Invalid</span>
                 </span>
               )}
+
+              {/* Performance indicator */}
+              <span className="text-blue-600 dark:text-blue-400 flex-shrink-0 hidden lg:inline">
+                Perf: {getPerformanceData().trends.performanceScore}%
+              </span>
             </div>
           </div>
         </div>
