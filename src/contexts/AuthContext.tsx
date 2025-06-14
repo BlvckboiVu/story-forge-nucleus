@@ -6,6 +6,7 @@ import { supabase } from '../lib/supabase';
 import { convertSupabaseUser } from './auth/userHelpers';
 import { loadGuestUserFromStorage, clearGuestUserFromStorage } from './auth/storageHelpers';
 import { performSignUp, performSignIn, performSignOut, performGuestLogin } from './auth/authOperations';
+import { sessionManager } from './auth/sessionManager';
 
 // Create context with a default value
 const AuthContext = createContext<AuthContextType>({
@@ -50,6 +51,19 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     };
   }, [user]);
 
+  // Set up session timeout handling
+  useEffect(() => {
+    sessionManager.setSessionCallbacks(
+      undefined, // Warning handled by SessionTimeoutWarning component
+      () => {
+        // Session expired - sign out user
+        setUser(null);
+        clearGuestUserFromStorage();
+        setError('Session expired due to inactivity');
+      }
+    );
+  }, []);
+
   useEffect(() => {
     let mounted = true;
 
@@ -64,10 +78,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             if (session?.user) {
               const convertedUser = convertSupabaseUser(session.user);
               setUser(convertedUser);
+              sessionManager.createSession(convertedUser);
               clearGuestUserFromStorage();
             } else {
               const guestUser = loadGuestUserFromStorage();
               setUser(guestUser);
+              if (guestUser) {
+                sessionManager.createSession(guestUser);
+              }
             }
             
             if (mounted) {
@@ -84,13 +102,20 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           console.error('Error getting session:', error);
           const guestUser = loadGuestUserFromStorage();
           setUser(guestUser);
+          if (guestUser) {
+            sessionManager.createSession(guestUser);
+          }
         } else if (session?.user) {
           const convertedUser = convertSupabaseUser(session.user);
           setUser(convertedUser);
+          sessionManager.createSession(convertedUser);
           clearGuestUserFromStorage();
         } else {
           const guestUser = loadGuestUserFromStorage();
           setUser(guestUser);
+          if (guestUser) {
+            sessionManager.createSession(guestUser);
+          }
         }
 
         if (mounted) {
@@ -117,12 +142,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     };
   }, []);
 
-  const signUp = async (email: string, password: string) => {
+  const signUp = async (email: string, password: string, displayName?: string) => {
     setLoading(true);
     setError(null);
     
     try {
-      const result = await performSignUp(email, password);
+      const result = await performSignUp(email, password, displayName);
       if (result.success && result.user) {
         setUser(result.user);
       }
@@ -182,6 +207,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const result = await performSignOut(user?.id);
       if (result.success) {
         setUser(null);
+        sessionManager.clearSession();
       }
       return result;
     } catch (e) {

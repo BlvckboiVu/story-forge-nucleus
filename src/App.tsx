@@ -2,6 +2,7 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from '@/components/ui/toaster';
 import { useAuth } from '@/contexts/AuthContext';
+import { SessionTimeoutWarning } from '@/components/auth/SessionTimeoutWarning';
 import Dashboard from '@/pages/Dashboard';
 import Editor from '@/pages/Editor';
 import StoryBible from '@/pages/StoryBible';
@@ -102,6 +103,7 @@ export default function App() {
         <Route path="*" element={<NotFound />} />
       </Routes>
       <Toaster />
+      <SessionTimeoutWarning />
     </Router>
   );
 }
