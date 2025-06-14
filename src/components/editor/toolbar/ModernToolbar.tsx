@@ -14,7 +14,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 interface ModernToolbarProps {
   selectedFont: string;
   onFontChange: (font: string) => void;
-  activeFormats: Record<string, boolean>;
+  activeFormats: Record<string, any>;
   onFormatClick: (format: string, value?: any) => void;
   onUndo: () => void;
   onRedo: () => void;
@@ -90,14 +90,14 @@ export const ModernToolbar = ({
             <ToolbarButton
               icon={Bold}
               onClick={() => onFormatClick('bold')}
-              active={activeFormats.bold}
+              active={Boolean(activeFormats.bold)}
               tooltip="Bold"
               size="sm"
             />
             <ToolbarButton
               icon={Italic}
               onClick={() => onFormatClick('italic')}
-              active={activeFormats.italic}
+              active={Boolean(activeFormats.italic)}
               tooltip="Italic"
               size="sm"
             />
@@ -189,31 +189,31 @@ export const ModernToolbar = ({
             <ToolbarButton
               icon={Bold}
               onClick={() => onFormatClick('bold')}
-              active={activeFormats.bold}
+              active={Boolean(activeFormats.bold)}
               tooltip="Bold (Ctrl+B)"
             />
             <ToolbarButton
               icon={Italic}
               onClick={() => onFormatClick('italic')}
-              active={activeFormats.italic}
+              active={Boolean(activeFormats.italic)}
               tooltip="Italic (Ctrl+I)"
             />
             <ToolbarButton
               icon={Underline}
               onClick={() => onFormatClick('underline')}
-              active={activeFormats.underline}
+              active={Boolean(activeFormats.underline)}
               tooltip="Underline (Ctrl+U)"
             />
             <ToolbarButton
               icon={Strikethrough}
               onClick={() => onFormatClick('strike')}
-              active={activeFormats.strike}
+              active={Boolean(activeFormats.strike)}
               tooltip="Strikethrough"
             />
             <ToolbarButton
               icon={Code}
               onClick={() => onFormatClick('code')}
-              active={activeFormats.code}
+              active={Boolean(activeFormats.code)}
               tooltip="Code"
             />
           </div>
@@ -258,7 +258,7 @@ export const ModernToolbar = ({
             <ToolbarButton
               icon={Quote}
               onClick={() => onFormatClick('blockquote')}
-              active={activeFormats.blockquote}
+              active={Boolean(activeFormats.blockquote)}
               tooltip="Quote"
             />
           </div>
@@ -311,7 +311,7 @@ const MobileToolbarContent = ({
 }: {
   selectedFont: string;
   onFontChange: (font: string) => void;
-  activeFormats: Record<string, boolean>;
+  activeFormats: Record<string, any>;
   onFormatClick: (format: string, value?: any) => void;
 }) => {
   const currentHeaderValue = activeFormats.header === false ? 'false' : String(activeFormats.header);
@@ -359,28 +359,28 @@ const MobileToolbarContent = ({
           <ToolbarButton
             icon={Underline}
             onClick={() => onFormatClick('underline')}
-            active={activeFormats.underline}
+            active={Boolean(activeFormats.underline)}
             tooltip="Underline"
             size="sm"
           />
           <ToolbarButton
             icon={Strikethrough}
             onClick={() => onFormatClick('strike')}
-            active={activeFormats.strike}
+            active={Boolean(activeFormats.strike)}
             tooltip="Strikethrough"
             size="sm"
           />
           <ToolbarButton
             icon={Code}
             onClick={() => onFormatClick('code')}
-            active={activeFormats.code}
+            active={Boolean(activeFormats.code)}
             tooltip="Code"
             size="sm"
           />
           <ToolbarButton
             icon={Quote}
             onClick={() => onFormatClick('blockquote')}
-            active={activeFormats.blockquote}
+            active={Boolean(activeFormats.blockquote)}
             tooltip="Quote"
             size="sm"
           />

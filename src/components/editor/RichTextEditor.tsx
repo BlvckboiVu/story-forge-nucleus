@@ -1,4 +1,3 @@
-
 import { useEffect, useRef, useState, useCallback } from 'react';
 import ReactQuill, { Quill } from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
@@ -314,7 +313,7 @@ const RichTextEditor = ({
     }
   }, [handleEditorError]);
 
-  const [activeFormats, setActiveFormats] = useState<Record<string, boolean>>({});
+  const [activeFormats, setActiveFormats] = useState<Record<string, any>>({});
 
   // Check active formats from editor
   useEffect(() => {
