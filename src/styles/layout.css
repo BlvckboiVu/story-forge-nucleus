@@ -1,65 +1,102 @@
 
-/* Layout fixes for proper proportions and responsive design */
+/* Modern CSS Grid Layout System for Responsive Editor */
 .sidebar-layout {
-  display: flex;
+  display: grid;
+  grid-template-columns: auto 1fr;
   min-height: 100vh;
-  width: 100%;
+  width: 100vw;
   max-width: 100vw;
-  overflow-x: hidden;
+  overflow: hidden;
+  position: relative;
 }
 
 .main-content {
-  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  display: grid;
+  grid-template-rows: auto 1fr;
+  width: 100%;
+  max-width: 100%;
+}
+
+/* Editor Container with Dynamic Sizing */
+.editor-container {
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  height: 100vh;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  container-type: inline-size;
+}
+
+/* Responsive Editor Wrapper */
+.editor-responsive-wrapper {
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  min-width: 0;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  overflow: hidden;
+  container-type: inline-size;
+}
+
+/* Rich Text Editor Area */
+.rich-text-editor {
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  min-height: 0;
   min-width: 0;
   overflow: hidden;
-  max-width: 100%;
-}
-
-.editor-container {
-  height: calc(100vh - 4rem);
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
   width: 100%;
   max-width: 100%;
+  height: 100%;
 }
 
-.rich-text-editor {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  min-height: 0;
-  overflow: hidden;
-  width: 100%;
-  max-width: 100%;
-}
-
+/* Quill Container Responsive Behavior */
 .ql-container {
-  flex: 1;
-  overflow-y: auto;
   min-height: 0;
+  min-width: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
   width: 100%;
   max-width: 100%;
+  height: 100%;
+  contain: layout style;
 }
 
 .ql-editor {
   min-height: 100%;
-  padding: 1.5rem;
+  padding: clamp(1rem, 2vw, 2rem);
   line-height: 1.6;
-  height: auto;
   width: 100%;
   max-width: 100%;
   box-sizing: border-box;
+  overflow-wrap: break-word;
+  word-wrap: break-word;
+  hyphens: auto;
 }
 
-/* Mobile optimizations */
-@media (max-width: 768px) {
-  .sidebar-layout {
-    flex-direction: column;
-  }
-  
-  .editor-container {
-    height: calc(100vh - 3.5rem);
+/* Toolbar Responsive Design */
+.ql-toolbar {
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  overflow-x: auto;
+  overflow-y: hidden;
+  flex-shrink: 0;
+  scrollbar-width: thin;
+}
+
+/* Container Queries for Ultra-Responsive Design */
+@container (max-width: 600px) {
+  .ql-toolbar {
+    padding: 0.5rem;
+    gap: 0.25rem;
   }
   
   .ql-editor {
@@ -67,47 +104,129 @@
     font-size: 16px; /* Prevent zoom on iOS */
   }
   
-  /* Ensure mobile viewport is respected */
-  .rich-text-editor {
-    width: 100%;
-    max-width: 100vw;
-    overflow-x: hidden;
-  }
-  
-  .ql-container {
-    width: 100%;
-    max-width: 100%;
-    overflow-x: hidden;
+  .editor-container {
+    height: 100dvh; /* Use dynamic viewport height on mobile */
   }
 }
 
-/* Focus mode styles */
+@container (min-width: 601px) and (max-width: 1024px) {
+  .ql-toolbar {
+    padding: 0.75rem;
+  }
+  
+  .ql-editor {
+    padding: 1.5rem;
+  }
+}
+
+@container (min-width: 1025px) {
+  .ql-toolbar {
+    padding: 1rem;
+  }
+  
+  .ql-editor {
+    padding: 2rem;
+    max-width: min(100%, 900px);
+    margin: 0 auto;
+  }
+}
+
+/* Focus Mode Responsive */
 .focus-mode .rich-text-editor {
-  max-width: 900px;
-  margin: 0 auto;
   width: 100%;
+  max-width: 100%;
 }
 
 .focus-mode .ql-editor {
-  max-width: 65ch;
+  max-width: min(100%, 65ch);
   margin: 0 auto;
-  width: 100%;
+  padding: clamp(2rem, 4vw, 4rem);
 }
 
-/* Prevent horizontal overflow globally */
+/* Mobile-Specific Optimizations */
+@media (max-width: 768px) {
+  .sidebar-layout {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto 1fr;
+  }
+  
+  .editor-container {
+    height: calc(100dvh - 3.5rem);
+  }
+  
+  .ql-editor {
+    font-size: 16px !important; /* Prevent zoom on iOS */
+  }
+}
+
+/* Tablet Responsive */
+@media (min-width: 769px) and (max-width: 1024px) {
+  .sidebar-layout {
+    grid-template-columns: 280px 1fr;
+  }
+}
+
+/* Desktop Responsive */
+@media (min-width: 1025px) {
+  .sidebar-layout {
+    grid-template-columns: 320px 1fr;
+  }
+}
+
+/* High-DPI and Retina Display Optimizations */
+@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+  .ql-editor {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+}
+
+/* Prevent horizontal overflow globally with modern CSS */
 * {
   box-sizing: border-box;
+}
+
+html, body {
+  overflow-x: hidden;
+  width: 100%;
+  max-width: 100vw;
 }
 
 .editor-wrapper {
   width: 100%;
   max-width: 100%;
-  overflow-x: hidden;
+  min-width: 0;
+  overflow: hidden;
+  contain: layout;
 }
 
-/* Responsive sidebar handling */
-@media (max-width: 1024px) {
-  .sidebar-layout .main-content {
-    width: 100%;
+/* Print Optimizations */
+@media print {
+  .sidebar-layout {
+    grid-template-columns: 1fr;
+  }
+  
+  .ql-toolbar {
+    display: none !important;
+  }
+  
+  .ql-editor {
+    padding: 0;
+    max-width: none;
+    margin: 0;
+  }
+}
+
+/* Reduced Motion Support */
+@media (prefers-reduced-motion: reduce) {
+  .ql-container {
+    scroll-behavior: auto;
+  }
+}
+
+/* Dark Mode Support */
+@media (prefers-color-scheme: dark) {
+  .editor-container {
+    color-scheme: dark;
   }
 }

@@ -30,11 +30,11 @@ export function Layout({
   const getLayoutClasses = () => {
     switch (mode) {
       case 'full-width':
-        return 'w-full max-w-none';
+        return 'w-full max-w-full';
       case 'contained':
         return 'max-w-7xl mx-auto w-full';
       case 'editor':
-        return 'w-full max-w-none h-full';
+        return 'w-full max-w-full h-full min-h-0';
       default:
         return 'max-w-5xl mx-auto w-full';
     }
@@ -42,7 +42,7 @@ export function Layout({
 
   if (!showNavigation) {
     return (
-      <div className="min-h-screen bg-background w-full max-w-full overflow-x-hidden">
+      <div className="min-h-screen bg-background w-full max-w-full overflow-hidden">
         <main className={cn("flex-1 w-full", getLayoutClasses(), className)}>
           <div className="container py-6 w-full max-w-full">
             {children}
@@ -54,8 +54,8 @@ export function Layout({
 
   if (isMobile) {
     return (
-      <div className="min-h-screen bg-background w-full max-w-full overflow-x-hidden">
-        <header className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-50 w-full">
+      <div className="min-h-screen bg-background w-full max-w-full overflow-hidden">
+        <header className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-50 w-full flex-shrink-0">
           <div className="flex h-14 items-center px-4 w-full">
             <MobileNav />
             <div className="flex items-center space-x-2 ml-2">
@@ -64,13 +64,13 @@ export function Layout({
           </div>
         </header>
         
-        <main className={cn("flex-1 w-full", getLayoutClasses(), className)}>
+        <main className={cn("w-full", getLayoutClasses(), className)} style={{ height: 'calc(100vh - 3.5rem)' }}>
           {mode === 'editor' ? (
-            <div className="w-full h-full">
+            <div className="w-full h-full overflow-hidden">
               {children}
             </div>
           ) : (
-            <div className="container py-6 w-full max-w-full px-4">
+            <div className="container py-6 w-full max-w-full px-4 h-full overflow-auto">
               {children}
             </div>
           )}
@@ -81,22 +81,22 @@ export function Layout({
 
   return (
     <SidebarProvider>
-      <div className="min-h-screen flex w-full max-w-full overflow-x-hidden">
+      <div className="sidebar-layout">
         <AppSidebar />
-        <SidebarInset className="flex-1 min-w-0 w-full">
+        <SidebarInset className="main-content">
           <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4 w-full">
             <SidebarTrigger className="-ml-1" />
             <div className="flex items-center gap-2">
               <h1 className="font-semibold">StoryForge</h1>
             </div>
           </header>
-          <main className={cn("flex-1 w-full", getLayoutClasses(), className)}>
+          <main className={cn("w-full", getLayoutClasses(), className)}>
             {mode === 'editor' ? (
-              <div className="w-full h-full">
+              <div className="w-full h-full overflow-hidden">
                 {children}
               </div>
             ) : (
-              <div className="p-4 w-full">
+              <div className="p-4 w-full h-full overflow-auto">
                 {children}
               </div>
             )}

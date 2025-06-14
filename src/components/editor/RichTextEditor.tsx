@@ -407,41 +407,44 @@ const RichTextEditor = ({
   }
 
   return (
-    <div className="editor-container">
-      {/* Enhanced toolbar with theme support */}
-      <EnhancedToolbar
-        selectedFont={currentTheme.font?.family || 'Inter'}
-        onFontChange={handleFontChange}
-        selectedTheme={currentTheme.id}
-        onThemeChange={changeTheme}
-        isFocusMode={isFocusMode}
-        onToggleFocus={handleToggleFocus}
-        onSave={handleSave}
-        hasUnsavedChanges={hasUnsavedChanges}
-        onFormatClick={handleFormatClick}
-        isMobile={isMobile || deviceIsMobile}
-        editorRef={editorRef}
-        extraActions={
-          !isFocusMode ? (
-            <div className="flex items-center gap-2">
-              <WritingViewOptions
-                viewMode={viewMode}
-                onViewModeChange={setViewMode}
-                pageHeight={pageHeight}
-                onPageHeightChange={setPageHeight}
-              />
-              {extraActions}
-            </div>
-          ) : undefined
-        }
-      />
+    <div className="editor-responsive-wrapper">
+      {/* Enhanced toolbar with responsive design */}
+      <div className="toolbar-container">
+        <EnhancedToolbar
+          selectedFont={currentTheme.font?.family || 'Inter'}
+          onFontChange={handleFontChange}
+          selectedTheme={currentTheme.id}
+          onThemeChange={changeTheme}
+          isFocusMode={isFocusMode}
+          onToggleFocus={handleToggleFocus}
+          onSave={handleSave}
+          hasUnsavedChanges={hasUnsavedChanges}
+          onFormatClick={handleFormatClick}
+          isMobile={isMobile || deviceIsMobile}
+          editorRef={editorRef}
+          extraActions={
+            !isFocusMode ? (
+              <div className="flex items-center gap-2">
+                <WritingViewOptions
+                  viewMode={viewMode}
+                  onViewModeChange={setViewMode}
+                  pageHeight={pageHeight}
+                  onPageHeightChange={setPageHeight}
+                />
+                {extraActions}
+              </div>
+            ) : undefined
+          }
+        />
+      </div>
 
+      {/* Editor content area with proper containment */}
       <div 
         ref={containerRef}
-        className="flex-1 bg-white dark:bg-gray-900 border-x border-gray-200 dark:border-gray-700 relative overflow-auto"
+        className="editor-content-area"
         style={{ 
-          scrollBehavior: 'smooth',
-          backgroundColor: currentTheme.colors.background 
+          backgroundColor: currentTheme.colors.background,
+          contain: 'layout style'
         }}
       >
         <ReactQuill
@@ -451,39 +454,48 @@ const RichTextEditor = ({
           onChange={handleChange}
           modules={modules}
           formats={formats}
-          className={editorClasses}
+          className={`rich-text-editor ${isFocusMode ? 'focus-mode' : ''} ${viewMode === 'page' ? 'page-view' : 'scroll-view'}`}
           placeholder="Start writing your masterpiece..."
           readOnly={loading}
-          style={editorStyle}
+          style={{
+            fontFamily: currentTheme.font?.family || 'Inter, sans-serif',
+            backgroundColor: currentTheme.colors.background,
+            color: currentTheme.colors.text,
+            ...(viewMode === 'page' && { 
+              '--page-height': `${pageHeight}px`,
+            } as any)
+          }}
         />
       </div>
       
-      {/* Professional status bar with save button */}
+      {/* Status bar with proper responsive design */}
       {!isFocusMode && (
-        <div className="bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700 px-6 py-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-6 text-sm text-muted-foreground">
-              <span className={stats.words > 50000 ? 'text-red-600' : stats.words > 45000 ? 'text-yellow-600' : ''}>
+        <div className="status-bar-container">
+          <div className="flex items-center justify-between px-4 py-3 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700">
+            <div className="flex items-center gap-4 text-sm text-muted-foreground overflow-hidden">
+              <span className={`flex-shrink-0 ${stats.words > 50000 ? 'text-red-600' : stats.words > 45000 ? 'text-yellow-600' : ''}`}>
                 {stats.words.toLocaleString()} words
               </span>
               {viewMode === 'page' && (
-                <span>Page {stats.pages}</span>
+                <span className="flex-shrink-0">Page {stats.pages}</span>
               )}
               {highlightMatches.length > 0 && (
-                <span className="text-blue-600">
+                <span className="text-blue-600 flex-shrink-0 hidden sm:inline">
                   {highlightMatches.length} Story Bible {highlightMatches.length === 1 ? 'reference' : 'references'}
                 </span>
               )}
               {hasUnsavedChanges && (
-                <span className="flex items-center gap-1 text-amber-600">
+                <span className="flex items-center gap-1 text-amber-600 flex-shrink-0">
                   <div className="w-2 h-2 bg-amber-500 rounded-full animate-pulse"></div>
-                  Unsaved changes
+                  <span className="hidden sm:inline">Unsaved changes</span>
+                  <span className="sm:hidden">Unsaved</span>
                 </span>
               )}
               {isSaving && (
-                <span className="flex items-center gap-1 text-blue-600">
+                <span className="flex items-center gap-1 text-blue-600 flex-shrink-0">
                   <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
-                  Saving...
+                  <span className="hidden sm:inline">Saving...</span>
+                  <span className="sm:hidden">Saving</span>
                 </span>
               )}
             </div>
@@ -493,7 +505,7 @@ const RichTextEditor = ({
               disabled={loading || !hasUnsavedChanges || isSaving}
               size="sm"
               className={`
-                transition-all duration-200 
+                transition-all duration-200 flex-shrink-0
                 ${hasUnsavedChanges 
                   ? 'bg-blue-600 hover:bg-blue-700 text-white shadow-md hover:shadow-lg' 
                   : 'bg-gray-100 hover:bg-gray-200 text-gray-600 border'
@@ -501,7 +513,10 @@ const RichTextEditor = ({
               `}
             >
               <Save className="h-4 w-4 mr-2" />
-              {isSaving ? 'Saving...' : loading ? 'Loading...' : 'Save Draft'}
+              <span className="hidden sm:inline">
+                {isSaving ? 'Saving...' : loading ? 'Loading...' : 'Save Draft'}
+              </span>
+              <span className="sm:hidden">Save</span>
             </Button>
           </div>
         </div>
