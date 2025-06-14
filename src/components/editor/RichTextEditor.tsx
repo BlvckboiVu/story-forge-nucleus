@@ -1,9 +1,13 @@
+
 import { useEffect, useRef, useState, useCallback } from 'react';
 import ReactQuill, { Quill } from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
 import { useToast } from '@/hooks/use-toast';
 import { Draft } from '@/lib/db';
-import { EnhancedToolbar } from './EnhancedToolbar';
+import { ModernToolbar } from './toolbar/ModernToolbar';
+import { ModernStatusBar } from './ModernStatusBar';
+import { EditorLoading } from './EditorLoading';
+import { FocusMode } from './FocusMode';
 import { useEnhancedAutoSave } from '@/hooks/useEnhancedAutoSave';
 import { useEnhancedWordCount } from '@/hooks/useEnhancedWordCount';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -17,7 +21,6 @@ import { StoryBibleEntry, getStoryBibleEntriesByProject } from '@/lib/storyBible
 import { debouncedHighlight, registerStoryBibleFormat, HighlightMatch } from '@/utils/highlighting';
 import { EditorErrorDisplay } from './EditorErrorDisplay';
 import { EditorValidationDisplay } from './EditorValidationDisplay';
-import { EditorStatusBar } from './EditorStatusBar';
 
 interface RichTextEditorProps {
   initialContent?: string;
@@ -77,6 +80,8 @@ const RichTextEditor = ({
   const [highlightMatches, setHighlightMatches] = useState<HighlightMatch[]>([]);
   const [editorError, setEditorError] = useState<string | null>(null);
   const [isRecovering, setIsRecovering] = useState(false);
+  const [selectedFont, setSelectedFont] = useState('Inter');
+  const [isOnline, setIsOnline] = useState(navigator.onLine);
   const { toast } = useToast();
   const editorRef = useRef<ReactQuill>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -149,6 +154,20 @@ const RichTextEditor = ({
       // Could save scroll position for restoration
     }
   });
+
+  // Track online status
+  useEffect(() => {
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+    
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
 
   // Register custom Quill format with error handling
   useEffect(() => {
@@ -284,6 +303,7 @@ const RichTextEditor = ({
     }
     
     try {
+      setSelectedFont(fontFamily);
       const quill = editorRef.current?.getEditor();
       if (quill) {
         const editor = quill.root;
@@ -294,13 +314,47 @@ const RichTextEditor = ({
     }
   }, [handleEditorError]);
 
+  const [activeFormats, setActiveFormats] = useState<Record<string, boolean>>({});
+
+  // Check active formats from editor
   useEffect(() => {
-    const editor = editorRef.current?.getEditor();
-    if (editor) {
-      const cleanup = setupKeyboardNavigation(editor.root);
-      return cleanup;
+    const checkFormats = () => {
+      if (!editorRef?.current?.getEditor) return;
+      
+      try {
+        const quill = editorRef.current.getEditor();
+        const range = quill.getSelection();
+        if (!range) return;
+
+        const format = quill.getFormat(range);
+        setActiveFormats({
+          bold: !!format.bold,
+          italic: !!format.italic,
+          underline: !!format.underline,
+          strike: !!format.strike,
+          code: !!format.code,
+          align: format.align || 'left',
+          list: format.list,
+          blockquote: !!format.blockquote,
+          header: format.header || false,
+        });
+      } catch (error) {
+        console.error('Error checking formats:', error);
+      }
+    };
+
+    const quill = editorRef?.current?.getEditor();
+    if (quill) {
+      quill.on('selection-change', checkFormats);
+      quill.on('text-change', checkFormats);
+      checkFormats();
+      
+      return () => {
+        quill.off('selection-change', checkFormats);
+        quill.off('text-change', checkFormats);
+      };
     }
-  }, [setupKeyboardNavigation]);
+  }, [editorRef]);
 
   const handleFormatClick = useCallback((format: string, value?: any) => {
     try {
@@ -311,47 +365,29 @@ const RichTextEditor = ({
 
       const range = quill.getSelection();
       if (!range) {
-        throw new Error('No text selected');
+        // Create a selection if none exists
+        quill.setSelection(0, 0);
       }
 
       trackUserAction('format_text', { format, value });
 
       switch (format) {
         case 'bold':
-          quill.format('bold', !quill.getFormat(range).bold);
-          announce('Bold formatting toggled');
-          break;
         case 'italic':
-          quill.format('italic', !quill.getFormat(range).italic);
-          announce('Italic formatting toggled');
-          break;
         case 'underline':
-          quill.format('underline', !quill.getFormat(range).underline);
-          announce('Underline formatting toggled');
-          break;
         case 'strike':
-          quill.format('strike', !quill.getFormat(range).strike);
-          announce('Strikethrough formatting toggled');
-          break;
         case 'code':
-          quill.format('code', !quill.getFormat(range).code);
-          announce('Code formatting toggled');
+        case 'blockquote':
+          quill.format(format, !quill.getFormat(range || { index: 0, length: 0 })[format]);
           break;
         case 'header':
           quill.format('header', value);
-          announce(`Header set to level ${value}`);
           break;
         case 'align':
           quill.format('align', value === 'left' ? false : value);
-          announce(`Text aligned ${value}`);
           break;
         case 'list':
           quill.format('list', value);
-          announce(`List formatting applied: ${value}`);
-          break;
-        case 'blockquote':
-          quill.format('blockquote', !quill.getFormat(range).blockquote);
-          announce('Blockquote formatting toggled');
           break;
         default:
           console.warn(`Unknown format: ${format}`);
@@ -359,24 +395,35 @@ const RichTextEditor = ({
     } catch (error) {
       handleEditorError(error as Error);
     }
-  }, [handleEditorError, trackUserAction, announce]);
+  }, [handleEditorError, trackUserAction]);
 
-  const handleToggleFocus = useCallback(() => {
-    try {
-      if (onToggleFocus) {
-        onToggleFocus();
-      }
-      toast({
-        title: isFocusMode ? "Focus mode disabled" : "Focus mode enabled",
-        description: isFocusMode ? "Regular editing mode restored" : "Distraction-free writing mode activated",
-        duration: 2000,
-      });
-    } catch (error) {
-      handleEditorError(error as Error);
+  // Handle undo/redo
+  const handleUndo = useCallback(() => {
+    const quill = editorRef?.current?.getEditor();
+    if (quill && quill.history) {
+      quill.history.undo();
     }
-  }, [isFocusMode, onToggleFocus, toast, handleEditorError]);
+  }, []);
 
-  const { isSaving, saveError, clearAutoSave } = useEnhancedAutoSave({
+  const handleRedo = useCallback(() => {
+    const quill = editorRef?.current?.getEditor();
+    if (quill && quill.history) {
+      quill.history.redo();
+    }
+  }, []);
+
+  const getHistoryState = useCallback(() => {
+    const quill = editorRef?.current?.getEditor();
+    if (quill && quill.history) {
+      return {
+        canUndo: quill.history.stack.undo.length > 0,
+        canRedo: quill.history.stack.redo.length > 0,
+      };
+    }
+    return { canUndo: false, canRedo: false };
+  }, []);
+
+  const { isSaving, saveError } = useEnhancedAutoSave({
     content,
     hasUnsavedChanges,
     onSave: handleSaveContent,
@@ -411,17 +458,13 @@ const RichTextEditor = ({
     }
   }, [hasUnsavedChanges, onUnsavedChangesChange]);
 
-  // Performance monitoring effect
-  useEffect(() => {
-    const interval = setInterval(() => {
-      const perfData = getPerformanceData();
-      if (perfData.trends.performanceScore < 70) {
-        console.warn('Performance degradation detected:', perfData);
-      }
-    }, 30000); // Check every 30 seconds
+  const historyState = getHistoryState();
+  const performanceData = getPerformanceData();
 
-    return () => clearInterval(interval);
-  }, [getPerformanceData]);
+  // Show loading state
+  if (loading) {
+    return <EditorLoading />;
+  }
 
   // Error display component
   if (editorError && !isValid) {
@@ -439,29 +482,56 @@ const RichTextEditor = ({
     );
   }
 
+  const editorContent = (
+    <div className="flex-1 w-full overflow-hidden">
+      <ReactQuill
+        ref={editorRef}
+        theme="snow"
+        value={content}
+        onChange={handleContentChangeWithTracking}
+        modules={modules}
+        formats={formats}
+        className="h-full w-full editor-modern"
+        placeholder="Start writing your story..."
+        readOnly={loading}
+        style={{
+          height: '100%',
+          width: '100%',
+          fontFamily: selectedFont,
+        }}
+      />
+    </div>
+  );
+
+  // Focus mode wrapper
+  if (isFocusMode) {
+    return (
+      <FocusMode
+        onExitFocus={() => onToggleFocus?.()}
+        onSave={() => handleSaveContent(content)}
+        hasUnsavedChanges={hasUnsavedChanges}
+        wordCount={stats.words}
+      >
+        {editorContent}
+      </FocusMode>
+    );
+  }
+
   return (
-    <div className="w-full h-full flex flex-col overflow-hidden" role="application" aria-label="Rich text editor">
-      {/* Enhanced toolbar */}
-      <div className="flex-shrink-0">
-        <EnhancedToolbar
-          selectedFont="Inter"
-          onFontChange={(font) => {
-            trackUserAction('change_font', { font });
-            handleFontChange(font);
-          }}
-          isFocusMode={isFocusMode}
-          onToggleFocus={() => {
-            trackUserAction('toggle_focus_mode', { enabled: !isFocusMode });
-            onToggleFocus?.();
-          }}
-          onSave={() => {}}
-          hasUnsavedChanges={hasUnsavedChanges}
-          onFormatClick={handleFormatClick}
-          isMobile={isMobile || deviceIsMobile}
-          editorRef={editorRef}
-          extraActions={extraActions}
-        />
-      </div>
+    <div className="w-full h-full flex flex-col overflow-hidden bg-white dark:bg-gray-900" role="application" aria-label="Rich text editor">
+      {/* Modern toolbar */}
+      <ModernToolbar
+        selectedFont={selectedFont}
+        onFontChange={handleFontChange}
+        activeFormats={activeFormats}
+        onFormatClick={handleFormatClick}
+        onUndo={handleUndo}
+        onRedo={handleRedo}
+        canUndo={historyState.canUndo}
+        canRedo={historyState.canRedo}
+        isMobile={isMobile || deviceIsMobile}
+        isFocusMode={isFocusMode}
+      />
 
       {/* Validation warnings */}
       <EditorValidationDisplay
@@ -473,48 +543,24 @@ const RichTextEditor = ({
       <div 
         ref={containerRef}
         className="flex-1 w-full overflow-hidden"
-        style={{ backgroundColor: '#ffffff' }}
       >
-        <ReactQuill
-          ref={editorRef}
-          theme="snow"
-          value={content}
-          onChange={handleContentChangeWithTracking}
-          modules={modules}
-          formats={formats}
-          className={`h-full w-full ${isFocusMode ? 'focus-mode' : ''}`}
-          placeholder="Start writing your masterpiece..."
-          readOnly={loading}
-          style={{
-            height: '100%',
-            width: '100%',
-            fontFamily: 'Inter, sans-serif',
-            backgroundColor: '#ffffff',
-            color: '#1f2937',
-          }}
-        />
+        {editorContent}
       </div>
       
-      {/* Enhanced status bar with performance indicators */}
-      {!isFocusMode && (
-        <EditorStatusBar
-          stats={{
-            words: stats.words,
-            pages: stats.pages,
-            readingTime: `${stats.readingTime} min`
-          }}
-          highlightMatches={highlightMatches}
-          hasUnsavedChanges={hasUnsavedChanges}
-          isSaving={isSaving}
-          saveError={saveError}
-          isValid={isValid}
-          getPerformanceData={getPerformanceData}
-          getWarningLevel={() => {
-            const level = getWarningLevel();
-            return level === 'none' ? 'safe' : level as 'danger' | 'warning';
-          }}
-        />
-      )}
+      {/* Modern status bar */}
+      <ModernStatusBar
+        stats={{
+          words: stats.words,
+          pages: stats.pages,
+          readingTime: `${stats.readingTime} min`
+        }}
+        hasUnsavedChanges={hasUnsavedChanges}
+        isSaving={isSaving}
+        saveError={saveError}
+        isValid={isValid}
+        isOnline={isOnline}
+        performanceScore={performanceData.trends.performanceScore}
+      />
     </div>
   );
 };
