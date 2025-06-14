@@ -77,11 +77,12 @@ export function useOfflineState(options: UseOfflineStateOptions = {}) {
     cursorPosition?: number;
     scrollPosition?: number;
     unsavedContent?: string;
+    lastSaved?: number;
   }) => {
     if (persistEditorState) {
       offlineStateManager.updateEditorState({
         ...updates,
-        lastSaved: Date.now(),
+        lastSaved: updates.lastSaved || Date.now(),
       });
     }
   }, [persistEditorState]);

@@ -1,8 +1,7 @@
-
 import { Draft, Project } from '@/lib/db';
 
 interface StateChangeEvent {
-  type: 'project_updated' | 'draft_updated' | 'project_selected' | 'draft_created' | 'draft_deleted';
+  type: 'project_updated' | 'draft_updated' | 'project_selected' | 'draft_created' | 'draft_deleted' | 'connectivity_changed' | 'state_updated';
   data: any;
   timestamp: number;
 }
