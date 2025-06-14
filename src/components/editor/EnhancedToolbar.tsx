@@ -16,19 +16,20 @@ import { useTranslation } from 'react-i18next';
 interface EnhancedToolbarProps {
   selectedFont: string;
   onFontChange: (font: string) => void;
-  selectedTheme: string;
-  onThemeChange: (theme: string) => void;
+  selectedTheme?: string;
+  onThemeChange?: (theme: string) => void;
   isFocusMode: boolean;
   onToggleFocus: () => void;
   onSave: () => void;
   hasUnsavedChanges: boolean;
   onFormatClick: (format: string, value?: any) => void;
-  onUndo: () => void;
-  onRedo: () => void;
-  canUndo: boolean;
-  canRedo: boolean;
+  onUndo?: () => void;
+  onRedo?: () => void;
+  canUndo?: boolean;
+  canRedo?: boolean;
   isMobile?: boolean;
   editorRef?: any;
+  extraActions?: React.ReactElement;
 }
 
 const fonts = [
@@ -63,19 +64,20 @@ const headings = [
 export const EnhancedToolbar = ({
   selectedFont,
   onFontChange,
-  selectedTheme,
-  onThemeChange,
+  selectedTheme = 'default',
+  onThemeChange = () => {},
   isFocusMode,
   onToggleFocus,
   onSave,
   hasUnsavedChanges,
   onFormatClick,
-  onUndo,
-  onRedo,
-  canUndo,
-  canRedo,
+  onUndo = () => {},
+  onRedo = () => {},
+  canUndo = false,
+  canRedo = false,
   isMobile = false,
   editorRef,
+  extraActions,
 }: EnhancedToolbarProps) => {
   const { t } = useTranslation();
   const [activeFormats, setActiveFormats] = useState<Record<string, boolean>>({});
@@ -477,6 +479,14 @@ export const EnhancedToolbar = ({
           >
             {t('more')}
           </Button>
+
+          {/* Extra actions */}
+          {extraActions && (
+            <>
+              <Separator orientation="vertical" className="h-6" />
+              {extraActions}
+            </>
+          )}
         </div>
 
         <div className="flex items-center gap-2 ml-4">
