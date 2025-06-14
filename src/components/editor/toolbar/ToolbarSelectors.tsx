@@ -4,8 +4,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 interface ToolbarSelectorsProps {
   selectedFont: string;
   onFontChange: (font: string) => void;
-  selectedTheme: string;
-  onThemeChange: (theme: string) => void;
   activeFormats: Record<string, boolean>;
   onFormatClick: (format: string, value?: any) => void;
 }
@@ -23,15 +21,6 @@ const fonts = [
   { value: 'Open Sans', label: 'Open Sans' },
 ];
 
-const themes = [
-  { value: 'default', label: 'Default' },
-  { value: 'dark', label: 'Dark Mode' },
-  { value: 'sepia', label: 'Sepia' },
-  { value: 'focus', label: 'Focus Blue' },
-  { value: 'warm', label: 'Warm' },
-  { value: 'forest', label: 'Forest' },
-];
-
 const headings = [
   { value: 'paragraph', label: 'Paragraph' },
   { value: 'h1', label: 'Heading 1' },
@@ -43,13 +32,9 @@ const headings = [
 export const ToolbarSelectors = ({
   selectedFont,
   onFontChange,
-  selectedTheme,
-  onThemeChange,
   activeFormats,
   onFormatClick
 }: ToolbarSelectorsProps) => {
-  const currentTheme = themes.find(theme => theme.value === selectedTheme) || themes[0];
-
   return (
     <div className="flex items-center gap-3">
       {/* Font Selector */}
@@ -66,26 +51,6 @@ export const ToolbarSelectors = ({
               className="text-gray-900 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer"
             >
               {font.label}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-
-      {/* Theme Selector */}
-      <Select value={selectedTheme} onValueChange={onThemeChange}>
-        <SelectTrigger className="w-32 h-9 text-sm bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600">
-          <SelectValue>
-            {currentTheme.label}
-          </SelectValue>
-        </SelectTrigger>
-        <SelectContent className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-lg z-50">
-          {themes.map((theme) => (
-            <SelectItem 
-              key={theme.value} 
-              value={theme.value}
-              className="text-gray-900 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer"
-            >
-              {theme.label}
             </SelectItem>
           ))}
         </SelectContent>

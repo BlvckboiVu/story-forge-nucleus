@@ -1,4 +1,3 @@
-
 // EditorHeader.tsx
 // Enhanced header with view options, focus mode, and proper spacing
 
@@ -47,8 +46,6 @@ export const EditorHeader = ({
   onToggleFocus = () => {}
 }: EditorHeaderProps) => {
   const { currentProject } = useProjects();
-  const isNearWordLimit = wordCount > WORD_LIMIT * 0.8;
-  const isOverWordLimit = wordCount > WORD_LIMIT;
 
   return (
     <header className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 px-6 py-4">
@@ -78,7 +75,7 @@ export const EditorHeader = ({
           </Button>
         </div>
 
-        {/* Right: View Options, Focus Mode, and Status */}
+        {/* Right: View Options, Focus Mode, and Save */}
         <div className="flex items-center gap-3 flex-shrink-0">
           {/* View Options */}
           <WritingViewOptions
@@ -108,31 +105,23 @@ export const EditorHeader = ({
             )}
           </Button>
 
-          {/* Status Info */}
-          <div className="flex items-center gap-4 text-sm border-l border-gray-200 dark:border-gray-700 pl-4">
-            <span className={
-              isOverWordLimit ? 'text-red-600 dark:text-red-400' :
-              isNearWordLimit ? 'text-yellow-600 dark:text-yellow-400' :
-              'text-muted-foreground'
-            }>
-              {wordCount.toLocaleString()} words
-            </span>
-            <span className="text-muted-foreground">Page {currentPage}</span>
+          {/* Status Info - Only unsaved indicator */}
+          <div className="flex items-center gap-2 text-sm">
             {hasUnsavedChanges && (
-              <span className="text-orange-600 dark:text-orange-400">• Unsaved</span>
+              <span className="text-orange-600 dark:text-orange-400 text-xs">• Unsaved</span>
             )}
           </div>
 
-          {/* Save Button */}
+          {/* Save Button - Icon only */}
           <Button
             onClick={onSave}
             disabled={loading || !hasUnsavedChanges}
             variant="default"
             size="sm"
-            className={hasUnsavedChanges ? 'bg-blue-600 hover:bg-blue-700' : ''}
+            className={`h-9 w-9 p-0 ${hasUnsavedChanges ? 'bg-blue-600 hover:bg-blue-700' : ''}`}
+            title="Save"
           >
-            <Save className="mr-2 h-4 w-4" />
-            Save
+            <Save className="h-4 w-4" />
           </Button>
         </div>
       </div>

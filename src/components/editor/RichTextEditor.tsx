@@ -7,7 +7,6 @@ import { EnhancedToolbar } from './EnhancedToolbar';
 import { useEnhancedAutoSave } from '@/hooks/useEnhancedAutoSave';
 import { useEnhancedWordCount } from '@/hooks/useEnhancedWordCount';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { useEditorTheme } from '@/hooks/useEditorTheme';
 import { useEditorContent } from '@/hooks/useEditorContent';
 import { useEditorScroll } from '@/hooks/useEditorScroll';
 import { Button } from '@/components/ui/button';
@@ -36,6 +35,11 @@ const WORD_LIMIT = 50000;
 
 const modules = {
   toolbar: false,
+  history: {
+    delay: 1000,
+    maxStack: 100,
+    userOnly: true
+  },
 };
 
 const formats = [
@@ -74,11 +78,6 @@ const RichTextEditor = ({
   const containerRef = useRef<HTMLDivElement>(null);
   const { currentProject } = useProjects();
   const deviceIsMobile = useIsMobile();
-
-  const { currentTheme, changeTheme } = useEditorTheme({
-    defaultThemeId: 'default',
-    storageKey: 'editor-theme',
-  });
 
   const { stats, updateWordCount } = useEnhancedWordCount({
     warningThreshold: 45000,
@@ -138,23 +137,6 @@ const RichTextEditor = ({
       onEditorReady(editorRef.current);
     }
   }, [onEditorReady]);
-
-  // Apply theme to editor
-  useEffect(() => {
-    try {
-      const quill = editorRef.current?.getEditor();
-      if (quill && currentTheme) {
-        const editor = quill.root;
-        editor.style.fontFamily = currentTheme.font?.family || 'Inter, sans-serif';
-        editor.style.fontSize = currentTheme.font?.size || '16px';
-        editor.style.lineHeight = currentTheme.font?.lineHeight || '1.6';
-        editor.style.backgroundColor = currentTheme.colors.background;
-        editor.style.color = currentTheme.colors.text;
-      }
-    } catch (error) {
-      console.error('Failed to apply theme:', error);
-    }
-  }, [currentTheme]);
 
   const handleHighlighting = useCallback(() => {
     const quill = editorRef.current?.getEditor();
@@ -244,27 +226,6 @@ const RichTextEditor = ({
     }
   };
 
-  const handleSave = () => {
-    try {
-      handleSaveContent(content);
-      clearAutoSave();
-      
-      toast({
-        title: "Draft saved",
-        description: `Your document has been saved successfully`,
-        duration: 3000,
-      });
-    } catch (error) {
-      console.error('Manual save failed:', error);
-      toast({
-        title: "Save failed",
-        description: "Failed to save your document",
-        variant: "destructive",
-        duration: 3000,
-      });
-    }
-  };
-
   const handleToggleFocus = () => {
     try {
       if (onToggleFocus) {
@@ -313,21 +274,19 @@ const RichTextEditor = ({
 
   return (
     <div className="w-full h-full flex flex-col overflow-hidden">
-      {/* Enhanced toolbar */}
+      {/* Enhanced toolbar - no save button */}
       <div className="flex-shrink-0">
         <EnhancedToolbar
-          selectedFont={currentTheme.font?.family || 'Inter'}
+          selectedFont="Inter"
           onFontChange={handleFontChange}
-          selectedTheme={currentTheme.id}
-          onThemeChange={changeTheme}
           isFocusMode={isFocusMode}
           onToggleFocus={handleToggleFocus}
-          onSave={handleSave}
+          onSave={() => {}} // Empty function since save is removed
           hasUnsavedChanges={hasUnsavedChanges}
           onFormatClick={handleFormatClick}
           isMobile={isMobile || deviceIsMobile}
           editorRef={editorRef}
-          extraActions={extraActions || undefined}
+          extraActions={extraActions}
         />
       </div>
 
@@ -336,7 +295,7 @@ const RichTextEditor = ({
         ref={containerRef}
         className="flex-1 w-full overflow-hidden"
         style={{ 
-          backgroundColor: currentTheme.colors.background
+          backgroundColor: '#ffffff'
         }}
       >
         <ReactQuill
@@ -352,9 +311,9 @@ const RichTextEditor = ({
           style={{
             height: '100%',
             width: '100%',
-            fontFamily: currentTheme.font?.family || 'Inter, sans-serif',
-            backgroundColor: currentTheme.colors.background,
-            color: currentTheme.colors.text,
+            fontFamily: 'Inter, sans-serif',
+            backgroundColor: '#ffffff',
+            color: '#1f2937',
           }}
         />
       </div>
@@ -388,25 +347,6 @@ const RichTextEditor = ({
                 </span>
               )}
             </div>
-            
-            <Button
-              onClick={handleSave}
-              disabled={loading || !hasUnsavedChanges || isSaving}
-              size="sm"
-              className={`
-                transition-all duration-200 flex-shrink-0 font-medium
-                ${hasUnsavedChanges 
-                  ? 'bg-blue-600 hover:bg-blue-700 text-white shadow-md hover:shadow-lg' 
-                  : 'bg-white hover:bg-gray-50 text-gray-600 border border-gray-300'
-                }
-              `}
-            >
-              <Save className="h-4 w-4 mr-2" />
-              <span className="hidden sm:inline">
-                {isSaving ? 'Saving...' : loading ? 'Loading...' : 'Save Draft'}
-              </span>
-              <span className="sm:hidden">Save</span>
-            </Button>
           </div>
         </div>
       )}

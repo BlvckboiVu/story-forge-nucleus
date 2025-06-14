@@ -13,8 +13,6 @@ import { ToolbarSelectors } from './toolbar/ToolbarSelectors';
 interface EnhancedToolbarProps {
   selectedFont: string;
   onFontChange: (font: string) => void;
-  selectedTheme?: string;
-  onThemeChange?: (theme: string) => void;
   isFocusMode: boolean;
   onToggleFocus: () => void;
   onSave: () => void;
@@ -32,8 +30,6 @@ interface EnhancedToolbarProps {
 export const EnhancedToolbar = ({
   selectedFont,
   onFontChange,
-  selectedTheme = 'default',
-  onThemeChange = () => {},
   isFocusMode,
   onToggleFocus,
   onSave,
@@ -94,6 +90,36 @@ export const EnhancedToolbar = ({
     }
   }, [editorRef]);
 
+  // Handle undo with proper Quill API
+  const handleUndo = () => {
+    const quill = editorRef?.current?.getEditor();
+    if (quill && quill.history) {
+      quill.history.undo();
+    }
+  };
+
+  // Handle redo with proper Quill API
+  const handleRedo = () => {
+    const quill = editorRef?.current?.getEditor();
+    if (quill && quill.history) {
+      quill.history.redo();
+    }
+  };
+
+  // Check if undo/redo is available
+  const getHistoryState = () => {
+    const quill = editorRef?.current?.getEditor();
+    if (quill && quill.history) {
+      return {
+        canUndo: quill.history.stack.undo.length > 0,
+        canRedo: quill.history.stack.redo.length > 0,
+      };
+    }
+    return { canUndo: false, canRedo: false };
+  };
+
+  const historyState = getHistoryState();
+
   if (isFocusMode) {
     return (
       <div className="flex items-center justify-center p-2 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 w-full">
@@ -125,8 +151,6 @@ export const EnhancedToolbar = ({
                 <ToolbarSelectors
                   selectedFont={selectedFont}
                   onFontChange={onFontChange}
-                  selectedTheme={selectedTheme}
-                  onThemeChange={onThemeChange}
                   activeFormats={activeFormats}
                   onFormatClick={onFormatClick}
                 />
@@ -138,7 +162,7 @@ export const EnhancedToolbar = ({
     );
   }
 
-  // Professional desktop toolbar - restored all functionality
+  // Professional desktop toolbar - clean and focused
   return (
     <div className="border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 w-full">
       <div className="flex items-center justify-between p-4 min-w-0">
@@ -148,8 +172,8 @@ export const EnhancedToolbar = ({
             <Button
               variant="ghost"
               size="sm"
-              onClick={onUndo}
-              disabled={!canUndo}
+              onClick={handleUndo}
+              disabled={!historyState.canUndo}
               className="h-9 w-9 p-0 text-gray-600 hover:text-gray-800 hover:bg-gray-100 disabled:opacity-50"
               title="Undo"
             >
@@ -158,8 +182,8 @@ export const EnhancedToolbar = ({
             <Button
               variant="ghost"
               size="sm"
-              onClick={onRedo}
-              disabled={!canRedo}
+              onClick={handleRedo}
+              disabled={!historyState.canRedo}
               className="h-9 w-9 p-0 text-gray-600 hover:text-gray-800 hover:bg-gray-100 disabled:opacity-50"
               title="Redo"
             >
@@ -169,13 +193,11 @@ export const EnhancedToolbar = ({
 
           <Separator orientation="vertical" className="h-6" />
 
-          {/* Font and Theme Selectors - Fixed spacing */}
+          {/* Font and Heading Selectors */}
           <div className="flex items-center gap-3">
             <ToolbarSelectors
               selectedFont={selectedFont}
               onFontChange={onFontChange}
-              selectedTheme={selectedTheme}
-              onThemeChange={onThemeChange}
               activeFormats={activeFormats}
               onFormatClick={onFormatClick}
             />
@@ -199,20 +221,6 @@ export const EnhancedToolbar = ({
               </div>
             </>
           )}
-        </div>
-
-        {/* Right side: Save button */}
-        <div className="flex items-center gap-3 ml-4 flex-shrink-0">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={onSave}
-            disabled={!hasUnsavedChanges}
-            className={`h-9 px-4 text-sm font-medium ${hasUnsavedChanges ? 'text-blue-600 bg-blue-50 hover:bg-blue-100' : 'text-gray-500'}`}
-          >
-            <Save className="h-4 w-4 mr-2" />
-            Save
-          </Button>
         </div>
       </div>
     </div>
