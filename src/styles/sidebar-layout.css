@@ -1,5 +1,5 @@
 
-/* Sidebar and main layout styles */
+/* Sidebar and main layout styles with responsive breakpoints */
 .sidebar-layout {
   display: grid;
   grid-template-columns: auto 1fr;
@@ -20,23 +20,42 @@
   max-width: 100%;
 }
 
-/* Mobile Responsive */
-@media (max-width: 768px) {
+/* Mobile Responsive (425px and below) */
+@media (max-width: 425px) {
+  .sidebar-layout {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto 1fr;
+  }
+  
+  .main-content {
+    padding: 0;
+  }
+}
+
+/* Tablet Portrait (426px - 768px) */
+@media (min-width: 426px) and (max-width: 768px) {
   .sidebar-layout {
     grid-template-columns: 1fr;
     grid-template-rows: auto 1fr;
   }
 }
 
-/* Tablet Responsive */
+/* Tablet Landscape (769px - 1024px) */
 @media (min-width: 769px) and (max-width: 1024px) {
+  .sidebar-layout {
+    grid-template-columns: 260px 1fr;
+  }
+}
+
+/* Desktop (1025px and above) */
+@media (min-width: 1025px) {
   .sidebar-layout {
     grid-template-columns: 280px 1fr;
   }
 }
 
-/* Desktop Responsive */
-@media (min-width: 1025px) {
+/* Large Desktop (1441px and above) */
+@media (min-width: 1441px) {
   .sidebar-layout {
     grid-template-columns: 320px 1fr;
   }

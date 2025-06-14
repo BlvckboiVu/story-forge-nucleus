@@ -1,4 +1,3 @@
-
 import * as React from 'react';
 import { cn } from '@/lib/utils';
 import { SidebarProvider, SidebarInset, SidebarTrigger } from '@/components/ui/sidebar';
@@ -44,7 +43,7 @@ export function Layout({
     return (
       <div className="min-h-screen bg-background w-full max-w-full overflow-hidden">
         <main className={cn("flex-1 w-full", getLayoutClasses(), className)}>
-          <div className="container py-6 w-full max-w-full">
+          <div className="container py-3 sm:py-6 w-full max-w-full px-3 sm:px-4">
             {children}
           </div>
         </main>
@@ -56,21 +55,21 @@ export function Layout({
     return (
       <div className="min-h-screen bg-background w-full max-w-full overflow-hidden">
         <header className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-50 w-full flex-shrink-0">
-          <div className="flex h-14 items-center px-4 w-full">
+          <div className="flex h-12 sm:h-14 items-center px-3 sm:px-4 w-full">
             <MobileNav />
             <div className="flex items-center space-x-2 ml-2">
-              <h1 className="font-semibold">StoryForge</h1>
+              <h1 className="font-semibold text-sm sm:text-base">StoryForge</h1>
             </div>
           </div>
         </header>
         
-        <main className={cn("w-full", getLayoutClasses(), className)} style={{ height: 'calc(100vh - 3.5rem)' }}>
+        <main className={cn("w-full", getLayoutClasses(), className)} style={{ height: 'calc(100vh - 3rem)' }}>
           {mode === 'editor' ? (
             <div className="w-full h-full overflow-hidden">
               {children}
             </div>
           ) : (
-            <div className="container py-6 w-full max-w-full px-4 h-full overflow-auto">
+            <div className="container py-3 sm:py-6 w-full max-w-full px-3 sm:px-4 h-full overflow-auto">
               {children}
             </div>
           )}
@@ -81,13 +80,13 @@ export function Layout({
 
   return (
     <SidebarProvider>
-      <div className="sidebar-layout">
+      <div className="sidebar-layout w-full">
         <AppSidebar />
         <SidebarInset className="main-content">
-          <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4 w-full">
+          <header className="flex h-12 lg:h-16 shrink-0 items-center gap-2 border-b px-3 lg:px-4 w-full">
             <SidebarTrigger className="-ml-1" />
             <div className="flex items-center gap-2">
-              <h1 className="font-semibold">StoryForge</h1>
+              <h1 className="font-semibold text-sm lg:text-base">StoryForge</h1>
             </div>
           </header>
           <main className={cn("w-full", getLayoutClasses(), className)}>
@@ -96,7 +95,7 @@ export function Layout({
                 {children}
               </div>
             ) : (
-              <div className="p-4 w-full h-full overflow-auto">
+              <div className="p-3 lg:p-4 w-full h-full overflow-auto">
                 {children}
               </div>
             )}

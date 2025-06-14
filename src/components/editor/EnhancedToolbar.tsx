@@ -1,9 +1,8 @@
-
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { 
-  Save, Undo, Redo, Type
+  Undo, Redo, Type, MoreHorizontal
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -130,23 +129,73 @@ export const EnhancedToolbar = ({
     );
   }
 
+  // Mobile toolbar with collapsible sections
   if (isMobile) {
     return (
-      <div className="flex items-center justify-between p-3 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 w-full">
-        <div className="flex items-center gap-2 flex-1 min-w-0">
+      <div className="flex items-center justify-between p-2 sm:p-3 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 w-full">
+        <div className="flex items-center gap-1 sm:gap-2 flex-1 min-w-0 overflow-hidden">
+          {/* History controls - always visible */}
+          <div className="flex items-center gap-1">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleUndo}
+              disabled={!historyState.canUndo}
+              className="h-8 w-8 p-0 text-gray-600 hover:text-gray-800 hover:bg-gray-100 disabled:opacity-50"
+              title="Undo"
+            >
+              <Undo className="h-3 w-3 sm:h-4 sm:w-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleRedo}
+              disabled={!historyState.canRedo}
+              className="h-8 w-8 p-0 text-gray-600 hover:text-gray-800 hover:bg-gray-100 disabled:opacity-50"
+              title="Redo"
+            >
+              <Redo className="h-3 w-3 sm:h-4 sm:w-4" />
+            </Button>
+          </div>
+
+          <Separator orientation="vertical" className="h-6" />
+
+          {/* Essential formatting - visible on mobile */}
           <ToolbarFormattingButtons
             activeFormats={activeFormats}
             onFormatClick={onFormatClick}
             isMobile={true}
           />
-          
+        </div>
+
+        {/* More options dropdown for mobile */}
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-gray-600 hover:text-gray-800 hover:bg-gray-100 sm:hidden">
+              <MoreHorizontal className="h-4 w-4" />
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-80 bg-white dark:bg-gray-800 shadow-lg border border-gray-200 dark:border-gray-700 z-50" align="end">
+            <div className="space-y-4">
+              <ToolbarSelectors
+                selectedFont={selectedFont}
+                onFontChange={onFontChange}
+                activeFormats={activeFormats}
+                onFormatClick={onFormatClick}
+              />
+            </div>
+          </PopoverContent>
+        </Popover>
+
+        {/* Font selector visible on larger mobile screens */}
+        <div className="hidden sm:block">
           <Popover>
             <PopoverTrigger asChild>
-              <Button variant="ghost" size="sm" className="h-9 w-9 p-0 text-gray-600 hover:text-gray-800 hover:bg-gray-100">
+              <Button variant="ghost" size="sm" className="h-8 px-2 text-gray-600 hover:text-gray-800 hover:bg-gray-100">
                 <Type className="h-4 w-4" />
               </Button>
             </PopoverTrigger>
-            <PopoverContent className="w-80 bg-white dark:bg-gray-800 shadow-lg border border-gray-200 dark:border-gray-700 z-50" align="start">
+            <PopoverContent className="w-80 bg-white dark:bg-gray-800 shadow-lg border border-gray-200 dark:border-gray-700 z-50" align="end">
               <div className="space-y-4">
                 <ToolbarSelectors
                   selectedFont={selectedFont}
@@ -162,11 +211,11 @@ export const EnhancedToolbar = ({
     );
   }
 
-  // Professional desktop toolbar - clean and focused
+  // Responsive desktop toolbar
   return (
     <div className="border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 w-full">
-      <div className="flex items-center justify-between p-4 min-w-0">
-        <div className="flex items-center gap-4 flex-1 min-w-0 overflow-hidden">
+      <div className="flex items-center justify-between p-2 lg:p-4 min-w-0">
+        <div className="flex items-center gap-2 lg:gap-4 flex-1 min-w-0 overflow-hidden">
           {/* History controls */}
           <div className="flex items-center gap-1">
             <Button
@@ -174,27 +223,27 @@ export const EnhancedToolbar = ({
               size="sm"
               onClick={handleUndo}
               disabled={!historyState.canUndo}
-              className="h-9 w-9 p-0 text-gray-600 hover:text-gray-800 hover:bg-gray-100 disabled:opacity-50"
+              className="h-8 w-8 lg:h-9 lg:w-9 p-0 text-gray-600 hover:text-gray-800 hover:bg-gray-100 disabled:opacity-50"
               title="Undo"
             >
-              <Undo className="h-4 w-4" />
+              <Undo className="h-3 w-3 lg:h-4 lg:w-4" />
             </Button>
             <Button
               variant="ghost"
               size="sm"
               onClick={handleRedo}
               disabled={!historyState.canRedo}
-              className="h-9 w-9 p-0 text-gray-600 hover:text-gray-800 hover:bg-gray-100 disabled:opacity-50"
+              className="h-8 w-8 lg:h-9 lg:w-9 p-0 text-gray-600 hover:text-gray-800 hover:bg-gray-100 disabled:opacity-50"
               title="Redo"
             >
-              <Redo className="h-4 w-4" />
+              <Redo className="h-3 w-3 lg:h-4 lg:w-4" />
             </Button>
           </div>
 
-          <Separator orientation="vertical" className="h-6" />
+          <Separator orientation="vertical" className="h-4 lg:h-6" />
 
-          {/* Font and Heading Selectors */}
-          <div className="flex items-center gap-3">
+          {/* Font and Heading Selectors - responsive layout */}
+          <div className="hidden md:flex items-center gap-2 lg:gap-3 min-w-0">
             <ToolbarSelectors
               selectedFont={selectedFont}
               onFontChange={onFontChange}
@@ -203,7 +252,28 @@ export const EnhancedToolbar = ({
             />
           </div>
 
-          <Separator orientation="vertical" className="h-6" />
+          {/* Tablet dropdown for font/headings */}
+          <div className="md:hidden">
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="ghost" size="sm" className="h-8 px-2 text-gray-600 hover:text-gray-800 hover:bg-gray-100">
+                  <Type className="h-4 w-4" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-80 bg-white dark:bg-gray-800 shadow-lg border border-gray-200 dark:border-gray-700 z-50" align="start">
+                <div className="space-y-4">
+                  <ToolbarSelectors
+                    selectedFont={selectedFont}
+                    onFontChange={onFontChange}
+                    activeFormats={activeFormats}
+                    onFormatClick={onFormatClick}
+                  />
+                </div>
+              </PopoverContent>
+            </Popover>
+          </div>
+
+          <Separator orientation="vertical" className="h-4 lg:h-6" />
 
           {/* Formatting Buttons */}
           <ToolbarFormattingButtons
@@ -215,8 +285,8 @@ export const EnhancedToolbar = ({
           {/* Extra actions if provided */}
           {extraActions && (
             <>
-              <Separator orientation="vertical" className="h-6" />
-              <div className="flex-shrink-0">
+              <Separator orientation="vertical" className="h-4 lg:h-6" />
+              <div className="flex-shrink-0 hidden lg:block">
                 {extraActions}
               </div>
             </>

@@ -1,5 +1,5 @@
 
-/* Editor-specific layout styles */
+/* Editor-specific layout styles with responsive breakpoints */
 .editor-container {
   display: grid;
   grid-template-rows: auto 1fr auto;
@@ -35,8 +35,85 @@
   height: 100%;
 }
 
+/* Responsive breakpoints */
+@media (max-width: 425px) {
+  .editor-container {
+    height: 100dvh;
+    padding: 0;
+  }
+  
+  .rich-text-editor {
+    font-size: 14px;
+  }
+  
+  /* Compact mobile layout */
+  .ql-editor {
+    padding: 0.75rem !important;
+    font-size: 14px;
+    line-height: 1.5;
+  }
+}
+
+@media (min-width: 426px) and (max-width: 768px) {
+  .editor-container {
+    height: 100dvh;
+  }
+  
+  .rich-text-editor {
+    font-size: 15px;
+  }
+  
+  .ql-editor {
+    padding: 1rem !important;
+    font-size: 15px;
+    line-height: 1.6;
+  }
+}
+
+@media (min-width: 769px) and (max-width: 1024px) {
+  .editor-container {
+    height: 100vh;
+  }
+  
+  .rich-text-editor {
+    font-size: 16px;
+  }
+  
+  .ql-editor {
+    padding: 1.5rem !important;
+    font-size: 16px;
+    line-height: 1.7;
+    max-width: 90%;
+    margin: 0 auto;
+  }
+}
+
+@media (min-width: 1025px) {
+  .ql-editor {
+    padding: 2rem !important;
+    font-size: 16px;
+    line-height: 1.7;
+    max-width: 85%;
+    margin: 0 auto;
+  }
+}
+
+@media (min-width: 1441px) {
+  .ql-editor {
+    padding: 2.5rem !important;
+    max-width: 80%;
+    margin: 0 auto;
+  }
+}
+
 /* Container Queries for Responsive Design */
-@container (max-width: 600px) {
+@container (max-width: 425px) {
+  .editor-container {
+    height: 100dvh;
+  }
+}
+
+@container (min-width: 426px) and (max-width: 768px) {
   .editor-container {
     height: 100dvh;
   }
@@ -51,14 +128,7 @@
 .focus-mode .ql-editor {
   max-width: min(100%, 65ch);
   margin: 0 auto;
-  padding: clamp(2rem, 4vw, 4rem);
-}
-
-/* Mobile Responsive */
-@media (max-width: 768px) {
-  .editor-container {
-    height: calc(100dvh - 3.5rem);
-  }
+  padding: clamp(1rem, 4vw, 4rem);
 }
 
 /* Print Optimizations */

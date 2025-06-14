@@ -1,4 +1,3 @@
-
 // EditorLayout.tsx
 // Layout component for the main editor view, handling both desktop and mobile layouts
 
@@ -69,8 +68,8 @@ const DesktopLayout = ({
         onSave={() => onSaveDraft(currentDraft?.content || '')}
       />
       
-      <div className="flex-1 flex gap-3 lg:gap-4 h-full w-full max-w-full overflow-hidden p-3 lg:p-4">
-        {/* Main editor area - constrained width */}
+      <div className="flex-1 flex gap-2 lg:gap-3 xl:gap-4 h-full w-full max-w-full overflow-hidden p-2 lg:p-3 xl:p-4">
+        {/* Main editor area - responsive width */}
         <div className="flex-1 min-w-0 min-h-0 overflow-hidden">
           <div className="h-full w-full bg-paper dark:bg-paper-dark shadow-sm border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
             <RichTextEditor 
@@ -88,9 +87,14 @@ const DesktopLayout = ({
           </div>
         </div>
 
-        {/* LLM Panel - hidden in focus mode, proper width constraints */}
+        {/* LLM Panel - responsive sizing */}
         {!isFocusMode && (
-          <div className="hidden lg:block flex-shrink-0" style={{ width: isPanelCollapsed ? '60px' : '320px' }}>
+          <div 
+            className="hidden lg:block flex-shrink-0 transition-all duration-200" 
+            style={{ 
+              width: isPanelCollapsed ? '60px' : window.innerWidth >= 1440 ? '360px' : window.innerWidth >= 1024 ? '300px' : '280px'
+            }}
+          >
             <LLMPanel
               isCollapsed={isPanelCollapsed}
               onToggle={togglePanel}
@@ -99,7 +103,7 @@ const DesktopLayout = ({
           </div>
         )}
 
-        {/* Floating action buttons for outline and drafts (medium screens only) */}
+        {/* Floating action buttons for tablet screens */}
         <div className="hidden md:flex lg:hidden fixed bottom-6 right-6 flex-col gap-3 z-50">
           <OutlinePopup />
           <Button 
