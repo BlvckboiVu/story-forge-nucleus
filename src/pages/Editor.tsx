@@ -4,16 +4,15 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { Layout } from '@/components/layout/Layout';
 import RichTextEditor from '@/components/editor/RichTextEditor';
 import { useProjects } from '@/contexts/ProjectContext';
-import { useDrafts } from '@/hooks/useDrafts';
+import { useOptimizedDrafts } from '@/utils/optimizedDb';
 import { Draft } from '@/types';
 
 export default function Editor() {
   const navigate = useNavigate();
   const { projectId } = useParams();
   const { projects, currentProject } = useProjects();
-  const { drafts, loading, error, createDraft, updateDraft } = useDrafts(projectId);
+  const { drafts, loading, error } = useOptimizedDrafts(projectId || '');
   const [currentDraft, setCurrentDraft] = useState<Draft | null>(null);
-  const [editorReady, setEditorReady] = useState(false);
 
   // If no projectId in URL but we have a current project, redirect
   useEffect(() => {
@@ -29,21 +28,29 @@ export default function Editor() {
     if (drafts.length > 0) {
       setCurrentDraft(drafts[0]);
     } else {
-      // Auto-create first draft
-      createDraft({
-        title: `${currentProject.title} - Draft 1`,
-        content: '',
-        projectId: currentProject.id,
-      }).then(setCurrentDraft);
+      // Auto-create first draft using optimized service
+      import('@/utils/optimizedDb').then(({ OptimizedDraftService }) => {
+        OptimizedDraftService.createDraft({
+          title: `${currentProject.title} - Draft 1`,
+          content: '',
+          projectId: currentProject.id,
+          wordCount: 0
+        }).then(id => {
+          // Fetch the newly created draft
+          OptimizedDraftService.getDraft(id).then(draft => {
+            if (draft) setCurrentDraft(draft);
+          });
+        });
+      });
     }
-  }, [drafts, currentProject, createDraft]);
+  }, [drafts, currentProject]);
 
   const handleSave = async (content: string) => {
     if (!currentDraft || !currentProject) return;
     
-    await updateDraft(currentDraft.id, {
+    const { OptimizedDraftService } = await import('@/utils/optimizedDb');
+    await OptimizedDraftService.updateDraft(currentDraft.id, {
       content,
-      wordCount: content.trim().split(/\s+/).length,
     });
   };
 
@@ -83,7 +90,7 @@ export default function Editor() {
         onSave={handleSave}
         draft={currentDraft}
         loading={loading}
-        onEditorReady={() => setEditorReady(true)}
+        onEditorReady={() => {}}
       />
     </Layout>
   );

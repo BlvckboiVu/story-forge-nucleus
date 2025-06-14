@@ -8,25 +8,49 @@ import { Label } from '@/components/ui/label';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 
+// Email validation regex
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+// Password validation - at least 6 characters
+const MIN_PASSWORD_LENGTH = 6;
+
 export default function Login() {
   const navigate = useNavigate();
   const { signIn, guestLogin } = useAuth();
   const { toast } = useToast();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
+  const [errors, setErrors] = useState<{ email?: string; password?: string; general?: string }>({});
   const [loading, setLoading] = useState(false);
+
+  const validateForm = () => {
+    const newErrors: { email?: string; password?: string } = {};
+
+    if (!email) {
+      newErrors.email = 'Email is required';
+    } else if (!EMAIL_REGEX.test(email)) {
+      newErrors.email = 'Please enter a valid email address';
+    }
+
+    if (!password) {
+      newErrors.password = 'Password is required';
+    } else if (password.length < MIN_PASSWORD_LENGTH) {
+      newErrors.password = `Password must be at least ${MIN_PASSWORD_LENGTH} characters`;
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
-    setLoading(true);
-
-    if (!email || !password) {
-      setError('Please fill in all fields');
-      setLoading(false);
+    
+    if (!validateForm()) {
       return;
     }
+
+    setErrors({});
+    setLoading(true);
 
     try {
       await signIn(email, password);
@@ -37,7 +61,7 @@ export default function Login() {
       });
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Invalid email or password';
-      setError(errorMessage);
+      setErrors({ general: errorMessage });
       toast({
         title: 'Error',
         description: errorMessage,
@@ -49,7 +73,7 @@ export default function Login() {
   };
 
   const handleGuestLogin = async () => {
-    setError('');
+    setErrors({});
     setLoading(true);
 
     try {
@@ -61,7 +85,7 @@ export default function Login() {
       });
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to login as guest';
-      setError(errorMessage);
+      setErrors({ general: errorMessage });
       toast({
         title: 'Error',
         description: errorMessage,
@@ -90,11 +114,19 @@ export default function Login() {
                 id="email"
                 type="email"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={(e) => {
+                  setEmail(e.target.value);
+                  if (errors.email) {
+                    setErrors(prev => ({ ...prev, email: undefined }));
+                  }
+                }}
                 placeholder="Enter your email"
-                required
                 disabled={loading}
+                className={errors.email ? 'border-red-500' : ''}
               />
+              {errors.email && (
+                <p className="text-sm text-red-500">{errors.email}</p>
+              )}
             </div>
 
             <div className="space-y-2">
@@ -103,15 +135,23 @@ export default function Login() {
                 id="password"
                 type="password"
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                onChange={(e) => {
+                  setPassword(e.target.value);
+                  if (errors.password) {
+                    setErrors(prev => ({ ...prev, password: undefined }));
+                  }
+                }}
                 placeholder="Enter your password"
-                required
                 disabled={loading}
+                className={errors.password ? 'border-red-500' : ''}
               />
+              {errors.password && (
+                <p className="text-sm text-red-500">{errors.password}</p>
+              )}
             </div>
 
-            {error && (
-              <p className="text-sm text-red-500">{error}</p>
+            {errors.general && (
+              <p className="text-sm text-red-500">{errors.general}</p>
             )}
 
             <Button type="submit" className="w-full" disabled={loading}>

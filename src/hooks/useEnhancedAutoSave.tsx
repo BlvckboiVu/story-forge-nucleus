@@ -58,14 +58,14 @@ export const useEnhancedAutoSave = ({
       
       if (isManual) {
         toast({
-          title: t('saved'),
-          description: t('draftSavedSuccessfully'),
+          title: t('saved', 'Saved'),
+          description: t('draftSavedSuccessfully', 'Draft saved successfully'),
           duration: 2000,
         });
       } else {
         toast({
-          title: t('autoSaved'),
-          description: t('draftAutoSavedSuccessfully'),
+          title: t('autoSaved', 'Auto-saved'),
+          description: t('draftAutoSavedSuccessfully', 'Draft auto-saved successfully'),
           duration: 1500,
         });
       }
@@ -76,12 +76,12 @@ export const useEnhancedAutoSave = ({
       hasErrorRef.current = true;
       onErrorStateChange?.(true);
       
-      const errorMessage = error instanceof Error ? error.message : t('unknownError');
+      const errorMessage = error instanceof Error ? error.message : t('unknownError', 'Unknown error');
       
       console.error('Save failed:', error);
       toast({
-        title: isManual ? t('saveFailedTitle') : t('autoSaveFailedTitle'),
-        description: `${t('saveFailedDescription')}: ${errorMessage}`,
+        title: isManual ? t('saveFailedTitle', 'Save Failed') : t('autoSaveFailedTitle', 'Auto-save Failed'),
+        description: `${t('saveFailedDescription', 'Failed to save')}: ${errorMessage}`,
         variant: "destructive",
         duration: 4000,
       });

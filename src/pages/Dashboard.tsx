@@ -1,18 +1,17 @@
+
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { PlusCircle, FileText, Calendar, Book } from "lucide-react";
 import { useAuth } from '@/contexts/AuthContext';
 import { useProjects } from '@/contexts/ProjectContext';
-import { getDrafts, type Draft } from '@/lib/db';
+import { OptimizedDraftService } from '@/utils/optimizedDb';
+import { Draft } from '@/types';
 import { Layout } from '@/components/layout/Layout';
 import { formatDate } from '@/utils/dateUtils';
 
 export default function Dashboard() {
-  const [activeTab, setActiveTab] = useState("projects");
   const [recentDrafts, setRecentDrafts] = useState<Draft[]>([]);
   const [loading, setLoading] = useState(true);
   const { user } = useAuth();
@@ -31,7 +30,7 @@ export default function Dashboard() {
     }
 
     try {
-      const drafts = await getDrafts(currentProject.id);
+      const drafts = await OptimizedDraftService.getDraftsByProject(currentProject.id);
       const sortedDrafts = drafts.sort((a, b) => 
         new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
       ).slice(0, 5);
@@ -59,7 +58,6 @@ export default function Dashboard() {
         description: "Your new project is ready for writing!",
       });
 
-      // Navigate to editor with the new project
       navigate('/app/editor');
     } catch (error) {
       toast({
