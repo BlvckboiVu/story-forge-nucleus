@@ -30,6 +30,7 @@ interface RichTextEditorProps {
   onWordCountChange?: (count: number) => void;
   onCurrentPageChange?: (page: number) => void;
   onUnsavedChangesChange?: (unsaved: boolean) => void;
+  onContentChange?: (content: string) => void; // New prop for offline state
   extraActions?: React.ReactNode;
 }
 
@@ -63,6 +64,7 @@ const RichTextEditor = ({
   onWordCountChange,
   onCurrentPageChange,
   onUnsavedChangesChange,
+  onContentChange, // New prop
   extraActions,
 }: RichTextEditorProps) => {
   const [content, setContent] = useState(initialContent);
@@ -310,6 +312,11 @@ const RichTextEditor = ({
       setContent(value);
       setHasUnsavedChanges(true);
       setEditorError(null);
+      
+      // Notify parent of content changes for offline persistence
+      if (onContentChange) {
+        onContentChange(value);
+      }
     } catch (error) {
       console.error('Content change failed:', error);
       setEditorError('Failed to update content');

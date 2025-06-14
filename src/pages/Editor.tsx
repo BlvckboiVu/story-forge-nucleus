@@ -4,18 +4,16 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { Layout } from '@/components/layout/Layout';
 import RichTextEditor from '@/components/editor/RichTextEditor';
 import { StoryBibleDrawer } from '@/components/StoryBibleDrawer';
-import Outline from '@/components/Outline';
-import OutlineTimeline from '@/components/OutlineTimeline';
+import OutlineIntegration from '@/components/editor/OutlineIntegration';
 import { useProjects } from '@/contexts/ProjectContext';
 import { useOptimizedDrafts } from '@/utils/optimizedDb';
 import { EnhancedOutlineService } from '@/utils/outlineDb';
+import { useOfflineState } from '@/hooks/useOfflineState';
+import { ConnectivityIndicator } from '@/components/ConnectivityIndicator';
 import { Draft } from '@/types';
 import { EnhancedOutline, OutlineScene } from '@/types/outline';
 import { Button } from '@/components/ui/button';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { BookOpen, Clock, Menu, X } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 
 export default function Editor() {
   const navigate = useNavigate();
@@ -31,6 +29,26 @@ export default function Editor() {
     partTitle: string;
   } | null>(null);
   const isMobile = useIsMobile();
+
+  // Enhanced offline state management
+  const {
+    currentProject: offlineCurrentProject,
+    currentDraft: offlineCurrentDraft,
+    editorState,
+    updateProject,
+    updateDraft,
+    updateEditor,
+    addToSyncQueue,
+    isOffline,
+    updateUrlState,
+  } = useOfflineState();
+
+  // Sync URL params with offline state
+  useEffect(() => {
+    if (projectId && projectId !== offlineCurrentProject) {
+      updateProject(projectId);
+    }
+  }, [projectId, offlineCurrentProject, updateProject]);
 
   // If no projectId in URL but we have a current project, redirect
   useEffect(() => {
@@ -62,36 +80,55 @@ export default function Editor() {
     if (!currentProject) return;
     
     if (drafts.length > 0) {
-      setCurrentDraft(drafts[0]);
+      const draftToLoad = drafts[0];
+      setCurrentDraft(draftToLoad);
+      updateDraft(draftToLoad.id);
+      
+      // Restore editor state if available
+      if (editorState && editorState.unsavedContent && offlineCurrentDraft === draftToLoad.id) {
+        // Will be handled by RichTextEditor when it receives the editorState
+      }
     } else {
       // Auto-create first draft using optimized service
       import('@/utils/optimizedDb').then(({ OptimizedDraftService }) => {
         OptimizedDraftService.createDraft({
           title: `${currentProject.title} - Draft 1`,
-          content: '',
+          content: editorState?.unsavedContent || '',
           projectId: currentProject.id,
           wordCount: 0
         }).then(id => {
-          // Fetch the newly created draft
           OptimizedDraftService.getDraft(id).then(draft => {
-            if (draft) setCurrentDraft(draft);
+            if (draft) {
+              setCurrentDraft(draft);
+              updateDraft(draft.id);
+            }
           });
         });
       });
     }
-  }, [drafts, currentProject]);
+  }, [drafts, currentProject, editorState, offlineCurrentDraft, updateDraft]);
 
   const handleSave = async (content: string) => {
     if (!currentDraft || !currentProject) return;
     
-    const { OptimizedDraftService } = await import('@/utils/optimizedDb');
-    await OptimizedDraftService.updateDraft(currentDraft.id, {
-      content,
-    });
+    try {
+      const { OptimizedDraftService } = await import('@/utils/optimizedDb');
+      await OptimizedDraftService.updateDraft(currentDraft.id, {
+        content,
+      });
 
-    // Update scene status if a scene is selected
-    if (selectedScene && outline) {
-      try {
+      // Add to sync queue for online sync
+      addToSyncQueue('update', 'draft', {
+        id: currentDraft.id,
+        content,
+        updatedAt: new Date(),
+      });
+
+      // Clear unsaved content from editor state
+      updateEditor({ unsavedContent: '' });
+
+      // Update scene status if a scene is selected
+      if (selectedScene && outline) {
         const wordCount = content.trim().split(/\s+/).filter(w => w.length > 0).length;
         const updatedStatus: 'planned' | 'draft' | 'complete' = wordCount > 100 ? 'draft' : 'planned';
         
@@ -120,9 +157,9 @@ export default function Editor() {
         if (updatedOutlines.length > 0) {
           setOutline(updatedOutlines[0]);
         }
-      } catch (error) {
-        console.error('Failed to update scene status:', error);
       }
+    } catch (error) {
+      console.error('Failed to save:', error);
     }
   };
 
@@ -131,7 +168,6 @@ export default function Editor() {
     
     // Load scene content into editor
     if (scene.content) {
-      // Update current draft with scene content
       setCurrentDraft(prev => prev ? {
         ...prev,
         content: scene.content || '',
@@ -143,6 +179,14 @@ export default function Editor() {
     if (isMobile) {
       setShowOutline(false);
     }
+  };
+
+  // Handle editor content changes for offline persistence
+  const handleContentChange = (content: string) => {
+    updateEditor({ 
+      unsavedContent: content,
+      lastSaved: Date.now(),
+    });
   };
 
   if (!currentProject) {
@@ -174,72 +218,24 @@ export default function Editor() {
     );
   }
 
-  // Mobile outline panel component
-  const OutlinePanel = () => (
-    <Tabs defaultValue="outline" className="h-full flex flex-col">
-      <TabsList className="grid w-full grid-cols-2 m-2">
-        <TabsTrigger value="outline" className="flex items-center gap-2">
-          <BookOpen className="h-4 w-4" />
-          Outline
-        </TabsTrigger>
-        <TabsTrigger value="timeline" className="flex items-center gap-2">
-          <Clock className="h-4 w-4" />
-          Timeline
-        </TabsTrigger>
-      </TabsList>
-      
-      <TabsContent value="outline" className="flex-1 overflow-hidden m-2 mt-0">
-        <Outline
-          projectId={currentProject.id}
-          onSceneSelect={handleSceneSelect}
-          className="h-full"
-        />
-      </TabsContent>
-      
-      <TabsContent value="timeline" className="flex-1 overflow-hidden m-2 mt-0">
-        {outline && (
-          <OutlineTimeline
-            outline={outline}
-            onSceneSelect={handleSceneSelect}
-            className="h-full"
-          />
-        )}
-      </TabsContent>
-    </Tabs>
-  );
-
   const extraActions = (
     <div className="flex items-center gap-2">
-      {isMobile ? (
-        <Sheet open={showOutline} onOpenChange={setShowOutline}>
-          <SheetTrigger asChild>
-            <Button
-              variant="outline"
-              size="icon"
-              title="Story Outline"
-            >
-              <BookOpen className="h-4 w-4" />
-            </Button>
-          </SheetTrigger>
-          <SheetContent side="right" className="w-full sm:w-96 p-0">
-            <div className="h-full">
-              <OutlinePanel />
-            </div>
-          </SheetContent>
-        </Sheet>
-      ) : (
-        <Button
-          variant="outline"
-          size="icon"
-          onClick={() => setShowOutline(!showOutline)}
-          title="Toggle Outline"
-        >
-          <BookOpen className="h-4 w-4" />
-        </Button>
-      )}
+      <ConnectivityIndicator />
+      <OutlineIntegration
+        projectId={currentProject.id}
+        outline={outline}
+        onSceneSelect={handleSceneSelect}
+        showOutline={showOutline}
+        onToggleOutline={() => setShowOutline(!showOutline)}
+      />
       <StoryBibleDrawer projectId={currentProject.id} />
     </div>
   );
+
+  // Use initial content from offline state if available
+  const initialContent = (editorState?.unsavedContent && offlineCurrentDraft === currentDraft?.id) 
+    ? editorState.unsavedContent 
+    : currentDraft?.content || '';
 
   return (
     <Layout mode="editor" showNavigation={true}>
@@ -248,18 +244,20 @@ export default function Editor() {
         <div className={`flex-1 min-w-0 ${showOutline && !isMobile ? 'pr-4' : ''}`}>
           <div className="h-full flex flex-col">
             <RichTextEditor
-              initialContent={currentDraft?.content || ''}
+              initialContent={initialContent}
               onSave={handleSave}
               draft={currentDraft}
               loading={loading}
               onEditorReady={() => {}}
               extraActions={extraActions}
+              onContentChange={handleContentChange}
             />
             
             {selectedScene && (
               <div className="mt-2 p-2 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-md">
                 <p className="text-sm text-blue-800 dark:text-blue-200">
                   Editing: {selectedScene.partTitle} → {selectedScene.chapterTitle} → {selectedScene.scene.title}
+                  {isOffline && <span className="ml-2 text-orange-600">(Offline)</span>}
                 </p>
               </div>
             )}
@@ -269,7 +267,13 @@ export default function Editor() {
         {/* Desktop Outline Sidebar */}
         {showOutline && !isMobile && (
           <div className="w-96 border-l bg-card min-w-0 flex-shrink-0">
-            <OutlinePanel />
+            <OutlineIntegration
+              projectId={currentProject.id}
+              outline={outline}
+              onSceneSelect={handleSceneSelect}
+              showOutline={showOutline}
+              onToggleOutline={() => setShowOutline(!showOutline)}
+            />
           </div>
         )}
       </div>
