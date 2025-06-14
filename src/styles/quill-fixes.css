@@ -1,7 +1,7 @@
 
-/* Quill Editor Fixes for Better UI Rendering */
+/* Quill Editor Fixes for Better UI Rendering and Responsive Design */
 
-/* Ensure toolbar shows properly */
+/* Ensure toolbar shows properly and respects width */
 .ql-toolbar {
   display: flex !important;
   visibility: visible !important;
@@ -10,9 +10,13 @@
   border-bottom: none;
   background: white;
   padding: 8px 12px;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  overflow-x: auto;
 }
 
-/* Fix editor container */
+/* Fix editor container width constraints */
 .ql-container {
   display: block !important;
   visibility: visible !important;
@@ -20,9 +24,12 @@
   border: 1px solid #e5e7eb;
   border-top: none;
   font-family: inherit;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
-/* Editor content area */
+/* Editor content area with proper width handling */
 .ql-editor {
   min-height: 200px;
   padding: 16px;
@@ -30,9 +37,14 @@
   line-height: 1.6;
   color: #374151;
   background: white;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  overflow-wrap: break-word;
+  word-wrap: break-word;
 }
 
-/* Fix button styles */
+/* Fix button styles with responsive considerations */
 .ql-toolbar button {
   display: inline-flex !important;
   align-items: center;
@@ -45,6 +57,7 @@
   margin: 0 2px;
   cursor: pointer;
   transition: background-color 0.2s;
+  flex-shrink: 0;
 }
 
 .ql-toolbar button:hover {
@@ -56,15 +69,17 @@
   color: #1d4ed8;
 }
 
-/* Fix select dropdowns */
+/* Fix select dropdowns with width constraints */
 .ql-toolbar select {
-  min-width: 100px;
+  min-width: 80px;
+  max-width: 120px;
   height: 32px;
   border: 1px solid #d1d5db;
   border-radius: 4px;
   padding: 4px 8px;
   background: white;
   font-size: 14px;
+  flex-shrink: 0;
 }
 
 /* Dark mode support */
@@ -114,11 +129,12 @@
   min-height: 80vh;
 }
 
-/* Mobile responsive */
+/* Mobile responsive improvements */
 @media (max-width: 768px) {
   .ql-toolbar {
     flex-wrap: wrap;
     padding: 6px;
+    gap: 2px;
   }
   
   .ql-toolbar button {
@@ -127,9 +143,40 @@
     margin: 1px;
   }
   
+  .ql-toolbar select {
+    min-width: 70px;
+    max-width: 100px;
+    font-size: 12px;
+  }
+  
   .ql-editor {
     padding: 12px;
-    font-size: 16px;
+    font-size: 16px; /* Prevent zoom on iOS */
+  }
+  
+  /* Ensure mobile editors don't overflow */
+  .ql-container,
+  .ql-editor {
+    width: 100%;
+    max-width: 100vw;
+    overflow-x: hidden;
+  }
+}
+
+/* Tablet responsive */
+@media (max-width: 1024px) and (min-width: 769px) {
+  .ql-toolbar {
+    padding: 8px;
+  }
+  
+  .ql-toolbar button {
+    width: 30px;
+    height: 30px;
+  }
+  
+  .ql-toolbar select {
+    min-width: 75px;
+    max-width: 110px;
   }
 }
 
@@ -158,4 +205,44 @@
 
 .dark .ql-editor ::selection {
   background: #1e3a8a;
+}
+
+/* Prevent text overflow in all directions */
+.ql-editor p,
+.ql-editor div,
+.ql-editor span {
+  max-width: 100%;
+  overflow-wrap: break-word;
+  word-wrap: break-word;
+  hyphens: auto;
+}
+
+/* Long URLs and unbreakable content */
+.ql-editor a {
+  word-break: break-all;
+  overflow-wrap: break-word;
+}
+
+/* Print styles */
+@media print {
+  .ql-toolbar {
+    display: none !important;
+  }
+  
+  .ql-container {
+    border: none;
+  }
+  
+  .ql-editor {
+    padding: 0;
+    background: white;
+    color: black;
+    width: 100%;
+    max-width: none;
+  }
+  
+  .ql-editor .story-bible-highlight {
+    background: none;
+    border-bottom: 1px solid black;
+  }
 }

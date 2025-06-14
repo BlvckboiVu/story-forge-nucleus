@@ -1,3 +1,4 @@
+
 // EditorLayout.tsx
 // Layout component for the main editor view, handling both desktop and mobile layouts
 
@@ -15,13 +16,6 @@ import { EditorHeader } from './EditorHeader';
 
 /**
  * Props for the EditorLayout component
- * @property currentDraft - The current draft being edited
- * @property loading - Whether the editor is loading
- * @property onSaveDraft - Callback to save the draft
- * @property onOpenDraft - Callback to open the draft modal
- * @property onNewDraft - Callback to create a new draft
- * @property onInsertLLMResponse - Callback to insert LLM response
- * @property onEditorReady - Callback when the editor is ready
  */
 interface EditorLayoutProps {
   currentDraft: Draft | null;
@@ -54,7 +48,6 @@ const DesktopLayout = ({
   toggleFocusMode: () => void;
   togglePanel: () => void;
 }) => {
-  // Real state for word count, page, unsaved changes
   const [wordCount, setWordCount] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
@@ -64,8 +57,7 @@ const DesktopLayout = ({
   };
 
   return (
-    <div className="flex-1 flex flex-col h-full overflow-hidden">
-      {/* Merged Header with status bar info */}
+    <div className="flex-1 flex flex-col h-full w-full max-w-full overflow-hidden">
       <EditorHeader
         currentDraft={currentDraft}
         onOpenDraft={onOpenDraft}
@@ -76,10 +68,11 @@ const DesktopLayout = ({
         loading={loading}
         onSave={() => onSaveDraft(currentDraft?.content || '')}
       />
-      <div className="flex-1 flex gap-3 lg:gap-4 h-full overflow-hidden p-3 lg:p-4">
-        {/* Main editor area */}
-        <div className="flex-1 min-h-0 overflow-hidden">
-          <div className="h-full bg-paper dark:bg-paper-dark shadow-sm border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
+      
+      <div className="flex-1 flex gap-3 lg:gap-4 h-full w-full max-w-full overflow-hidden p-3 lg:p-4">
+        {/* Main editor area - constrained width */}
+        <div className="flex-1 min-w-0 min-h-0 overflow-hidden">
+          <div className="h-full w-full bg-paper dark:bg-paper-dark shadow-sm border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
             <RichTextEditor 
               initialContent={currentDraft?.content || ''} 
               onSave={onSaveDraft}
@@ -95,9 +88,9 @@ const DesktopLayout = ({
           </div>
         </div>
 
-        {/* LLM Panel (hidden in focus mode) */}
+        {/* LLM Panel - hidden in focus mode, proper width constraints */}
         {!isFocusMode && (
-          <div className="hidden lg:block">
+          <div className="hidden lg:block flex-shrink-0" style={{ width: isPanelCollapsed ? '60px' : '320px' }}>
             <LLMPanel
               isCollapsed={isPanelCollapsed}
               onToggle={togglePanel}
@@ -106,8 +99,8 @@ const DesktopLayout = ({
           </div>
         )}
 
-        {/* Floating action buttons for outline and drafts (desktop only) */}
-        <div className="hidden md:flex lg:hidden fixed bottom-6 right-6 flex-col gap-3">
+        {/* Floating action buttons for outline and drafts (medium screens only) */}
+        <div className="hidden md:flex lg:hidden fixed bottom-6 right-6 flex-col gap-3 z-50">
           <OutlinePopup />
           <Button 
             onClick={onOpenDraft}
@@ -150,13 +143,12 @@ const MobileLayout = ({
   isFullscreen: boolean;
   onToggleFullscreen: () => void;
 }) => {
-  // Real state for word count, page, unsaved changes
   const [wordCount, setWordCount] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
 
   return (
-    <div className="flex flex-col h-full overflow-hidden">
+    <div className="flex flex-col h-full w-full max-w-full overflow-hidden">
       <MobileEditorHeader
         currentDraft={currentDraft}
         onOpenDraft={onOpenDraft}
@@ -165,7 +157,7 @@ const MobileLayout = ({
         isFullscreen={isFullscreen}
         onToggleFullscreen={onToggleFullscreen}
       />
-      <div className="flex-1 min-h-0 overflow-hidden bg-paper dark:bg-paper-dark">
+      <div className="flex-1 min-h-0 w-full max-w-full overflow-hidden bg-paper dark:bg-paper-dark">
         <RichTextEditor 
           initialContent={currentDraft?.content || ''} 
           onSave={onSaveDraft}
@@ -196,11 +188,8 @@ export const EditorLayout = ({
   onInsertLLMResponse,
   onEditorReady,
 }: EditorLayoutProps) => {
-  // Detect if device is mobile
   const isMobile = useIsMobile();
-  // State for fullscreen mode (mobile focus mode)
   const [isFullscreen, setIsFullscreen] = useState(false);
-  // Focus mode and panel collapse state from custom hook
   const { 
     isFocusMode, 
     isPanelCollapsed, 
@@ -208,12 +197,10 @@ export const EditorLayout = ({
     togglePanel 
   } = useFocusMode();
 
-  // Toggle fullscreen for mobile
   const toggleFullscreen = () => {
     setIsFullscreen(!isFullscreen);
   };
 
-  // Render mobile or desktop layout
   if (isMobile) {
     return (
       <MobileLayout
