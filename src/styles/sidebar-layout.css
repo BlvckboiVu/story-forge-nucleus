@@ -19,11 +19,12 @@
   grid-template-rows: auto 1fr;
   width: 100%;
   max-width: 100%;
+  position: relative;
 }
 
 /* Sidebar collapsed state - content expands to fill space */
 .sidebar-layout[data-sidebar-collapsed="true"] {
-  grid-template-columns: 0fr 1fr;
+  grid-template-columns: 60px 1fr;
 }
 
 /* Mobile Responsive (425px and below) */
@@ -77,6 +78,16 @@
   .sidebar-layout[data-sidebar-collapsed="true"] {
     grid-template-columns: 60px 1fr;
   }
+}
+
+/* Fix overlap issues - ensure content doesn't overlap sidebar */
+.sidebar-layout .main-content {
+  z-index: 1;
+}
+
+/* Ensure sidebar has proper layering */
+.sidebar-layout > :first-child {
+  z-index: 10;
 }
 
 /* Print Optimizations */

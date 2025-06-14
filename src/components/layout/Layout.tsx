@@ -23,7 +23,10 @@ function LayoutContent({
   showNavigation = true,
 }: LayoutProps) {
   const isMobile = useIsMobile();
-  const { state } = useSidebar();
+  
+  // Only use sidebar when not mobile and navigation is shown
+  const sidebarContext = !isMobile && showNavigation ? useSidebar() : null;
+  const sidebarState = sidebarContext?.state;
 
   const getLayoutClasses = () => {
     switch (mode) {
@@ -38,22 +41,10 @@ function LayoutContent({
     }
   };
 
-  if (!showNavigation) {
+  if (!showNavigation || isMobile) {
     return (
       <div className="min-h-screen bg-background w-full max-w-full overflow-hidden">
         <main className={cn("flex-1 w-full", getLayoutClasses(), className)}>
-          <div className="container py-3 sm:py-6 w-full max-w-full px-3 sm:px-4">
-            {children}
-          </div>
-        </main>
-      </div>
-    );
-  }
-
-  if (isMobile) {
-    return (
-      <div className="min-h-screen bg-background w-full max-w-full overflow-hidden">
-        <main className={cn("w-full h-screen", getLayoutClasses(), className)}>
           {mode === 'editor' ? (
             <div className="w-full h-full overflow-hidden">
               {children}
@@ -69,7 +60,7 @@ function LayoutContent({
   }
 
   return (
-    <div className={cn("sidebar-layout w-full", state === 'collapsed' && 'data-sidebar-collapsed')} data-sidebar-collapsed={state === 'collapsed'}>
+    <div className={cn("sidebar-layout w-full")} data-sidebar-collapsed={sidebarState === 'collapsed'}>
       <AppSidebar />
       <SidebarInset className="main-content">
         <main className={cn("w-full h-full", getLayoutClasses(), className)}>
