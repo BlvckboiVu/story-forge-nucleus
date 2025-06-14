@@ -1,6 +1,7 @@
 
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from '@/components/ui/toaster';
+import { SidebarProvider } from '@/components/ui/sidebar';
 import { useAuth } from '@/contexts/AuthContext';
 import { SessionTimeoutWarning } from '@/components/auth/SessionTimeoutWarning';
 import Dashboard from '@/pages/Dashboard';
@@ -26,7 +27,11 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
     return <Navigate to="/login" replace />;
   }
 
-  return <>{children}</>;
+  return (
+    <SidebarProvider>
+      {children}
+    </SidebarProvider>
+  );
 }
 
 function PublicRoute({ children }: { children: React.ReactNode }) {
