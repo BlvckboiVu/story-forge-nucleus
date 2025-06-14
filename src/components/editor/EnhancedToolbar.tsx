@@ -51,6 +51,7 @@ const themes = [
   { value: 'sepia', label: 'Sepia', colors: { bg: '#f4f3e8', text: '#5c4b37' } },
   { value: 'focus', label: 'Focus Blue', colors: { bg: '#f8fafc', text: '#1e293b' } },
   { value: 'warm', label: 'Warm', colors: { bg: '#fef7ed', text: '#9a3412' } },
+  { value: 'forest', label: 'Forest', colors: { bg: '#f0fdf4', text: '#14532d' } },
 ];
 
 const headings = [
@@ -127,6 +128,9 @@ export const EnhancedToolbar = ({
     }
   }, [editorRef]);
 
+  // Get current theme label
+  const currentTheme = themes.find(theme => theme.value === selectedTheme) || themes[0];
+
   if (isFocusMode && !isMobile) {
     return (
       <div className="flex items-center justify-between p-3 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
@@ -137,10 +141,10 @@ export const EnhancedToolbar = ({
             onClick={onSave}
             disabled={!hasUnsavedChanges}
             className={`h-8 text-sm ${hasUnsavedChanges ? 'text-blue-600' : ''}`}
-            title={t('save')}
+            title="save"
           >
             <Save className="h-4 w-4 mr-1" />
-            {t('save')}
+            Save
           </Button>
         </div>
         
@@ -149,7 +153,7 @@ export const EnhancedToolbar = ({
           size="sm"
           onClick={onToggleFocus}
           className="h-8 w-8 p-0"
-          title={t('exitFocusMode')}
+          title="exitFocusMode"
         >
           <Minimize2 className="h-4 w-4" />
         </Button>
@@ -167,7 +171,7 @@ export const EnhancedToolbar = ({
             size="sm"
             onClick={() => onFormatClick('bold')}
             className={`h-8 w-8 p-0 ${activeFormats.bold ? 'bg-blue-100 text-blue-700' : ''}`}
-            title={t('bold')}
+            title="bold"
           >
             <Bold className="h-4 w-4" />
           </Button>
@@ -176,30 +180,30 @@ export const EnhancedToolbar = ({
             size="sm"
             onClick={() => onFormatClick('italic')}
             className={`h-8 w-8 p-0 ${activeFormats.italic ? 'bg-blue-100 text-blue-700' : ''}`}
-            title={t('italic')}
+            title="italic"
           >
             <Italic className="h-4 w-4" />
           </Button>
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => onFormatClick('list-bullet')}
+            onClick={() => onFormatClick('list', 'bullet')}
             className={`h-8 w-8 p-0 ${activeFormats['list-bullet'] ? 'bg-blue-100 text-blue-700' : ''}`}
-            title={t('bulletList')}
+            title="bulletList"
           >
             <List className="h-4 w-4" />
           </Button>
           
           <Popover>
             <PopoverTrigger asChild>
-              <Button variant="ghost" size="sm" className="h-8 w-8 p-0" title={t('moreOptions')}>
+              <Button variant="ghost" size="sm" className="h-8 w-8 p-0" title="moreOptions">
                 <Type className="h-4 w-4" />
               </Button>
             </PopoverTrigger>
             <PopoverContent className="w-64" align="start">
               <div className="space-y-3">
                 <div>
-                  <label className="text-sm font-medium">{t('font')}</label>
+                  <label className="text-sm font-medium">Font</label>
                   <Select value={selectedFont} onValueChange={onFontChange}>
                     <SelectTrigger className="w-full h-8">
                       <SelectValue />
@@ -214,7 +218,7 @@ export const EnhancedToolbar = ({
                   </Select>
                 </div>
                 <div>
-                  <label className="text-sm font-medium">{t('theme')}</label>
+                  <label className="text-sm font-medium">Theme</label>
                   <Select value={selectedTheme} onValueChange={onThemeChange}>
                     <SelectTrigger className="w-full h-8">
                       <SelectValue />
@@ -239,7 +243,7 @@ export const EnhancedToolbar = ({
             size="sm"
             onClick={onToggleFocus}
             className="h-8 w-8 p-0"
-            title={t('focusMode')}
+            title="focusMode"
           >
             <Maximize2 className="h-4 w-4" />
           </Button>
@@ -262,7 +266,7 @@ export const EnhancedToolbar = ({
               onClick={onUndo}
               disabled={!canUndo}
               className="h-8 w-8 p-0"
-              title={t('undo')}
+              title="undo"
             >
               <Undo className="h-4 w-4" />
             </Button>
@@ -272,7 +276,7 @@ export const EnhancedToolbar = ({
               onClick={onRedo}
               disabled={!canRedo}
               className="h-8 w-8 p-0"
-              title={t('redo')}
+              title="redo"
             >
               <Redo className="h-4 w-4" />
             </Button>
@@ -297,7 +301,9 @@ export const EnhancedToolbar = ({
 
             <Select value={selectedTheme} onValueChange={onThemeChange}>
               <SelectTrigger className="w-32 h-8">
-                <SelectValue />
+                <SelectValue placeholder="Theme">
+                  {currentTheme.label}
+                </SelectValue>
               </SelectTrigger>
               <SelectContent>
                 {themes.map((theme) => (
@@ -343,7 +349,7 @@ export const EnhancedToolbar = ({
               size="sm"
               onClick={() => onFormatClick('bold')}
               className={`h-8 w-8 p-0 ${activeFormats.bold ? 'bg-blue-100 text-blue-700' : ''}`}
-              title={t('bold')}
+              title="bold"
             >
               <Bold className="h-4 w-4" />
             </Button>
@@ -352,7 +358,7 @@ export const EnhancedToolbar = ({
               size="sm"
               onClick={() => onFormatClick('italic')}
               className={`h-8 w-8 p-0 ${activeFormats.italic ? 'bg-blue-100 text-blue-700' : ''}`}
-              title={t('italic')}
+              title="italic"
             >
               <Italic className="h-4 w-4" />
             </Button>
@@ -361,7 +367,7 @@ export const EnhancedToolbar = ({
               size="sm"
               onClick={() => onFormatClick('underline')}
               className={`h-8 w-8 p-0 ${activeFormats.underline ? 'bg-blue-100 text-blue-700' : ''}`}
-              title={t('underline')}
+              title="underline"
             >
               <Underline className="h-4 w-4" />
             </Button>
@@ -370,7 +376,7 @@ export const EnhancedToolbar = ({
               size="sm"
               onClick={() => onFormatClick('strike')}
               className={`h-8 w-8 p-0 ${activeFormats.strike ? 'bg-blue-100 text-blue-700' : ''}`}
-              title={t('strikethrough')}
+              title="strikethrough"
             >
               <Strikethrough className="h-4 w-4" />
             </Button>
@@ -379,7 +385,7 @@ export const EnhancedToolbar = ({
               size="sm"
               onClick={() => onFormatClick('code')}
               className={`h-8 w-8 p-0 ${activeFormats.code ? 'bg-blue-100 text-blue-700' : ''}`}
-              title={t('code')}
+              title="code"
             >
               <Code className="h-4 w-4" />
             </Button>
@@ -394,7 +400,7 @@ export const EnhancedToolbar = ({
               size="sm"
               onClick={() => onFormatClick('align', 'left')}
               className={`h-8 w-8 p-0 ${activeFormats['align-left'] ? 'bg-blue-100 text-blue-700' : ''}`}
-              title={t('alignLeft')}
+              title="alignLeft"
             >
               <AlignLeft className="h-4 w-4" />
             </Button>
@@ -403,7 +409,7 @@ export const EnhancedToolbar = ({
               size="sm"
               onClick={() => onFormatClick('align', 'center')}
               className={`h-8 w-8 p-0 ${activeFormats['align-center'] ? 'bg-blue-100 text-blue-700' : ''}`}
-              title={t('alignCenter')}
+              title="alignCenter"
             >
               <AlignCenter className="h-4 w-4" />
             </Button>
@@ -412,7 +418,7 @@ export const EnhancedToolbar = ({
               size="sm"
               onClick={() => onFormatClick('align', 'right')}
               className={`h-8 w-8 p-0 ${activeFormats['align-right'] ? 'bg-blue-100 text-blue-700' : ''}`}
-              title={t('alignRight')}
+              title="alignRight"
             >
               <AlignRight className="h-4 w-4" />
             </Button>
@@ -421,7 +427,7 @@ export const EnhancedToolbar = ({
               size="sm"
               onClick={() => onFormatClick('align', 'justify')}
               className={`h-8 w-8 p-0 ${activeFormats['align-justify'] ? 'bg-blue-100 text-blue-700' : ''}`}
-              title={t('alignJustify')}
+              title="alignJustify"
             >
               <AlignJustify className="h-4 w-4" />
             </Button>
@@ -436,7 +442,7 @@ export const EnhancedToolbar = ({
               size="sm"
               onClick={() => onFormatClick('list', 'bullet')}
               className={`h-8 w-8 p-0 ${activeFormats['list-bullet'] ? 'bg-blue-100 text-blue-700' : ''}`}
-              title={t('bulletList')}
+              title="bulletList"
             >
               <List className="h-4 w-4" />
             </Button>
@@ -445,7 +451,7 @@ export const EnhancedToolbar = ({
               size="sm"
               onClick={() => onFormatClick('list', 'ordered')}
               className={`h-8 w-8 p-0 ${activeFormats['list-ordered'] ? 'bg-blue-100 text-blue-700' : ''}`}
-              title={t('numberedList')}
+              title="numberedList"
             >
               <ListOrdered className="h-4 w-4" />
             </Button>
@@ -454,7 +460,7 @@ export const EnhancedToolbar = ({
               size="sm"
               onClick={() => onFormatClick('blockquote')}
               className={`h-8 w-8 p-0 ${activeFormats.blockquote ? 'bg-blue-100 text-blue-700' : ''}`}
-              title={t('quote')}
+              title="quote"
             >
               <Quote className="h-4 w-4" />
             </Button>
@@ -463,7 +469,7 @@ export const EnhancedToolbar = ({
               size="sm"
               onClick={() => onFormatClick('divider')}
               className="h-8 w-8 p-0"
-              title={t('divider')}
+              title="divider"
             >
               <Minus className="h-4 w-4" />
             </Button>
@@ -475,9 +481,9 @@ export const EnhancedToolbar = ({
             size="sm"
             onClick={() => setShowMoreOptions(!showMoreOptions)}
             className="h-8 px-2"
-            title={t('moreOptions')}
+            title="moreOptions"
           >
-            {t('more')}
+            More
           </Button>
 
           {/* Extra actions */}
@@ -495,10 +501,10 @@ export const EnhancedToolbar = ({
             size="sm"
             onClick={onToggleFocus}
             className="h-8"
-            title={t('focusMode')}
+            title="focusMode"
           >
             <Maximize2 className="h-4 w-4 mr-1" />
-            {t('focus')}
+            Focus
           </Button>
         </div>
       </div>
@@ -511,7 +517,7 @@ export const EnhancedToolbar = ({
             size="sm"
             onClick={() => onFormatClick('link')}
             className="h-8 w-8 p-0"
-            title={t('insertLink')}
+            title="insertLink"
           >
             <Link className="h-4 w-4" />
           </Button>
@@ -520,7 +526,7 @@ export const EnhancedToolbar = ({
             size="sm"
             onClick={() => onFormatClick('image')}
             className="h-8 w-8 p-0"
-            title={t('insertImage')}
+            title="insertImage"
           >
             <Image className="h-4 w-4" />
           </Button>
@@ -529,7 +535,7 @@ export const EnhancedToolbar = ({
             size="sm"
             onClick={() => onFormatClick('table')}
             className="h-8 w-8 p-0"
-            title={t('insertTable')}
+            title="insertTable"
           >
             <Table className="h-4 w-4" />
           </Button>

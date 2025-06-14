@@ -1,0 +1,161 @@
+
+/* Quill Editor Fixes for Better UI Rendering */
+
+/* Ensure toolbar shows properly */
+.ql-toolbar {
+  display: flex !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  border: 1px solid #e5e7eb;
+  border-bottom: none;
+  background: white;
+  padding: 8px 12px;
+}
+
+/* Fix editor container */
+.ql-container {
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  border: 1px solid #e5e7eb;
+  border-top: none;
+  font-family: inherit;
+}
+
+/* Editor content area */
+.ql-editor {
+  min-height: 200px;
+  padding: 16px;
+  font-size: 16px;
+  line-height: 1.6;
+  color: #374151;
+  background: white;
+}
+
+/* Fix button styles */
+.ql-toolbar button {
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: transparent;
+  border-radius: 4px;
+  margin: 0 2px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.ql-toolbar button:hover {
+  background-color: #f3f4f6;
+}
+
+.ql-toolbar button.ql-active {
+  background-color: #dbeafe;
+  color: #1d4ed8;
+}
+
+/* Fix select dropdowns */
+.ql-toolbar select {
+  min-width: 100px;
+  height: 32px;
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+  padding: 4px 8px;
+  background: white;
+  font-size: 14px;
+}
+
+/* Dark mode support */
+.dark .ql-toolbar {
+  background: #374151;
+  border-color: #4b5563;
+  color: #f9fafb;
+}
+
+.dark .ql-container {
+  border-color: #4b5563;
+}
+
+.dark .ql-editor {
+  background: #374151;
+  color: #f9fafb;
+}
+
+.dark .ql-toolbar button:hover {
+  background-color: #4b5563;
+}
+
+.dark .ql-toolbar button.ql-active {
+  background-color: #1e3a8a;
+  color: #60a5fa;
+}
+
+.dark .ql-toolbar select {
+  background: #4b5563;
+  border-color: #6b7280;
+  color: #f9fafb;
+}
+
+/* Focus mode styles */
+.focus-mode .ql-toolbar {
+  display: none;
+}
+
+.focus-mode .ql-container {
+  border: none;
+}
+
+.focus-mode .ql-editor {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 48px 24px;
+  min-height: 80vh;
+}
+
+/* Mobile responsive */
+@media (max-width: 768px) {
+  .ql-toolbar {
+    flex-wrap: wrap;
+    padding: 6px;
+  }
+  
+  .ql-toolbar button {
+    width: 28px;
+    height: 28px;
+    margin: 1px;
+  }
+  
+  .ql-editor {
+    padding: 12px;
+    font-size: 16px;
+  }
+}
+
+/* Story Bible highlighting */
+.ql-editor .story-bible-highlight {
+  background: rgba(59, 130, 246, 0.1);
+  border-bottom: 2px dotted #3b82f6;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.ql-editor .story-bible-highlight:hover {
+  background: rgba(59, 130, 246, 0.2);
+}
+
+/* Placeholder text */
+.ql-editor.ql-blank::before {
+  color: #9ca3af;
+  font-style: italic;
+}
+
+/* Selection highlighting */
+.ql-editor ::selection {
+  background: #dbeafe;
+}
+
+.dark .ql-editor ::selection {
+  background: #1e3a8a;
+}

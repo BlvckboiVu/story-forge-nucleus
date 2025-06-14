@@ -8,6 +8,7 @@ import { WritingViewOptions } from './WritingViewOptions';
 import { useEnhancedAutoSave } from '@/hooks/useEnhancedAutoSave';
 import { useEnhancedWordCount } from '@/hooks/useEnhancedWordCount';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { useEditorTheme } from '@/hooks/useEditorTheme';
 import { Button } from '@/components/ui/button';
 import { Save } from 'lucide-react';
 import { useProjects } from '@/contexts/ProjectContext';
@@ -47,7 +48,7 @@ const formats = [
   'align',
   'blockquote', 'code-block',
   'link',
-  'story-bible-highlight' // Custom format for highlighting
+  'story-bible-highlight'
 ];
 
 const RichTextEditor = ({
@@ -66,7 +67,6 @@ const RichTextEditor = ({
 }: RichTextEditorProps) => {
   const [content, setContent] = useState(initialContent);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
-  const [selectedFont, setSelectedFont] = useState('Inter');
   const [viewMode, setViewMode] = useState<'scroll' | 'page'>('scroll');
   const [pageHeight, setPageHeight] = useState(800);
   const [storyBibleEntries, setStoryBibleEntries] = useState<StoryBibleEntry[]>([]);
@@ -78,6 +78,12 @@ const RichTextEditor = ({
   const containerRef = useRef<HTMLDivElement>(null);
   const { currentProject } = useProjects();
   const deviceIsMobile = useIsMobile();
+
+  // Use editor theme hook
+  const { currentTheme, changeTheme } = useEditorTheme({
+    defaultThemeId: 'default',
+    storageKey: 'editor-theme',
+  });
 
   // Enhanced word count hook
   const { stats, updateWordCount } = useEnhancedWordCount({
@@ -128,18 +134,22 @@ const RichTextEditor = ({
     }
   }, [onEditorReady]);
 
-  // Apply font change to the editor
+  // Apply theme to editor
   useEffect(() => {
     try {
       const quill = editorRef.current?.getEditor();
-      if (quill && selectedFont) {
+      if (quill && currentTheme) {
         const editor = quill.root;
-        editor.style.fontFamily = selectedFont;
+        editor.style.fontFamily = currentTheme.font?.family || 'Inter, sans-serif';
+        editor.style.fontSize = currentTheme.font?.size || '16px';
+        editor.style.lineHeight = currentTheme.font?.lineHeight || '1.6';
+        editor.style.backgroundColor = currentTheme.colors.background;
+        editor.style.color = currentTheme.colors.text;
       }
     } catch (error) {
-      console.error('Failed to apply font:', error);
+      console.error('Failed to apply theme:', error);
     }
-  }, [selectedFont]);
+  }, [currentTheme]);
 
   // Auto-scroll to keep cursor in view with early trigger
   const handleCursorScroll = useCallback(() => {
@@ -155,23 +165,19 @@ const RichTextEditor = ({
       const containerRect = container.getBoundingClientRect();
       const editorRect = quill.root.getBoundingClientRect();
       
-      // Calculate position relative to container
       const cursorTop = editorRect.top + bounds.top - containerRect.top;
       const cursorBottom = cursorTop + bounds.height;
       
-      // Trigger scroll when cursor gets within 100px of bottom edge (not at the edge)
       const scrollThreshold = containerRect.height - 100;
       const topThreshold = 50;
       
       if (cursorBottom > scrollThreshold) {
-        // Scroll down to keep cursor in comfortable view
         const targetScrollTop = container.scrollTop + (cursorBottom - scrollThreshold) + 50;
         container.scrollTo({
           top: targetScrollTop,
           behavior: 'smooth'
         });
       } else if (cursorTop < topThreshold) {
-        // Scroll up if cursor is too close to top
         const targetScrollTop = Math.max(0, container.scrollTop - (topThreshold - cursorTop) - 50);
         container.scrollTo({
           top: targetScrollTop,
@@ -194,7 +200,6 @@ const RichTextEditor = ({
     };
 
     const handleTextChange = () => {
-      // Delay both highlighting and scroll to allow text changes to settle
       setTimeout(() => {
         handleHighlighting();
         handleCursorScroll();
@@ -243,7 +248,6 @@ const RichTextEditor = ({
   const handleFontChange = (fontFamily: string) => {
     if (!fontFamily?.trim()) return;
     
-    setSelectedFont(fontFamily);
     try {
       const quill = editorRef.current?.getEditor();
       if (quill) {
@@ -255,7 +259,7 @@ const RichTextEditor = ({
     }
   };
 
-  const handleFormatClick = (format: string) => {
+  const handleFormatClick = (format: string, value?: any) => {
     try {
       const quill = editorRef.current?.getEditor();
       if (!quill) return;
@@ -273,24 +277,26 @@ const RichTextEditor = ({
         case 'underline':
           quill.format('underline', !quill.getFormat(range).underline);
           break;
-        case 'align-left':
-          quill.format('align', false);
+        case 'strike':
+          quill.format('strike', !quill.getFormat(range).strike);
           break;
-        case 'align-center':
-          quill.format('align', 'center');
+        case 'code':
+          quill.format('code', !quill.getFormat(range).code);
           break;
-        case 'align-right':
-          quill.format('align', 'right');
+        case 'header':
+          quill.format('header', value);
           break;
-        case 'list-bullet':
-          quill.format('list', 'bullet');
+        case 'align':
+          quill.format('align', value === 'left' ? false : value);
           break;
-        case 'list-ordered':
-          quill.format('list', 'ordered');
+        case 'list':
+          quill.format('list', value);
           break;
         case 'blockquote':
           quill.format('blockquote', !quill.getFormat(range).blockquote);
           break;
+        default:
+          console.warn(`Unknown format: ${format}`);
       }
     } catch (error) {
       console.error('Format failed:', error);
@@ -300,8 +306,7 @@ const RichTextEditor = ({
 
   const handleChange = (value: string) => {
     try {
-      const newStats = updateWordCount(value);
-      
+      updateWordCount(value);
       setContent(value);
       setHasUnsavedChanges(true);
       setEditorError(null);
@@ -357,8 +362,10 @@ const RichTextEditor = ({
   `.trim();
 
   const editorStyle = {
-    fontFamily: selectedFont,
+    fontFamily: currentTheme.font?.family || 'Inter, sans-serif',
     height: '100%',
+    backgroundColor: currentTheme.colors.background,
+    color: currentTheme.colors.text,
     ...(viewMode === 'page' && { 
       '--page-height': `${pageHeight}px`,
     } as any)
@@ -397,10 +404,12 @@ const RichTextEditor = ({
 
   return (
     <div className={`flex flex-col h-full relative ${isFocusMode ? 'focus-mode' : ''}`}>
-      {/* Move toolbar to top */}
+      {/* Enhanced toolbar with theme support */}
       <EnhancedToolbar
-        selectedFont={selectedFont}
+        selectedFont={currentTheme.font?.family || 'Inter'}
         onFontChange={handleFontChange}
+        selectedTheme={currentTheme.id}
+        onThemeChange={changeTheme}
         isFocusMode={isFocusMode}
         onToggleFocus={handleToggleFocus}
         onSave={handleSave}
@@ -426,7 +435,10 @@ const RichTextEditor = ({
       <div 
         ref={containerRef}
         className="flex-1 bg-white dark:bg-gray-900 border-x border-gray-200 dark:border-gray-700 relative overflow-auto"
-        style={{ scrollBehavior: 'smooth' }}
+        style={{ 
+          scrollBehavior: 'smooth',
+          backgroundColor: currentTheme.colors.background 
+        }}
       >
         <ReactQuill
           ref={editorRef}
