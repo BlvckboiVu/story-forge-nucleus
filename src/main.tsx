@@ -5,6 +5,7 @@ import { AuthProvider } from './contexts/AuthContext';
 import { ProjectProvider } from './contexts/ProjectContext';
 import App from './App';
 import './index.css';
+import './i18n';
 
 // Register service worker
 if ('serviceWorker' in navigator) {

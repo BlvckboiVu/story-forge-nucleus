@@ -77,7 +77,7 @@ export default function Editor() {
   }
 
   return (
-    <Layout mode="full">
+    <Layout mode="contained">
       <RichTextEditor
         initialContent={currentDraft?.content || ''}
         onSave={handleSave}
