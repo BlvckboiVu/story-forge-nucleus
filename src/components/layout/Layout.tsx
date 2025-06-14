@@ -1,6 +1,7 @@
+
 import * as React from 'react';
 import { cn } from '@/lib/utils';
-import { SidebarProvider, SidebarInset, SidebarTrigger, useSidebar } from '@/components/ui/sidebar';
+import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar';
 import { AppSidebar } from './AppSidebar';
 import { MobileNav } from './MobileNav';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -16,13 +17,11 @@ interface LayoutProps {
   onInsertLLMResponse?: (text: string) => void;
 }
 
-function DesktopLayoutContent({
+function DesktopLayoutWithSidebar({
   children,
   mode = 'default',
   className,
 }: LayoutProps) {
-  const { state } = useSidebar();
-
   const getLayoutClasses = () => {
     switch (mode) {
       case 'full-width':
@@ -37,26 +36,28 @@ function DesktopLayoutContent({
   };
 
   return (
-    <div className={cn("sidebar-layout w-full")} data-sidebar-collapsed={state === 'collapsed'}>
-      <AppSidebar />
-      <SidebarInset className="main-content">
-        <main className={cn("w-full h-full", getLayoutClasses(), className)}>
-          {mode === 'editor' ? (
-            <div className="w-full h-full overflow-hidden">
-              {children}
-            </div>
-          ) : (
-            <div className="p-3 lg:p-4 w-full h-full overflow-auto">
-              {children}
-            </div>
-          )}
-        </main>
-      </SidebarInset>
-    </div>
+    <SidebarProvider>
+      <div className="sidebar-layout w-full min-h-screen">
+        <AppSidebar />
+        <SidebarInset className="main-content">
+          <main className={cn("w-full h-full", getLayoutClasses(), className)}>
+            {mode === 'editor' ? (
+              <div className="w-full h-full overflow-hidden">
+                {children}
+              </div>
+            ) : (
+              <div className="p-3 lg:p-4 w-full h-full overflow-auto">
+                {children}
+              </div>
+            )}
+          </main>
+        </SidebarInset>
+      </div>
+    </SidebarProvider>
   );
 }
 
-function MobileLayoutContent({
+function MobileOrNoSidebarLayout({
   children,
   mode = 'default',
   className,
@@ -101,10 +102,10 @@ export function Layout({
 }: LayoutProps) {
   const isMobile = useIsMobile();
 
-  // If mobile or navigation is disabled, use mobile layout (no sidebar)
+  // If mobile or navigation is disabled, use layout without sidebar
   if (isMobile || !showNavigation) {
     return (
-      <MobileLayoutContent 
+      <MobileOrNoSidebarLayout 
         children={children}
         mode={mode}
         className={className}
@@ -115,18 +116,16 @@ export function Layout({
     );
   }
 
-  // Desktop with navigation enabled - wrap in SidebarProvider
+  // Desktop with navigation enabled - use sidebar layout
   return (
-    <SidebarProvider>
-      <DesktopLayoutContent 
-        children={children}
-        mode={mode}
-        className={className}
-        showNavigation={showNavigation}
-        showEditorPanels={showEditorPanels}
-        onInsertLLMResponse={onInsertLLMResponse}
-      />
-    </SidebarProvider>
+    <DesktopLayoutWithSidebar 
+      children={children}
+      mode={mode}
+      className={className}
+      showNavigation={showNavigation}
+      showEditorPanels={showEditorPanels}
+      onInsertLLMResponse={onInsertLLMResponse}
+    />
   );
 }
 

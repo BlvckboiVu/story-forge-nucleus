@@ -20,39 +20,13 @@
   width: 100%;
   max-width: 100%;
   position: relative;
+  background: var(--background);
+  z-index: 1;
 }
 
 /* Sidebar collapsed state - content expands to fill space */
 .sidebar-layout[data-sidebar-collapsed="true"] {
   grid-template-columns: 60px 1fr;
-}
-
-/* Ensure sidebar doesn't collapse on mobile - hide it completely */
-@media (max-width: 425px) {
-  .sidebar-layout {
-    grid-template-columns: 1fr;
-    grid-template-rows: 1fr;
-  }
-  
-  .sidebar-layout[data-sidebar-collapsed="true"] {
-    grid-template-columns: 1fr;
-  }
-  
-  .main-content {
-    padding: 0;
-  }
-}
-
-/* Tablet Portrait (426px - 768px) - Hide sidebar completely */
-@media (min-width: 426px) and (max-width: 768px) {
-  .sidebar-layout {
-    grid-template-columns: 1fr;
-    grid-template-rows: 1fr;
-  }
-  
-  .sidebar-layout[data-sidebar-collapsed="true"] {
-    grid-template-columns: 1fr;
-  }
 }
 
 /* Tablet Landscape (769px - 1024px) - Show sidebar */
@@ -86,12 +60,6 @@
   .sidebar-layout[data-sidebar-collapsed="true"] {
     grid-template-columns: 60px 1fr;
   }
-}
-
-/* Fix overlap issues - ensure content doesn't overlap sidebar */
-.sidebar-layout .main-content {
-  z-index: 1;
-  background: var(--background);
 }
 
 /* Ensure sidebar has proper layering */
