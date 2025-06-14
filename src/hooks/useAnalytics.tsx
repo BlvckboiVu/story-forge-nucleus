@@ -1,4 +1,3 @@
-
 import { useState, useCallback, useEffect } from 'react';
 
 export interface UserBehaviorData {
@@ -39,6 +38,7 @@ export interface WritingMetrics {
   peakWritingTime: string;
   documentsCompleted: number;
   totalWritingTime: number;
+  totalWords: number;
   distractionEvents: number;
   revisionCount: number;
   mostUsedFeatures: string[];
@@ -64,6 +64,7 @@ export function useAnalytics() {
     peakWritingTime: '',
     documentsCompleted: 0,
     totalWritingTime: 0,
+    totalWords: 0,
     distractionEvents: 0,
     revisionCount: 0,
     mostUsedFeatures: [],
@@ -164,6 +165,7 @@ export function useAnalytics() {
       peakWritingTime,
       documentsCompleted: sessionData.documentsCreated,
       totalWritingTime: sessionMinutes,
+      totalWords: sessionData.totalWords,
       distractionEvents: sessionData.events.filter(e => e.action === 'window_blur').length,
       revisionCount: sessionData.events.filter(e => e.action === 'undo' || e.action === 'redo').length,
       mostUsedFeatures: sessionData.featuresUsed.slice(0, 5),

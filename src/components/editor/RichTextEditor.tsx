@@ -1,3 +1,4 @@
+
 import { useEffect, useRef, useState, useCallback } from 'react';
 import ReactQuill, { Quill } from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
@@ -203,32 +204,35 @@ const RichTextEditor = ({
     }
   }, [storyBibleEntries, isFocusMode]);
 
+  // Enhanced save with performance and accessibility
   const handleSaveContent = useCallback(async (contentToSave: string) => {
     try {
       if (!isValid) {
+        announceValidationError(validationErrors);
         throw new Error('Cannot save invalid content');
       }
       
-      await onSave(contentToSave);
+      announceSaveStatus('saving');
+      trackUserAction('save_document', { wordCount: stats.words, draftId: draft?.id });
+      
+      await measureSaveTime(async () => {
+        await onSave(contentToSave);
+      });
+      
       setHasUnsavedChanges(false);
       setEditorError(null);
+      announceSaveStatus('saved');
+      
     } catch (error) {
       console.error('Save failed:', error);
       const errorMessage = error instanceof Error ? error.message : 'Failed to save content';
       setEditorError(errorMessage);
-      throw error; // Re-throw for the autosave hook to handle
+      announceSaveStatus('error');
+      trackError(error as Error, { action: 'save', wordCount: stats.words });
+      throw error;
     }
-  }, [isValid, onSave, setHasUnsavedChanges]);
-
-  const { isSaving, saveError, clearAutoSave } = useEnhancedAutoSave({
-    content,
-    hasUnsavedChanges,
-    onSave: handleSaveContent,
-    onSaveStateChange: () => {},
-    interval: 10000,
-    retryAttempts: 3,
-    retryDelay: 1000
-  });
+  }, [isValid, validationErrors, stats.words, draft?.id, onSave, setHasUnsavedChanges, 
+      measureSaveTime, announceSaveStatus, announceValidationError, trackUserAction, trackError]);
 
   const handleRecovery = useCallback(async () => {
     setIsRecovering(true);
@@ -272,36 +276,6 @@ const RichTextEditor = ({
       trackAnalyticsKeystroke();
     });
   }, [handleChange, measureRenderTime, trackKeystroke, trackAnalyticsKeystroke]);
-
-  // Enhanced save with performance and accessibility
-  const handleSaveContent = useCallback(async (contentToSave: string) => {
-    try {
-      if (!isValid) {
-        announceValidationError(validationErrors);
-        throw new Error('Cannot save invalid content');
-      }
-      
-      announceSaveStatus('saving');
-      trackUserAction('save_document', { wordCount: stats.words, draftId: draft?.id });
-      
-      await measureSaveTime(async () => {
-        await onSave(contentToSave);
-      });
-      
-      setHasUnsavedChanges(false);
-      setEditorError(null);
-      announceSaveStatus('saved');
-      
-    } catch (error) {
-      console.error('Save failed:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Failed to save content';
-      setEditorError(errorMessage);
-      announceSaveStatus('error');
-      trackError(error as Error, { action: 'save', wordCount: stats.words });
-      throw error;
-    }
-  }, [isValid, validationErrors, stats.words, draft?.id, onSave, setHasUnsavedChanges, 
-      measureSaveTime, announceSaveStatus, announceValidationError, trackUserAction, trackError]);
 
   const handleFontChange = useCallback((fontFamily: string) => {
     if (!fontFamily?.trim()) {
@@ -402,6 +376,16 @@ const RichTextEditor = ({
     }
   }, [isFocusMode, onToggleFocus, toast, handleEditorError]);
 
+  const { isSaving, saveError, clearAutoSave } = useEnhancedAutoSave({
+    content,
+    hasUnsavedChanges,
+    onSave: handleSaveContent,
+    onSaveStateChange: () => {},
+    interval: 10000,
+    retryAttempts: 3,
+    retryDelay: 1000
+  });
+
   // Notify parent of changes with error handling
   useEffect(() => {
     try {
@@ -489,7 +473,6 @@ const RichTextEditor = ({
           selectedFont="Inter"
           onFontChange={(font) => {
             trackUserAction('change_font', { font });
-          
             handleFontChange(font);
           }}
           isFocusMode={isFocusMode}
