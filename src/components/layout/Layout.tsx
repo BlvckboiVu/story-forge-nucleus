@@ -99,12 +99,28 @@ export function Layout({
   const isMobile = useIsMobile();
 
   if (isMobile || !showNavigation) {
-    return <LayoutContent {...props} />;
+    return (
+      <LayoutContent 
+        children={children}
+        mode={mode}
+        className={className}
+        showNavigation={showNavigation}
+        showEditorPanels={showEditorPanels}
+        onInsertLLMResponse={onInsertLLMResponse}
+      />
+    );
   }
 
   return (
     <SidebarProvider>
-      <LayoutContent {...props} />
+      <LayoutContent 
+        children={children}
+        mode={mode}
+        className={className}
+        showNavigation={showNavigation}
+        showEditorPanels={showEditorPanels}
+        onInsertLLMResponse={onInsertLLMResponse}
+      />
     </SidebarProvider>
   );
 }
