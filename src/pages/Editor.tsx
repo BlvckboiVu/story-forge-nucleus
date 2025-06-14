@@ -13,7 +13,9 @@ import { Draft } from '@/types';
 import { EnhancedOutline, OutlineScene } from '@/types/outline';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { BookOpen, Clock } from 'lucide-react';
+import { BookOpen, Clock, Menu, X } from 'lucide-react';
+import { useIsMobile } from '@/hooks/use-mobile';
+import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 
 export default function Editor() {
   const navigate = useNavigate();
@@ -28,6 +30,7 @@ export default function Editor() {
     chapterTitle: string;
     partTitle: string;
   } | null>(null);
+  const isMobile = useIsMobile();
 
   // If no projectId in URL but we have a current project, redirect
   useEffect(() => {
@@ -135,6 +138,11 @@ export default function Editor() {
         title: `${partTitle} - ${chapterTitle} - ${scene.title}`,
       } : null);
     }
+    
+    // Close mobile outline panel
+    if (isMobile) {
+      setShowOutline(false);
+    }
   };
 
   if (!currentProject) {
@@ -166,76 +174,102 @@ export default function Editor() {
     );
   }
 
+  // Mobile outline panel component
+  const OutlinePanel = () => (
+    <Tabs defaultValue="outline" className="h-full flex flex-col">
+      <TabsList className="grid w-full grid-cols-2 m-2">
+        <TabsTrigger value="outline" className="flex items-center gap-2">
+          <BookOpen className="h-4 w-4" />
+          Outline
+        </TabsTrigger>
+        <TabsTrigger value="timeline" className="flex items-center gap-2">
+          <Clock className="h-4 w-4" />
+          Timeline
+        </TabsTrigger>
+      </TabsList>
+      
+      <TabsContent value="outline" className="flex-1 overflow-hidden m-2 mt-0">
+        <Outline
+          projectId={currentProject.id}
+          onSceneSelect={handleSceneSelect}
+          className="h-full"
+        />
+      </TabsContent>
+      
+      <TabsContent value="timeline" className="flex-1 overflow-hidden m-2 mt-0">
+        {outline && (
+          <OutlineTimeline
+            outline={outline}
+            onSceneSelect={handleSceneSelect}
+            className="h-full"
+          />
+        )}
+      </TabsContent>
+    </Tabs>
+  );
+
   const extraActions = (
     <div className="flex items-center gap-2">
-      <Button
-        variant="outline"
-        size="icon"
-        onClick={() => setShowOutline(!showOutline)}
-        title="Toggle Outline"
-      >
-        <BookOpen className="h-4 w-4" />
-      </Button>
+      {isMobile ? (
+        <Sheet open={showOutline} onOpenChange={setShowOutline}>
+          <SheetTrigger asChild>
+            <Button
+              variant="outline"
+              size="icon"
+              title="Story Outline"
+            >
+              <BookOpen className="h-4 w-4" />
+            </Button>
+          </SheetTrigger>
+          <SheetContent side="right" className="w-full sm:w-96 p-0">
+            <div className="h-full">
+              <OutlinePanel />
+            </div>
+          </SheetContent>
+        </Sheet>
+      ) : (
+        <Button
+          variant="outline"
+          size="icon"
+          onClick={() => setShowOutline(!showOutline)}
+          title="Toggle Outline"
+        >
+          <BookOpen className="h-4 w-4" />
+        </Button>
+      )}
       <StoryBibleDrawer projectId={currentProject.id} />
     </div>
   );
 
   return (
     <Layout mode="editor" showNavigation={true}>
-      <div className="h-full w-full flex">
+      <div className="h-full w-full flex overflow-hidden">
         {/* Main Editor Area */}
-        <div className={`flex-1 ${showOutline ? 'pr-4' : ''}`}>
-          <RichTextEditor
-            initialContent={currentDraft?.content || ''}
-            onSave={handleSave}
-            draft={currentDraft}
-            loading={loading}
-            onEditorReady={() => {}}
-            extraActions={extraActions}
-          />
-          
-          {selectedScene && (
-            <div className="mt-2 p-2 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-md">
-              <p className="text-sm text-blue-800 dark:text-blue-200">
-                Editing: {selectedScene.partTitle} → {selectedScene.chapterTitle} → {selectedScene.scene.title}
-              </p>
-            </div>
-          )}
+        <div className={`flex-1 min-w-0 ${showOutline && !isMobile ? 'pr-4' : ''}`}>
+          <div className="h-full flex flex-col">
+            <RichTextEditor
+              initialContent={currentDraft?.content || ''}
+              onSave={handleSave}
+              draft={currentDraft}
+              loading={loading}
+              onEditorReady={() => {}}
+              extraActions={extraActions}
+            />
+            
+            {selectedScene && (
+              <div className="mt-2 p-2 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-md">
+                <p className="text-sm text-blue-800 dark:text-blue-200">
+                  Editing: {selectedScene.partTitle} → {selectedScene.chapterTitle} → {selectedScene.scene.title}
+                </p>
+              </div>
+            )}
+          </div>
         </div>
 
-        {/* Outline Sidebar */}
-        {showOutline && (
-          <div className="w-96 border-l bg-card">
-            <Tabs defaultValue="outline" className="h-full flex flex-col">
-              <TabsList className="grid w-full grid-cols-2 m-2">
-                <TabsTrigger value="outline" className="flex items-center gap-2">
-                  <BookOpen className="h-4 w-4" />
-                  Outline
-                </TabsTrigger>
-                <TabsTrigger value="timeline" className="flex items-center gap-2">
-                  <Clock className="h-4 w-4" />
-                  Timeline
-                </TabsTrigger>
-              </TabsList>
-              
-              <TabsContent value="outline" className="flex-1 overflow-hidden m-2 mt-0">
-                <Outline
-                  projectId={currentProject.id}
-                  onSceneSelect={handleSceneSelect}
-                  className="h-full"
-                />
-              </TabsContent>
-              
-              <TabsContent value="timeline" className="flex-1 overflow-hidden m-2 mt-0">
-                {outline && (
-                  <OutlineTimeline
-                    outline={outline}
-                    onSceneSelect={handleSceneSelect}
-                    className="h-full"
-                  />
-                )}
-              </TabsContent>
-            </Tabs>
+        {/* Desktop Outline Sidebar */}
+        {showOutline && !isMobile && (
+          <div className="w-96 border-l bg-card min-w-0 flex-shrink-0">
+            <OutlinePanel />
           </div>
         )}
       </div>

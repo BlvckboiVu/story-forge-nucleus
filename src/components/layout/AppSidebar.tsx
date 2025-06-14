@@ -24,12 +24,13 @@ import {
   BookOpen, 
   Settings, 
   LogOut,
-  Plus
+  Plus,
+  List
 } from 'lucide-react';
 
 export function AppSidebar() {
   const { user, signOut } = useAuth();
-  const { createProject } = useProjects();
+  const { createProject, currentProject } = useProjects();
   const { toast } = useToast();
   const location = useLocation();
   const navigate = useNavigate();
@@ -69,6 +70,15 @@ export function AppSidebar() {
     { name: 'Settings', href: '/app/settings', icon: Settings },
   ];
 
+  const projectTools = currentProject ? [
+    { 
+      name: 'Story Outline', 
+      href: `/app/editor/${currentProject.id}`, 
+      icon: List,
+      description: 'View and edit your story structure'
+    },
+  ] : [];
+
   return (
     <Sidebar>
       <SidebarHeader>
@@ -104,6 +114,36 @@ export function AppSidebar() {
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
+
+        {currentProject && (
+          <SidebarGroup>
+            <SidebarGroupLabel>Project Tools</SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {projectTools.map((tool) => {
+                  const isActive = location.pathname.includes('/editor');
+                  return (
+                    <SidebarMenuItem key={tool.name}>
+                      <SidebarMenuButton 
+                        asChild
+                        isActive={isActive}
+                        tooltip={tool.description}
+                      >
+                        <a href={tool.href} onClick={(e) => {
+                          e.preventDefault();
+                          navigate(tool.href);
+                        }}>
+                          <tool.icon className="h-4 w-4" />
+                          <span>{tool.name}</span>
+                        </a>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  );
+                })}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
 
         <SidebarGroup>
           <SidebarGroupContent>

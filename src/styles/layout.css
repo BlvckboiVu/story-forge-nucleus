@@ -16,6 +16,7 @@
   height: calc(100vh - 4rem);
   display: flex;
   flex-direction: column;
+  overflow: hidden;
 }
 
 .rich-text-editor {
@@ -23,17 +24,20 @@
   display: flex;
   flex-direction: column;
   min-height: 0;
+  overflow: hidden;
 }
 
 .ql-container {
   flex: 1;
   overflow-y: auto;
+  min-height: 0;
 }
 
 .ql-editor {
   min-height: 100%;
   padding: 1.5rem;
   line-height: 1.6;
+  height: auto;
 }
 
 /* Mobile optimizations */
@@ -46,6 +50,17 @@
     padding: 1rem;
     font-size: 16px; /* Prevent zoom on iOS */
   }
+  
+  /* Ensure mobile viewport is respected */
+  .rich-text-editor {
+    max-width: 100vw;
+    overflow-x: hidden;
+  }
+  
+  .ql-container {
+    max-width: 100%;
+    overflow-x: hidden;
+  }
 }
 
 /* Focus mode styles */
@@ -57,4 +72,15 @@
 .focus-mode .ql-editor {
   max-width: 65ch;
   margin: 0 auto;
+}
+
+/* Prevent horizontal overflow */
+* {
+  box-sizing: border-box;
+}
+
+.editor-wrapper {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
 }

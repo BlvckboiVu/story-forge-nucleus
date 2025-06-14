@@ -13,13 +13,14 @@ import {
   Settings, 
   LogOut,
   Plus,
-  Menu
+  Menu,
+  List
 } from 'lucide-react';
 
 export function MobileNav() {
   const [open, setOpen] = useState(false);
   const { user, signOut } = useAuth();
-  const { createProject } = useProjects();
+  const { createProject, currentProject } = useProjects();
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -54,6 +55,14 @@ export function MobileNav() {
     { name: 'Story Bible', href: '/app/story-bible', icon: BookOpen },
     { name: 'Settings', href: '/app/settings', icon: Settings },
   ];
+
+  const projectTools = currentProject ? [
+    { 
+      name: 'Story Outline', 
+      href: `/app/editor/${currentProject.id}`, 
+      icon: List 
+    },
+  ] : [];
 
   const handleNavigation = (href: string) => {
     navigate(href);
@@ -93,6 +102,31 @@ export function MobileNav() {
               );
             })}
           </nav>
+
+          {currentProject && projectTools.length > 0 && (
+            <div className="mt-4 pt-4 border-t">
+              <p className="text-sm font-medium text-muted-foreground mb-2 px-2">Project Tools</p>
+              <div className="space-y-2">
+                {projectTools.map((tool) => {
+                  const isActive = location.pathname.includes('/editor');
+                  return (
+                    <Button
+                      key={tool.name}
+                      variant={isActive ? "secondary" : "ghost"}
+                      className={cn(
+                        "w-full justify-start",
+                        isActive && "bg-secondary"
+                      )}
+                      onClick={() => handleNavigation(tool.href)}
+                    >
+                      <tool.icon className="mr-2 h-5 w-5" />
+                      {tool.name}
+                    </Button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
 
           <div className="mt-4 pt-4 border-t">
             <Button
