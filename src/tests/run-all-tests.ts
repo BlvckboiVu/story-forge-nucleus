@@ -5,27 +5,27 @@ import { describe, it, expect } from 'vitest';
 export const runComprehensiveTests = () => {
   describe('Comprehensive Editor Test Suite', () => {
     
-    it('should run formatting tests', async () => {
-      // Import and run formatting tests
-      const { default: formattingTests } = await import('./editor-formatting.test');
+    it('should validate formatting tests exist', async () => {
+      // Verify formatting tests module exists
+      const formattingTests = await import('./editor-formatting.test');
       expect(formattingTests).toBeDefined();
     });
 
-    it('should run toolbar tests', async () => {
-      // Import and run toolbar tests  
-      const { default: toolbarTests } = await import('./editor-toolbar.test');
+    it('should validate toolbar tests exist', async () => {
+      // Verify toolbar tests module exists
+      const toolbarTests = await import('./editor-toolbar.test');
       expect(toolbarTests).toBeDefined();
     });
 
-    it('should run theme tests', async () => {
-      // Import and run theme tests
-      const { default: themeTests } = await import('./editor-theme.test');
+    it('should validate theme tests exist', async () => {
+      // Verify theme tests module exists
+      const themeTests = await import('./editor-theme.test');
       expect(themeTests).toBeDefined();
     });
 
-    it('should run integration tests', async () => {
-      // Import and run integration tests
-      const { default: integrationTests } = await import('./editor-integration.test');
+    it('should validate integration tests exist', async () => {
+      // Verify integration tests module exists
+      const integrationTests = await import('./editor-integration.test');
       expect(integrationTests).toBeDefined();
     });
 

@@ -111,12 +111,24 @@ describe('RichTextEditor Formatting Tests', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockUseProjects.mockReturnValue({
-      currentProject: { id: 'test-project', title: 'Test Project' },
+      currentProject: { 
+        id: 'test-project', 
+        title: 'Test Project',
+        description: 'Test Description',
+        isPublic: false,
+        status: 'writing',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        userId: 'test-user-id'
+      },
       projects: [],
       createProject: vi.fn(),
       updateProject: vi.fn(),
       deleteProject: vi.fn(),
       setCurrentProject: vi.fn(),
+      loading: false,
+      error: null,
+      getProject: vi.fn(),
     });
   });
 
