@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Layout } from '@/components/layout/Layout';
 import RichTextEditor from '@/components/editor/RichTextEditor';
+import { StoryBibleDrawer } from '@/components/StoryBibleDrawer';
 import { useProjects } from '@/contexts/ProjectContext';
 import { useOptimizedDrafts } from '@/utils/optimizedDb';
 import { Draft } from '@/types';
@@ -83,6 +84,10 @@ export default function Editor() {
     );
   }
 
+  const extraActions = (
+    <StoryBibleDrawer projectId={currentProject.id} />
+  );
+
   return (
     <Layout mode="contained">
       <RichTextEditor
@@ -91,6 +96,7 @@ export default function Editor() {
         draft={currentDraft}
         loading={loading}
         onEditorReady={() => {}}
+        extraActions={extraActions}
       />
     </Layout>
   );

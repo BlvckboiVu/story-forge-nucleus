@@ -13,7 +13,7 @@ import {
   SheetTrigger,
 } from '@/components/ui/sheet';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Book, Plus, Search, Filter, Edit, Trash2 } from 'lucide-react';
+import { Book, Plus, Search, Filter, Edit, Trash2, ExternalLink } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { StoryBibleModal } from './StoryBibleModal';
 import { 
@@ -24,6 +24,7 @@ import {
   deleteStoryBibleEntry
 } from '@/lib/storyBibleDb';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { useNavigate } from 'react-router-dom';
 
 interface StoryBibleDrawerProps {
   projectId: string;
@@ -49,6 +50,7 @@ export const StoryBibleDrawer: React.FC<StoryBibleDrawerProps> = ({ projectId })
   const [sheetOpen, setSheetOpen] = useState(false);
   const isMobile = useIsMobile();
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   const loadEntries = useCallback(async (reset = false) => {
     if (loading) return;
@@ -60,20 +62,20 @@ export const StoryBibleDrawer: React.FC<StoryBibleDrawerProps> = ({ projectId })
       const newEntries = await getStoryBibleEntriesByProject(
         projectId,
         currentOffset,
-        10,
+        8, // Smaller limit for drawer
         searchTerm || undefined,
         typeFilter === 'all' ? undefined : typeFilter
       );
 
       if (reset) {
         setEntries(newEntries);
-        setOffset(10);
+        setOffset(8);
       } else {
         setEntries(prev => [...prev, ...newEntries]);
-        setOffset(prev => prev + 10);
+        setOffset(prev => prev + 8);
       }
 
-      setHasMore(newEntries.length === 10);
+      setHasMore(newEntries.length === 8);
     } catch (error) {
       toast({
         title: 'Error loading entries',
@@ -124,7 +126,7 @@ export const StoryBibleDrawer: React.FC<StoryBibleDrawerProps> = ({ projectId })
   };
 
   const EntryCard = ({ entry }: { entry: StoryBibleEntry }) => (
-    <Card className="mb-3 hover:shadow-md transition-shadow cursor-pointer group">
+    <Card className="mb-3 hover:shadow-md transition-all duration-200 cursor-pointer group border border-gray-200 dark:border-gray-700">
       <CardHeader className="pb-2">
         <div className="flex items-start justify-between">
           <div className="flex-1 min-w-0">
@@ -135,7 +137,10 @@ export const StoryBibleDrawer: React.FC<StoryBibleDrawerProps> = ({ projectId })
               </Badge>
             </div>
             <p className="text-xs text-muted-foreground">
-              Updated {entry.updated_at.toLocaleDateString()}
+              {entry.updated_at.toLocaleDateString('en-US', { 
+                month: 'short', 
+                day: 'numeric'
+              })}
             </p>
           </div>
           <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity ml-2">
@@ -148,6 +153,7 @@ export const StoryBibleDrawer: React.FC<StoryBibleDrawerProps> = ({ projectId })
                 setModalOpen(true);
               }}
               className="h-6 w-6 p-0"
+              title="Edit entry"
             >
               <Edit className="h-3 w-3" />
             </Button>
@@ -159,6 +165,7 @@ export const StoryBibleDrawer: React.FC<StoryBibleDrawerProps> = ({ projectId })
                 handleDeleteEntry(entry.id);
               }}
               className="h-6 w-6 p-0 text-red-500 hover:text-red-700"
+              title="Delete entry"
             >
               <Trash2 className="h-3 w-3" />
             </Button>
@@ -168,20 +175,21 @@ export const StoryBibleDrawer: React.FC<StoryBibleDrawerProps> = ({ projectId })
       {entry.description && (
         <CardContent className="pt-0">
           <p className="text-xs text-muted-foreground line-clamp-2">
-            {entry.description.replace(/<[^>]*>/g, '').substring(0, 100)}...
+            {entry.description.replace(/<[^>]*>/g, '').substring(0, 80)}
+            {entry.description.length > 80 && '...'}
           </p>
         </CardContent>
       )}
       {entry.tags.length > 0 && (
         <CardContent className="pt-0">
           <div className="flex flex-wrap gap-1">
-            {entry.tags.slice(0, 3).map(tag => (
+            {entry.tags.slice(0, 2).map(tag => (
               <Badge key={tag} variant="outline" className="text-xs">
                 {tag}
               </Badge>
             ))}
-            {entry.tags.length > 3 && (
-              <span className="text-xs text-muted-foreground">+{entry.tags.length - 3}</span>
+            {entry.tags.length > 2 && (
+              <span className="text-xs text-muted-foreground">+{entry.tags.length - 2}</span>
             )}
           </div>
         </CardContent>
@@ -193,30 +201,64 @@ export const StoryBibleDrawer: React.FC<StoryBibleDrawerProps> = ({ projectId })
     <>
       <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
         <SheetTrigger asChild>
-          <Button variant="outline" size="sm" className="gap-2 hover:bg-accent transition-colors">
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            className="gap-2 hover:bg-accent transition-colors"
+            title="Open Story Bible"
+          >
             <Book className="h-4 w-4" />
-            Story Bible
+            {!isMobile && "Story Bible"}
           </Button>
         </SheetTrigger>
-        <SheetContent className="w-full sm:w-96 h-full flex flex-col">
+        <SheetContent className="w-full sm:w-96 h-full flex flex-col" side="right">
           <SheetHeader className="border-b pb-4">
-            <SheetTitle className="flex items-center gap-2">
-              <Book className="h-5 w-5" />
-              Story Bible
+            <SheetTitle className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Book className="h-5 w-5" />
+                Story Bible
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  setSheetOpen(false);
+                  navigate('/app/story-bible');
+                }}
+                className="gap-2 text-sm"
+                title="Open full page view"
+              >
+                <ExternalLink className="h-4 w-4" />
+                Full View
+              </Button>
             </SheetTitle>
           </SheetHeader>
 
           <div className="flex-1 flex flex-col gap-4 py-4 overflow-hidden">
+            {/* Quick Stats */}
+            <div className="grid grid-cols-2 gap-2 text-center">
+              <div className="bg-muted/50 rounded-lg p-2">
+                <div className="font-semibold text-sm">{entries.length}</div>
+                <div className="text-xs text-muted-foreground">Total</div>
+              </div>
+              <div className="bg-muted/50 rounded-lg p-2">
+                <div className="font-semibold text-sm">
+                  {entries.filter(e => e.type === 'Character').length}
+                </div>
+                <div className="text-xs text-muted-foreground">Characters</div>
+              </div>
+            </div>
+
             {/* Controls */}
             <div className="space-y-3">
               <div className="flex gap-2">
                 <div className="relative flex-1">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input
-                    placeholder="Search entries..."
+                    placeholder="Search..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-9"
+                    className="pl-9 text-sm"
                   />
                 </div>
                 <Button
@@ -226,6 +268,7 @@ export const StoryBibleDrawer: React.FC<StoryBibleDrawerProps> = ({ projectId })
                   }}
                   size="sm"
                   className="shrink-0"
+                  title="Add new entry"
                 >
                   <Plus className="h-4 w-4" />
                 </Button>
@@ -237,7 +280,7 @@ export const StoryBibleDrawer: React.FC<StoryBibleDrawerProps> = ({ projectId })
                   value={typeFilter}
                   onValueChange={(value: StoryBibleEntry['type'] | 'all') => setTypeFilter(value)}
                 >
-                  <SelectTrigger className="w-full">
+                  <SelectTrigger className="w-full text-sm">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -264,7 +307,8 @@ export const StoryBibleDrawer: React.FC<StoryBibleDrawerProps> = ({ projectId })
                     variant="outline"
                     onClick={() => loadEntries()}
                     disabled={loading}
-                    className="w-full"
+                    className="w-full text-sm"
+                    size="sm"
                   >
                     {loading ? 'Loading...' : 'Load More'}
                   </Button>
@@ -272,8 +316,8 @@ export const StoryBibleDrawer: React.FC<StoryBibleDrawerProps> = ({ projectId })
                 
                 {entries.length === 0 && !loading && (
                   <div className="text-center py-8 text-muted-foreground">
-                    <Book className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                    <p className="text-sm">No story bible entries yet.</p>
+                    <Book className="h-8 w-8 mx-auto mb-3 opacity-50" />
+                    <p className="text-sm mb-2">No entries yet</p>
                     <p className="text-xs">Create your first entry to get started!</p>
                   </div>
                 )}
@@ -291,8 +335,10 @@ export const StoryBibleDrawer: React.FC<StoryBibleDrawerProps> = ({ projectId })
         }}
         onSave={handleCreateEntry}
         onUpdate={handleUpdateEntry}
+        onDelete={handleDeleteEntry}
         entry={selectedEntry}
         projectId={projectId}
+        existingEntries={entries}
       />
     </>
   );
