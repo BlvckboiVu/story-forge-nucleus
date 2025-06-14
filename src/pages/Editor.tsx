@@ -3,16 +3,17 @@ import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Layout } from '@/components/layout/Layout';
 import RichTextEditor from '@/components/editor/RichTextEditor';
+import { EditorHeader } from '@/components/editor/EditorHeader';
 import { StoryBibleDrawer } from '@/components/StoryBibleDrawer';
 import OutlineIntegration from '@/components/editor/OutlineIntegration';
 import { useProjects } from '@/contexts/ProjectContext';
 import { useOptimizedDrafts } from '@/utils/optimizedDb';
 import { EnhancedOutlineService } from '@/utils/outlineDb';
 import { useOfflineState } from '@/hooks/useOfflineState';
+import { useFocusMode } from '@/hooks/use-focus-mode';
 import { ConnectivityIndicator } from '@/components/ConnectivityIndicator';
 import { Draft } from '@/types';
 import { EnhancedOutline, OutlineScene } from '@/types/outline';
-import { Button } from '@/components/ui/button';
 import { useIsMobile } from '@/hooks/use-mobile';
 
 export default function Editor() {
@@ -28,6 +29,11 @@ export default function Editor() {
     chapterTitle: string;
     partTitle: string;
   } | null>(null);
+  const [viewMode, setViewMode] = useState<'scroll' | 'page'>('scroll');
+  const [pageHeight, setPageHeight] = useState(800);
+  const [wordCount, setWordCount] = useState(0);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const isMobile = useIsMobile();
 
   // Enhanced offline state management
@@ -42,6 +48,14 @@ export default function Editor() {
     isOffline,
     updateUrlState,
   } = useOfflineState();
+
+  // Focus mode management
+  const { 
+    isFocusMode, 
+    isPanelCollapsed, 
+    toggleFocusMode, 
+    togglePanel 
+  } = useFocusMode();
 
   // Sync URL params with offline state
   useEffect(() => {
@@ -181,12 +195,19 @@ export default function Editor() {
     }
   };
 
-  // Handle editor content changes for offline persistence
   const handleContentChange = (content: string) => {
     updateEditor({ 
       unsavedContent: content,
       lastSaved: Date.now(),
     });
+  };
+
+  const handleOpenDraft = () => {
+    console.log('Open draft modal');
+  };
+
+  const handleNewDraft = () => {
+    console.log('Create new draft');
   };
 
   if (!currentProject) {
@@ -218,64 +239,74 @@ export default function Editor() {
     );
   }
 
-  const extraActions = (
-    <div className="flex items-center gap-2">
-      <ConnectivityIndicator />
-      <OutlineIntegration
-        projectId={currentProject.id}
-        outline={outline}
-        onSceneSelect={handleSceneSelect}
-        showOutline={showOutline}
-        onToggleOutline={() => setShowOutline(!showOutline)}
-      />
-      <StoryBibleDrawer projectId={currentProject.id} />
-    </div>
-  );
-
   // Use initial content from offline state if available
   const initialContent = (editorState?.unsavedContent && offlineCurrentDraft === currentDraft?.id) 
     ? editorState.unsavedContent 
     : currentDraft?.content || '';
 
   return (
-    <Layout mode="editor" showNavigation={true}>
-      <div className="h-full w-full flex overflow-hidden">
-        {/* Main Editor Area */}
-        <div className={`flex-1 min-w-0 ${showOutline && !isMobile ? 'pr-4' : ''}`}>
-          <div className="h-full flex flex-col">
-            <RichTextEditor
-              initialContent={initialContent}
-              onSave={handleSave}
-              draft={currentDraft}
-              loading={loading}
-              onEditorReady={() => {}}
-              extraActions={extraActions}
-              onContentChange={handleContentChange}
-            />
-            
-            {selectedScene && (
-              <div className="mt-2 p-2 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-md">
-                <p className="text-sm text-blue-800 dark:text-blue-200">
-                  Editing: {selectedScene.partTitle} → {selectedScene.chapterTitle} → {selectedScene.scene.title}
-                  {isOffline && <span className="ml-2 text-orange-600">(Offline)</span>}
-                </p>
-              </div>
-            )}
-          </div>
-        </div>
+    <Layout mode="editor" showNavigation={false}>
+      <div className="h-full w-full flex flex-col overflow-hidden">
+        {/* Enhanced Editor Header with view options and focus mode */}
+        <EditorHeader
+          currentDraft={currentDraft}
+          onOpenDraft={handleOpenDraft}
+          onNewDraft={handleNewDraft}
+          wordCount={wordCount}
+          currentPage={currentPage}
+          hasUnsavedChanges={hasUnsavedChanges}
+          loading={loading}
+          onSave={() => handleSave(initialContent)}
+          viewMode={viewMode}
+          onViewModeChange={setViewMode}
+          pageHeight={pageHeight}
+          onPageHeightChange={setPageHeight}
+          isFocusMode={isFocusMode}
+          onToggleFocus={toggleFocusMode}
+        />
 
-        {/* Desktop Outline Sidebar */}
-        {showOutline && !isMobile && (
-          <div className="w-96 border-l bg-card min-w-0 flex-shrink-0">
-            <OutlineIntegration
-              projectId={currentProject.id}
-              outline={outline}
-              onSceneSelect={handleSceneSelect}
-              showOutline={showOutline}
-              onToggleOutline={() => setShowOutline(!showOutline)}
-            />
+        {/* Main Editor Area */}
+        <div className="flex-1 h-full overflow-hidden flex">
+          <div className={`flex-1 min-w-0 ${showOutline && !isMobile ? 'pr-4' : ''}`}>
+            <div className="h-full flex flex-col">
+              <RichTextEditor
+                initialContent={initialContent}
+                onSave={handleSave}
+                draft={currentDraft}
+                loading={loading}
+                onEditorReady={() => {}}
+                isFocusMode={isFocusMode}
+                onToggleFocus={toggleFocusMode}
+                onWordCountChange={setWordCount}
+                onCurrentPageChange={setCurrentPage}
+                onUnsavedChangesChange={setHasUnsavedChanges}
+                onContentChange={handleContentChange}
+              />
+              
+              {selectedScene && (
+                <div className="mt-2 p-2 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-md">
+                  <p className="text-sm text-blue-800 dark:text-blue-200">
+                    Editing: {selectedScene.partTitle} → {selectedScene.chapterTitle} → {selectedScene.scene.title}
+                    {isOffline && <span className="ml-2 text-orange-600">(Offline)</span>}
+                  </p>
+                </div>
+              )}
+            </div>
           </div>
-        )}
+
+          {/* Desktop Outline Sidebar */}
+          {showOutline && !isMobile && (
+            <div className="w-96 border-l bg-card min-w-0 flex-shrink-0">
+              <OutlineIntegration
+                projectId={currentProject.id}
+                outline={outline}
+                onSceneSelect={handleSceneSelect}
+                showOutline={showOutline}
+                onToggleOutline={() => setShowOutline(!showOutline)}
+              />
+            </div>
+          )}
+        </div>
       </div>
     </Layout>
   );

@@ -5,7 +5,6 @@ import 'react-quill/dist/quill.snow.css';
 import { useToast } from '@/hooks/use-toast';
 import { Draft } from '@/lib/db';
 import { EnhancedToolbar } from './EnhancedToolbar';
-import { WritingViewOptions } from './WritingViewOptions';
 import { useEnhancedAutoSave } from '@/hooks/useEnhancedAutoSave';
 import { useEnhancedWordCount } from '@/hooks/useEnhancedWordCount';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -17,9 +16,6 @@ import { Save } from 'lucide-react';
 import { useProjects } from '@/contexts/ProjectContext';
 import { StoryBibleEntry, getStoryBibleEntriesByProject } from '@/lib/storyBibleDb';
 import { debouncedHighlight, registerStoryBibleFormat, HighlightMatch } from '@/utils/highlighting';
-
-// RichTextEditor.tsx
-// Main rich text editor component for writing, editing, and formatting story drafts
 
 interface RichTextEditorProps {
   initialContent?: string;
@@ -33,14 +29,14 @@ interface RichTextEditorProps {
   onWordCountChange?: (count: number) => void;
   onCurrentPageChange?: (page: number) => void;
   onUnsavedChangesChange?: (unsaved: boolean) => void;
-  onContentChange?: (content: string) => void; // New prop for offline state
+  onContentChange?: (content: string) => void;
   extraActions?: React.ReactNode;
 }
 
 const WORD_LIMIT = 50000;
 
 const modules = {
-  toolbar: false, // We'll use our custom toolbar
+  toolbar: false,
 };
 
 const formats = [
@@ -67,11 +63,9 @@ const RichTextEditor = ({
   onWordCountChange,
   onCurrentPageChange,
   onUnsavedChangesChange,
-  onContentChange, // New prop
+  onContentChange,
   extraActions,
 }: RichTextEditorProps) => {
-  const [viewMode, setViewMode] = useState<'scroll' | 'page'>('scroll');
-  const [pageHeight, setPageHeight] = useState(800);
   const [storyBibleEntries, setStoryBibleEntries] = useState<StoryBibleEntry[]>([]);
   const [highlightMatches, setHighlightMatches] = useState<HighlightMatch[]>([]);
   const [editorError, setEditorError] = useState<string | null>(null);
@@ -82,19 +76,16 @@ const RichTextEditor = ({
   const { currentProject } = useProjects();
   const deviceIsMobile = useIsMobile();
 
-  // Use editor theme hook
   const { currentTheme, changeTheme } = useEditorTheme({
     defaultThemeId: 'default',
     storageKey: 'editor-theme',
   });
 
-  // Enhanced word count hook
   const { stats, updateWordCount } = useEnhancedWordCount({
     warningThreshold: 45000,
     limitThreshold: WORD_LIMIT,
   });
 
-  // Use extracted hooks
   const { content, hasUnsavedChanges, setHasUnsavedChanges, handleChange } = useEditorContent({
     initialContent,
     onContentChange,
@@ -106,7 +97,7 @@ const RichTextEditor = ({
 
   const { handleCursorScroll } = useEditorScroll({ editorRef, containerRef });
 
-  // Register custom Quill format for Story Bible highlighting
+  // Register custom Quill format
   useEffect(() => {
     try {
       if (Quill) {
@@ -118,7 +109,7 @@ const RichTextEditor = ({
     }
   }, []);
 
-  // Load Story Bible entries for current project
+  // Load Story Bible entries
   useEffect(() => {
     const loadStoryBibleEntries = async () => {
       if (!currentProject) return;
@@ -166,7 +157,6 @@ const RichTextEditor = ({
     }
   }, [currentTheme]);
 
-  // Handle highlighting when content or selection changes
   const handleHighlighting = useCallback(() => {
     const quill = editorRef.current?.getEditor();
     if (!quill || !storyBibleEntries.length || isFocusMode) return;
@@ -291,7 +281,7 @@ const RichTextEditor = ({
     }
   };
 
-  // Notify parent of word count and page changes
+  // Notify parent of changes
   useEffect(() => {
     if (onWordCountChange) onWordCountChange(stats.words);
   }, [stats.words, onWordCountChange]);
@@ -323,9 +313,9 @@ const RichTextEditor = ({
   }
 
   return (
-    <div className="w-full h-full min-h-0 min-w-0 max-w-full overflow-hidden grid grid-rows-[auto_1fr_auto]">
-      {/* Enhanced toolbar with professional design */}
-      <div className="w-full max-w-full overflow-hidden flex-shrink-0">
+    <div className="w-full h-full flex flex-col overflow-hidden">
+      {/* Enhanced toolbar */}
+      <div className="flex-shrink-0">
         <EnhancedToolbar
           selectedFont={currentTheme.font?.family || 'Inter'}
           onFontChange={handleFontChange}
@@ -338,29 +328,16 @@ const RichTextEditor = ({
           onFormatClick={handleFormatClick}
           isMobile={isMobile || deviceIsMobile}
           editorRef={editorRef}
-          extraActions={
-            !isFocusMode ? (
-              <div className="flex items-center gap-2">
-                <WritingViewOptions
-                  viewMode={viewMode}
-                  onViewModeChange={setViewMode}
-                  pageHeight={pageHeight}
-                  onPageHeightChange={setPageHeight}
-                />
-                {extraActions}
-              </div>
-            ) : undefined
-          }
+          extraActions={extraActions}
         />
       </div>
 
-      {/* Editor content area with strict constraints */}
+      {/* Editor content area */}
       <div 
         ref={containerRef}
-        className="w-full h-full min-h-0 min-w-0 max-w-full overflow-hidden flex-1"
+        className="flex-1 w-full overflow-hidden"
         style={{ 
-          backgroundColor: currentTheme.colors.background,
-          contain: 'layout style'
+          backgroundColor: currentTheme.colors.background
         }}
       >
         <ReactQuill
@@ -370,34 +347,28 @@ const RichTextEditor = ({
           onChange={handleChange}
           modules={modules}
           formats={formats}
-          className={`h-full w-full max-w-full ${isFocusMode ? 'focus-mode' : ''} ${viewMode === 'page' ? 'page-view' : 'scroll-view'}`}
+          className={`h-full w-full ${isFocusMode ? 'focus-mode' : ''}`}
           placeholder="Start writing your masterpiece..."
           readOnly={loading}
           style={{
             height: '100%',
             width: '100%',
-            maxWidth: '100%',
             fontFamily: currentTheme.font?.family || 'Inter, sans-serif',
             backgroundColor: currentTheme.colors.background,
             color: currentTheme.colors.text,
-            ...(viewMode === 'page' && { 
-              '--page-height': `${pageHeight}px`,
-            } as any)
           }}
         />
       </div>
       
-      {/* Status bar with professional design */}
+      {/* Status bar */}
       {!isFocusMode && (
-        <div className="w-full max-w-full overflow-hidden flex-shrink-0">
+        <div className="flex-shrink-0">
           <div className="flex items-center justify-between px-4 py-3 bg-gray-50 dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700">
             <div className="flex items-center gap-4 text-sm text-gray-600 dark:text-gray-400 overflow-hidden">
               <span className={`flex-shrink-0 font-medium ${stats.words > 50000 ? 'text-red-600' : stats.words > 45000 ? 'text-yellow-600' : 'text-gray-700 dark:text-gray-300'}`}>
                 {stats.words.toLocaleString()} words
               </span>
-              {viewMode === 'page' && (
-                <span className="flex-shrink-0 text-gray-600 dark:text-gray-400">Page {stats.pages}</span>
-              )}
+              <span className="flex-shrink-0 text-gray-600 dark:text-gray-400">Page {stats.pages}</span>
               {highlightMatches.length > 0 && (
                 <span className="text-blue-600 dark:text-blue-400 flex-shrink-0 hidden sm:inline">
                   {highlightMatches.length} Story Bible {highlightMatches.length === 1 ? 'reference' : 'references'}

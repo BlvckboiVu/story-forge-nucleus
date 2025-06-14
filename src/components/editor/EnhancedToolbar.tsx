@@ -1,9 +1,9 @@
+
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { 
-  Save, Maximize2, Minimize2,
-  Undo, Redo, Type
+  Save, Undo, Redo, Type
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -28,36 +28,6 @@ interface EnhancedToolbarProps {
   editorRef?: any;
   extraActions?: React.ReactElement;
 }
-
-const fonts = [
-  { value: 'Inter', label: 'Inter' },
-  { value: 'Arial', label: 'Arial' },
-  { value: 'Times New Roman', label: 'Times New Roman' },
-  { value: 'Georgia', label: 'Georgia' },
-  { value: 'Helvetica', label: 'Helvetica' },
-  { value: 'Verdana', label: 'Verdana' },
-  { value: 'Courier New', label: 'Courier New (Monospace)' },
-  { value: 'Playfair Display', label: 'Playfair Display (Serif)' },
-  { value: 'Roboto', label: 'Roboto' },
-  { value: 'Open Sans', label: 'Open Sans' },
-];
-
-const themes = [
-  { value: 'default', label: 'Default', colors: { bg: '#ffffff', text: '#000000' } },
-  { value: 'dark', label: 'Dark Mode', colors: { bg: '#1a1a1a', text: '#ffffff' } },
-  { value: 'sepia', label: 'Sepia', colors: { bg: '#f4f3e8', text: '#5c4b37' } },
-  { value: 'focus', label: 'Focus Blue', colors: { bg: '#f8fafc', text: '#1e293b' } },
-  { value: 'warm', label: 'Warm', colors: { bg: '#fef7ed', text: '#9a3412' } },
-  { value: 'forest', label: 'Forest', colors: { bg: '#f0fdf4', text: '#14532d' } },
-];
-
-const headings = [
-  { value: 'paragraph', label: 'Paragraph' },
-  { value: 'h1', label: 'Heading 1' },
-  { value: 'h2', label: 'Heading 2' },
-  { value: 'h3', label: 'Heading 3' },
-  { value: 'h4', label: 'Heading 4' },
-];
 
 export const EnhancedToolbar = ({
   selectedFont,
@@ -124,34 +94,12 @@ export const EnhancedToolbar = ({
     }
   }, [editorRef]);
 
-  // Get current theme label
-  const currentTheme = themes.find(theme => theme.value === selectedTheme) || themes[0];
-
-  if (isFocusMode && !isMobile) {
+  if (isFocusMode) {
     return (
-      <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 w-full">
-        <div className="flex items-center gap-3">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={onSave}
-            disabled={!hasUnsavedChanges}
-            className={`h-9 px-4 text-sm font-medium ${hasUnsavedChanges ? 'text-blue-600 bg-blue-50 hover:bg-blue-100' : 'text-gray-500'}`}
-          >
-            <Save className="h-4 w-4 mr-2" />
-            Save
-          </Button>
+      <div className="flex items-center justify-center p-2 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 w-full">
+        <div className="text-sm text-gray-500 dark:text-gray-400">
+          Focus Mode - Distraction-free writing
         </div>
-        
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={onToggleFocus}
-          className="h-9 px-4 text-sm font-medium text-gray-600 hover:text-gray-800 hover:bg-gray-100"
-        >
-          <Minimize2 className="h-4 w-4 mr-2" />
-          Exit Focus
-        </Button>
       </div>
     );
   }
@@ -172,7 +120,7 @@ export const EnhancedToolbar = ({
                 <Type className="h-4 w-4" />
               </Button>
             </PopoverTrigger>
-            <PopoverContent className="w-64" align="start">
+            <PopoverContent className="w-80 bg-white dark:bg-gray-800 shadow-lg border border-gray-200 dark:border-gray-700 z-50" align="start">
               <div className="space-y-4">
                 <ToolbarSelectors
                   selectedFont={selectedFont}
@@ -186,23 +134,11 @@ export const EnhancedToolbar = ({
             </PopoverContent>
           </Popover>
         </div>
-
-        <div className="flex items-center gap-2 ml-2">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={onToggleFocus}
-            className="h-9 px-3 text-sm font-medium text-gray-600 hover:text-gray-800 hover:bg-gray-100"
-          >
-            <Maximize2 className="h-4 w-4 mr-1" />
-            Focus
-          </Button>
-        </div>
       </div>
     );
   }
 
-  // Professional desktop toolbar
+  // Professional desktop toolbar - restored all functionality
   return (
     <div className="border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 w-full">
       <div className="flex items-center justify-between p-4 min-w-0">
@@ -215,6 +151,7 @@ export const EnhancedToolbar = ({
               onClick={onUndo}
               disabled={!canUndo}
               className="h-9 w-9 p-0 text-gray-600 hover:text-gray-800 hover:bg-gray-100 disabled:opacity-50"
+              title="Undo"
             >
               <Undo className="h-4 w-4" />
             </Button>
@@ -224,6 +161,7 @@ export const EnhancedToolbar = ({
               onClick={onRedo}
               disabled={!canRedo}
               className="h-9 w-9 p-0 text-gray-600 hover:text-gray-800 hover:bg-gray-100 disabled:opacity-50"
+              title="Redo"
             >
               <Redo className="h-4 w-4" />
             </Button>
@@ -231,24 +169,28 @@ export const EnhancedToolbar = ({
 
           <Separator orientation="vertical" className="h-6" />
 
-          <ToolbarSelectors
-            selectedFont={selectedFont}
-            onFontChange={onFontChange}
-            selectedTheme={selectedTheme}
-            onThemeChange={onThemeChange}
-            activeFormats={activeFormats}
-            onFormatClick={onFormatClick}
-          />
+          {/* Font and Theme Selectors - Fixed spacing */}
+          <div className="flex items-center gap-3">
+            <ToolbarSelectors
+              selectedFont={selectedFont}
+              onFontChange={onFontChange}
+              selectedTheme={selectedTheme}
+              onThemeChange={onThemeChange}
+              activeFormats={activeFormats}
+              onFormatClick={onFormatClick}
+            />
+          </div>
 
           <Separator orientation="vertical" className="h-6" />
 
+          {/* Formatting Buttons */}
           <ToolbarFormattingButtons
             activeFormats={activeFormats}
             onFormatClick={onFormatClick}
             isMobile={false}
           />
 
-          {/* Extra actions */}
+          {/* Extra actions if provided */}
           {extraActions && (
             <>
               <Separator orientation="vertical" className="h-6" />
@@ -259,15 +201,17 @@ export const EnhancedToolbar = ({
           )}
         </div>
 
+        {/* Right side: Save button */}
         <div className="flex items-center gap-3 ml-4 flex-shrink-0">
           <Button
             variant="ghost"
             size="sm"
-            onClick={onToggleFocus}
-            className="h-9 px-4 text-sm font-medium text-gray-600 hover:text-gray-800 hover:bg-gray-100"
+            onClick={onSave}
+            disabled={!hasUnsavedChanges}
+            className={`h-9 px-4 text-sm font-medium ${hasUnsavedChanges ? 'text-blue-600 bg-blue-50 hover:bg-blue-100' : 'text-gray-500'}`}
           >
-            <Maximize2 className="h-4 w-4 mr-2" />
-            Focus Mode
+            <Save className="h-4 w-4 mr-2" />
+            Save
           </Button>
         </div>
       </div>
