@@ -1,8 +1,7 @@
-
 import Dexie, { Table } from 'dexie';
 import { v4 as uuidv4 } from 'uuid';
 
-// Version interface
+// Version interface with extended metadata
 export interface DocumentVersion {
   id: string;
   draftId: string;
@@ -16,6 +15,9 @@ export interface DocumentVersion {
     isAutoSave?: boolean;
     font?: string;
     viewMode?: string;
+    isValid?: boolean;
+    validationErrors?: string[];
+    validationWarnings?: string[];
   };
 }
 

@@ -1,7 +1,6 @@
-
 import { useState, useEffect, useCallback, useMemo } from 'react';
 
-interface WordCountStats {
+export interface WordCountStats {
   words: number;
   characters: number;
   charactersNoSpaces: number;

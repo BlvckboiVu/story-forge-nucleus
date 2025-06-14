@@ -1,4 +1,3 @@
-
 import { sanitizeHtml } from './sanitize';
 import DOMPurify from 'dompurify';
 
@@ -67,7 +66,7 @@ export function validateEditorContent(
     errors.push('Failed to parse HTML content');
   }
 
-  // Sanitize content
+  // Sanitize content - removed REMOVE_EMPTY_ELEMENTS which doesn't exist in DOMPurify config
   let sanitizedContent: string;
   try {
     sanitizedContent = DOMPurify.sanitize(content, {
@@ -76,7 +75,6 @@ export function validateEditorContent(
       ALLOW_DATA_ATTR: true,
       FORBID_TAGS: ['script', 'style', 'iframe', 'object', 'embed', 'link'],
       FORBID_ATTR: ['onerror', 'onload', 'onclick', 'onmouseover', 'onfocus', 'onblur'],
-      REMOVE_EMPTY_ELEMENTS: true,
     });
   } catch (error) {
     errors.push('Content sanitization failed');
