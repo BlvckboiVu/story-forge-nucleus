@@ -352,18 +352,15 @@ const RichTextEditor = ({
     }
   };
 
-  // Mobile-specific classes
-  const mobileClasses = isMobile || deviceIsMobile ? 'mobile-editor' : '';
+  // Mobile-specific classes - simplified
   const editorClasses = `
-    rich-text-editor
-    ${mobileClasses}
-    ${isFocusMode ? 'focus-mode max-w-4xl mx-auto px-4' : ''}
+    rich-text-editor h-full
+    ${isFocusMode ? 'focus-mode' : ''}
     ${viewMode === 'page' ? 'page-view' : 'scroll-view'}
   `.trim();
 
   const editorStyle = {
     fontFamily: currentTheme.font?.family || 'Inter, sans-serif',
-    height: '100%',
     backgroundColor: currentTheme.colors.background,
     color: currentTheme.colors.text,
     ...(viewMode === 'page' && { 
@@ -403,7 +400,7 @@ const RichTextEditor = ({
   }
 
   return (
-    <div className={`flex flex-col h-full relative ${isFocusMode ? 'focus-mode' : ''}`}>
+    <div className="editor-container">
       {/* Enhanced toolbar with theme support */}
       <EnhancedToolbar
         selectedFont={currentTheme.font?.family || 'Inter'}

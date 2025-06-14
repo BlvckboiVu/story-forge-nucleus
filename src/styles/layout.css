@@ -1,0 +1,60 @@
+
+/* Layout fixes for proper proportions */
+.sidebar-layout {
+  display: flex;
+  min-height: 100vh;
+  width: 100%;
+}
+
+.main-content {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.editor-container {
+  height: calc(100vh - 4rem);
+  display: flex;
+  flex-direction: column;
+}
+
+.rich-text-editor {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.ql-container {
+  flex: 1;
+  overflow-y: auto;
+}
+
+.ql-editor {
+  min-height: 100%;
+  padding: 1.5rem;
+  line-height: 1.6;
+}
+
+/* Mobile optimizations */
+@media (max-width: 768px) {
+  .editor-container {
+    height: calc(100vh - 3.5rem);
+  }
+  
+  .ql-editor {
+    padding: 1rem;
+    font-size: 16px; /* Prevent zoom on iOS */
+  }
+}
+
+/* Focus mode styles */
+.focus-mode .rich-text-editor {
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.focus-mode .ql-editor {
+  max-width: 65ch;
+  margin: 0 auto;
+}

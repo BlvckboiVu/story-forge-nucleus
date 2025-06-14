@@ -57,7 +57,7 @@ export default function Editor() {
 
   if (!currentProject) {
     return (
-      <Layout mode="contained">
+      <Layout mode="editor">
         <div className="flex items-center justify-center h-full">
           <div className="text-center">
             <h2 className="text-xl font-semibold mb-2">No Project Selected</h2>
@@ -76,7 +76,7 @@ export default function Editor() {
 
   if (loading && !currentDraft) {
     return (
-      <Layout mode="contained">
+      <Layout mode="editor">
         <div className="flex items-center justify-center h-full">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
         </div>
@@ -89,15 +89,17 @@ export default function Editor() {
   );
 
   return (
-    <Layout mode="contained">
-      <RichTextEditor
-        initialContent={currentDraft?.content || ''}
-        onSave={handleSave}
-        draft={currentDraft}
-        loading={loading}
-        onEditorReady={() => {}}
-        extraActions={extraActions}
-      />
+    <Layout mode="editor" showNavigation={true}>
+      <div className="h-full w-full">
+        <RichTextEditor
+          initialContent={currentDraft?.content || ''}
+          onSave={handleSave}
+          draft={currentDraft}
+          loading={loading}
+          onEditorReady={() => {}}
+          extraActions={extraActions}
+        />
+      </div>
     </Layout>
   );
 }
