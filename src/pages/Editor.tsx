@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Layout } from '@/components/layout/Layout';
@@ -245,7 +244,7 @@ export default function Editor() {
     : currentDraft?.content || '';
 
   return (
-    <Layout mode="editor" showNavigation={false}>
+    <Layout mode="editor" showNavigation={true}>
       <div className="h-full w-full flex flex-col overflow-hidden">
         {/* Enhanced Editor Header with view options and focus mode */}
         <EditorHeader
