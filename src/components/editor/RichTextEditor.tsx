@@ -328,15 +328,15 @@ const RichTextEditor = ({
 
         const format = quill.getFormat(range);
         setActiveFormats({
-          bold: !!format.bold,
-          italic: !!format.italic,
-          underline: !!format.underline,
-          strike: !!format.strike,
-          code: !!format.code,
-          align: format.align || 'left',
-          list: format.list,
-          blockquote: !!format.blockquote,
-          header: format.header || false,
+          bold: Boolean(format.bold),
+          italic: Boolean(format.italic),
+          underline: Boolean(format.underline),
+          strike: Boolean(format.strike),
+          code: Boolean(format.code),
+          align: typeof format.align === 'string' ? format.align : 'left',
+          list: typeof format.list === 'string' ? format.list : undefined,
+          blockquote: Boolean(format.blockquote),
+          header: typeof format.header === 'string' ? format.header : false,
         });
       } catch (error) {
         console.error('Error checking formats:', error);

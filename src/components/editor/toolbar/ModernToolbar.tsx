@@ -35,7 +35,7 @@ const fonts = [
 ];
 
 const headings = [
-  { value: false, label: 'Normal' },
+  { value: 'false', label: 'Normal' },
   { value: '1', label: 'Heading 1' },
   { value: '2', label: 'Heading 2' },
   { value: '3', label: 'Heading 3' },
@@ -124,6 +124,9 @@ export const ModernToolbar = ({
     );
   }
 
+  // Get current header value as string for Select component
+  const currentHeaderValue = activeFormats.header === false ? 'false' : String(activeFormats.header);
+
   // Desktop toolbar
   return (
     <div className="bg-white dark:bg-gray-900 border-b border-gray-100 dark:border-gray-800">
@@ -163,7 +166,7 @@ export const ModernToolbar = ({
             </Select>
 
             <Select 
-              value={activeFormats.header || 'false'} 
+              value={currentHeaderValue} 
               onValueChange={(value) => onFormatClick('header', value === 'false' ? false : value)}
             >
               <SelectTrigger className="w-32 h-9 bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700">
@@ -171,7 +174,7 @@ export const ModernToolbar = ({
               </SelectTrigger>
               <SelectContent>
                 {headings.map((heading) => (
-                  <SelectItem key={String(heading.value)} value={String(heading.value)}>
+                  <SelectItem key={heading.value} value={heading.value}>
                     {heading.label}
                   </SelectItem>
                 ))}
@@ -311,6 +314,8 @@ const MobileToolbarContent = ({
   activeFormats: Record<string, boolean>;
   onFormatClick: (format: string, value?: any) => void;
 }) => {
+  const currentHeaderValue = activeFormats.header === false ? 'false' : String(activeFormats.header);
+
   return (
     <div className="space-y-4">
       <div>
@@ -332,7 +337,7 @@ const MobileToolbarContent = ({
       <div>
         <label className="text-sm font-medium mb-2 block">Style</label>
         <Select 
-          value={activeFormats.header || 'false'} 
+          value={currentHeaderValue} 
           onValueChange={(value) => onFormatClick('header', value === 'false' ? false : value)}
         >
           <SelectTrigger className="w-full">
@@ -340,7 +345,7 @@ const MobileToolbarContent = ({
           </SelectTrigger>
           <SelectContent>
             {headings.map((heading) => (
-              <SelectItem key={String(heading.value)} value={String(heading.value)}>
+              <SelectItem key={heading.value} value={heading.value}>
                 {heading.label}
               </SelectItem>
             ))}
