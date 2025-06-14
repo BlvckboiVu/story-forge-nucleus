@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { User, AuthContextType } from '../types';
 import { supabase } from '../lib/supabase';
@@ -29,6 +30,20 @@ const convertSupabaseUser = (supabaseUser: SupabaseUser): User => ({
   role: supabaseUser.user_metadata?.role || 'user',
   isOnline: navigator.onLine
 });
+
+// Helper function to create local guest users
+const createLocalGuestUser = (): User => {
+  return {
+    id: 'local-guest',
+    email: 'guest@storyforge.com',
+    displayName: 'Guest User',
+    avatarUrl: undefined,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+    role: 'guest' as const,
+    isOnline: navigator.onLine
+  };
+};
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
@@ -207,99 +222,20 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
-  // Enhanced guest login function with better rate limit handling
+  // Simplified guest login function - purely local
   const guestLogin = async () => {
     setLoading(true);
     setError(null);
     
     try {
-      // Check if we're offline first
-      if (!navigator.onLine) {
-        const localGuestUser = createLocalGuestUser(false);
-        setUser(localGuestUser);
-        return { success: true, user: localGuestUser, warning: 'You are now logged in as a guest (offline mode).' };
-      }
-
-      // Check if we've recently hit rate limits by looking at localStorage
-      const rateLimitKey = 'guest_rate_limit_hit';
-      const lastRateLimit = localStorage.getItem(rateLimitKey);
-      const rateLimitCooldown = 5 * 60 * 1000; // 5 minutes
-      
-      if (lastRateLimit && (Date.now() - parseInt(lastRateLimit)) < rateLimitCooldown) {
-        // We're still in cooldown, use local guest immediately
-        const localGuestUser = createLocalGuestUser(true);
-        setUser(localGuestUser);
-        return { 
-          success: true, 
-          user: localGuestUser, 
-          warning: 'Using local guest mode due to recent rate limits. Full features will be available when you sign up.' 
-        };
-      }
-
-      // Try Supabase guest account creation with a shorter timeout
-      const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error('timeout')), 3000); // 3 second timeout
-      });
-
-      const guestEmail = `guest_${Date.now()}_${Math.random().toString(36).substr(2, 5)}@storyforge.com`;
-      const guestPassword = crypto.randomUUID().slice(0, 16);
-      
-      try {
-        const signupPromise = supabase.auth.signUp({
-          email: guestEmail,
-          password: guestPassword,
-        });
-
-        const { data, error } = await Promise.race([signupPromise, timeoutPromise]) as any;
-        
-        if (error) {
-          throw error;
-        }
-        
-        if (data?.user) {
-          const convertedUser = convertSupabaseUser(data.user);
-          convertedUser.role = 'guest';
-          setUser(convertedUser);
-          
-          // Try to create profile, but don't fail if it doesn't work
-          try {
-            await supabase.from('profiles').insert([
-              {
-                id: convertedUser.id,
-                email: convertedUser.email,
-                created_at: new Date().toISOString(),
-                updated_at: new Date().toISOString(),
-              },
-            ]);
-          } catch (profileError) {
-            console.error('Guest profile creation failed:', profileError);
-          }
-          
-          return { success: true, user: convertedUser };
-        }
-        
-        throw new Error('No user returned from signup');
-        
-      } catch (e: any) {
-        // Handle rate limits and other errors
-        if (e?.message?.toLowerCase().includes('rate limit') || 
-            e?.message?.toLowerCase().includes('429') ||
-            e?.message === 'timeout') {
-          
-          // Mark that we hit rate limit
-          localStorage.setItem(rateLimitKey, Date.now().toString());
-          
-          const localGuestUser = createLocalGuestUser(true);
-          setUser(localGuestUser);
-          return { 
-            success: true, 
-            user: localGuestUser, 
-            warning: 'Using local guest mode. Sign up for a full account to access all features.' 
-          };
-        } else {
-          throw e;
-        }
-      }
+      // Create local guest user without any Supabase calls
+      const localGuestUser = createLocalGuestUser();
+      setUser(localGuestUser);
+      return { 
+        success: true, 
+        user: localGuestUser,
+        warning: 'You are logged in as a guest. Sign up for a full account to save your work and access all features.'
+      };
     } catch (e) {
       console.error('Error with guest login:', e);
       const errorMessage = e instanceof Error ? e.message : 'Failed to login as guest';
@@ -310,29 +246,18 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
-  // Helper function to create local guest users
-  const createLocalGuestUser = (isOnline: boolean): User => {
-    return {
-      id: 'local-guest',
-      email: 'guest@storyforge.com',
-      displayName: 'Guest User',
-      avatarUrl: undefined,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-      role: 'guest' as const,
-      isOnline: isOnline
-    };
-  };
-
   // Sign out function with proper result handling
   const signOut = async () => {
     setLoading(true);
     setError(null);
     
     try {
-      const { error } = await supabase.auth.signOut();
-      if (error) {
-        return { success: false, error: error.message };
+      // Only call Supabase signOut if the user is not a local guest
+      if (user?.id !== 'local-guest') {
+        const { error } = await supabase.auth.signOut();
+        if (error) {
+          return { success: false, error: error.message };
+        }
       }
       
       localStorage.removeItem('storyforge_user');
