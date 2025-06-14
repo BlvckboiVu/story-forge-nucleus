@@ -29,6 +29,7 @@ interface RichTextEditorProps {
   onWordCountChange?: (count: number) => void;
   onCurrentPageChange?: (page: number) => void;
   onUnsavedChangesChange?: (unsaved: boolean) => void;
+  extraActions?: React.ReactNode;
 }
 
 const WORD_LIMIT = 50000;
@@ -61,6 +62,7 @@ const RichTextEditor = ({
   onWordCountChange,
   onCurrentPageChange,
   onUnsavedChangesChange,
+  extraActions,
 }: RichTextEditorProps) => {
   const [content, setContent] = useState(initialContent);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
@@ -408,12 +410,15 @@ const RichTextEditor = ({
         editorRef={editorRef}
         extraActions={
           !isFocusMode ? (
-            <WritingViewOptions
-              viewMode={viewMode}
-              onViewModeChange={setViewMode}
-              pageHeight={pageHeight}
-              onPageHeightChange={setPageHeight}
-            />
+            <div className="flex items-center gap-2">
+              <WritingViewOptions
+                viewMode={viewMode}
+                onViewModeChange={setViewMode}
+                pageHeight={pageHeight}
+                onPageHeightChange={setPageHeight}
+              />
+              {extraActions}
+            </div>
           ) : undefined
         }
       />
