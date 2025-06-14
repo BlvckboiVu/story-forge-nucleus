@@ -1,5 +1,6 @@
 
 import { User as SupabaseUser } from '@supabase/supabase-js';
+import { User } from '../../types';
 
 export interface AuthResult {
   success: boolean;
@@ -33,6 +34,3 @@ export interface AuthContextType {
   signOut: () => Promise<SignOutResult>;
   guestLogin: () => Promise<GuestLoginResult>;
 }
-
-// Re-export User type from the main types file
-export type { User } from '../../types';
