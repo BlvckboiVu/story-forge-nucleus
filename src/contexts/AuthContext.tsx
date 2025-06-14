@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { User, AuthContextType } from '../types';
 import { supabase } from '../lib/supabase';
@@ -208,38 +207,53 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
-  // Guest login function with proper result handling
+  // Enhanced guest login function with better rate limit handling
   const guestLogin = async () => {
     setLoading(true);
     setError(null);
     
     try {
+      // Check if we're offline first
       if (!navigator.onLine) {
-        const localGuestUser = {
-          id: 'local-guest',
-          email: 'local-guest@storyforge.com',
-          displayName: 'Guest',
-          avatarUrl: undefined,
-          createdAt: new Date(),
-          updatedAt: new Date(),
-          role: 'guest' as const,
-          isOnline: false
-        };
+        const localGuestUser = createLocalGuestUser(false);
         setUser(localGuestUser);
-        return { success: true, user: localGuestUser, isOffline: true };
+        return { success: true, user: localGuestUser, warning: 'You are now logged in as a guest (offline mode).' };
       }
 
-      const guestEmail = `guest_${Date.now()}@storyforge.com`;
+      // Check if we've recently hit rate limits by looking at localStorage
+      const rateLimitKey = 'guest_rate_limit_hit';
+      const lastRateLimit = localStorage.getItem(rateLimitKey);
+      const rateLimitCooldown = 5 * 60 * 1000; // 5 minutes
+      
+      if (lastRateLimit && (Date.now() - parseInt(lastRateLimit)) < rateLimitCooldown) {
+        // We're still in cooldown, use local guest immediately
+        const localGuestUser = createLocalGuestUser(true);
+        setUser(localGuestUser);
+        return { 
+          success: true, 
+          user: localGuestUser, 
+          warning: 'Using local guest mode due to recent rate limits. Full features will be available when you sign up.' 
+        };
+      }
+
+      // Try Supabase guest account creation with a shorter timeout
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('timeout')), 3000); // 3 second timeout
+      });
+
+      const guestEmail = `guest_${Date.now()}_${Math.random().toString(36).substr(2, 5)}@storyforge.com`;
       const guestPassword = crypto.randomUUID().slice(0, 16);
       
       try {
-        const { data, error } = await supabase.auth.signUp({
+        const signupPromise = supabase.auth.signUp({
           email: guestEmail,
           password: guestPassword,
         });
+
+        const { data, error } = await Promise.race([signupPromise, timeoutPromise]) as any;
         
         if (error) {
-          return { success: false, error: error.message };
+          throw error;
         }
         
         if (data?.user) {
@@ -247,40 +261,40 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           convertedUser.role = 'guest';
           setUser(convertedUser);
           
-          const { error: profileError } = await supabase.from('profiles').insert([
-            {
-              id: convertedUser.id,
-              email: convertedUser.email,
-              created_at: new Date().toISOString(),
-              updated_at: new Date().toISOString(),
-            },
-          ]);
-          
-          if (profileError) {
+          // Try to create profile, but don't fail if it doesn't work
+          try {
+            await supabase.from('profiles').insert([
+              {
+                id: convertedUser.id,
+                email: convertedUser.email,
+                created_at: new Date().toISOString(),
+                updated_at: new Date().toISOString(),
+              },
+            ]);
+          } catch (profileError) {
             console.error('Guest profile creation failed:', profileError);
           }
           
           return { success: true, user: convertedUser };
         }
         
-        return { success: false, error: 'Guest login failed: No user returned' };
+        throw new Error('No user returned from signup');
+        
       } catch (e: any) {
-        if (e?.message?.toLowerCase().includes('rate limit')) {
-          const localGuestUser = {
-            id: 'local-guest',
-            email: 'local-guest@storyforge.com',
-            displayName: 'Guest',
-            avatarUrl: undefined,
-            createdAt: new Date(),
-            updatedAt: new Date(),
-            role: 'guest' as const,
-            isOnline: true
-          };
+        // Handle rate limits and other errors
+        if (e?.message?.toLowerCase().includes('rate limit') || 
+            e?.message?.toLowerCase().includes('429') ||
+            e?.message === 'timeout') {
+          
+          // Mark that we hit rate limit
+          localStorage.setItem(rateLimitKey, Date.now().toString());
+          
+          const localGuestUser = createLocalGuestUser(true);
           setUser(localGuestUser);
           return { 
             success: true, 
             user: localGuestUser, 
-            warning: 'Using local guest mode due to rate limits' 
+            warning: 'Using local guest mode. Sign up for a full account to access all features.' 
           };
         } else {
           throw e;
@@ -294,6 +308,20 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     } finally {
       setLoading(false);
     }
+  };
+
+  // Helper function to create local guest users
+  const createLocalGuestUser = (isOnline: boolean): User => {
+    return {
+      id: 'local-guest',
+      email: 'guest@storyforge.com',
+      displayName: 'Guest User',
+      avatarUrl: undefined,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      role: 'guest' as const,
+      isOnline: isOnline
+    };
   };
 
   // Sign out function with proper result handling
