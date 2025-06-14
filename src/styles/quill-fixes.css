@@ -1,157 +1,73 @@
 
-/* Quill Editor Fixes for Better UI Rendering and Responsive Design */
+/* Quill Editor Professional Fixes */
 
-/* Ensure toolbar shows properly and respects width */
+/* Toolbar with proper constraints and professional styling */
 .ql-toolbar {
-  display: flex !important;
-  visibility: visible !important;
-  opacity: 1 !important;
-  border: 1px solid #e5e7eb;
-  border-bottom: none;
-  background: white;
-  padding: 8px 12px;
-  width: 100%;
-  max-width: 100%;
-  box-sizing: border-box;
-  overflow-x: auto;
+  display: none !important; /* Hide default toolbar - we use custom */
 }
 
-/* Fix editor container width constraints */
+/* Container with strict width management */
 .ql-container {
   display: block !important;
   visibility: visible !important;
   opacity: 1 !important;
-  border: 1px solid #e5e7eb;
-  border-top: none;
+  border: none;
   font-family: inherit;
   width: 100%;
   max-width: 100%;
+  height: 100%;
   box-sizing: border-box;
+  overflow: hidden;
 }
 
-/* Editor content area with proper width handling */
+/* Editor content with professional styling and overflow control */
 .ql-editor {
-  min-height: 200px;
-  padding: 16px;
+  min-height: 100%;
+  padding: clamp(1rem, 2vw, 2rem);
   font-size: 16px;
   line-height: 1.6;
   color: #374151;
   background: white;
   width: 100%;
   max-width: 100%;
+  height: 100%;
   box-sizing: border-box;
   overflow-wrap: break-word;
   word-wrap: break-word;
-}
-
-/* Fix button styles with responsive considerations */
-.ql-toolbar button {
-  display: inline-flex !important;
-  align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 32px;
-  border: none;
-  background: transparent;
-  border-radius: 4px;
-  margin: 0 2px;
-  cursor: pointer;
-  transition: background-color 0.2s;
-  flex-shrink: 0;
-}
-
-.ql-toolbar button:hover {
-  background-color: #f3f4f6;
-}
-
-.ql-toolbar button.ql-active {
-  background-color: #dbeafe;
-  color: #1d4ed8;
-}
-
-/* Fix select dropdowns with width constraints */
-.ql-toolbar select {
-  min-width: 80px;
-  max-width: 120px;
-  height: 32px;
-  border: 1px solid #d1d5db;
-  border-radius: 4px;
-  padding: 4px 8px;
-  background: white;
-  font-size: 14px;
-  flex-shrink: 0;
+  hyphens: auto;
+  overflow-y: auto;
+  overflow-x: hidden;
 }
 
 /* Dark mode support */
-.dark .ql-toolbar {
-  background: #374151;
-  border-color: #4b5563;
-  color: #f9fafb;
-}
-
 .dark .ql-container {
-  border-color: #4b5563;
+  background: #1f2937;
 }
 
 .dark .ql-editor {
-  background: #374151;
-  color: #f9fafb;
-}
-
-.dark .ql-toolbar button:hover {
-  background-color: #4b5563;
-}
-
-.dark .ql-toolbar button.ql-active {
-  background-color: #1e3a8a;
-  color: #60a5fa;
-}
-
-.dark .ql-toolbar select {
-  background: #4b5563;
-  border-color: #6b7280;
+  background: #1f2937;
   color: #f9fafb;
 }
 
 /* Focus mode styles */
-.focus-mode .ql-toolbar {
-  display: none;
-}
-
 .focus-mode .ql-container {
   border: none;
+  background: transparent;
 }
 
 .focus-mode .ql-editor {
-  max-width: 800px;
+  max-width: min(100%, 65ch);
   margin: 0 auto;
-  padding: 48px 24px;
+  padding: clamp(2rem, 4vw, 4rem);
   min-height: 80vh;
+  background: transparent;
 }
 
 /* Mobile responsive improvements */
 @media (max-width: 768px) {
-  .ql-toolbar {
-    flex-wrap: wrap;
-    padding: 6px;
-    gap: 2px;
-  }
-  
-  .ql-toolbar button {
-    width: 28px;
-    height: 28px;
-    margin: 1px;
-  }
-  
-  .ql-toolbar select {
-    min-width: 70px;
-    max-width: 100px;
-    font-size: 12px;
-  }
-  
   .ql-editor {
-    padding: 12px;
-    font-size: 16px; /* Prevent zoom on iOS */
+    padding: 1rem;
+    font-size: 16px !important; /* Prevent zoom on iOS */
   }
   
   /* Ensure mobile editors don't overflow */
@@ -165,18 +81,15 @@
 
 /* Tablet responsive */
 @media (max-width: 1024px) and (min-width: 769px) {
-  .ql-toolbar {
-    padding: 8px;
+  .ql-editor {
+    padding: 1.5rem;
   }
-  
-  .ql-toolbar button {
-    width: 30px;
-    height: 30px;
-  }
-  
-  .ql-toolbar select {
-    min-width: 75px;
-    max-width: 110px;
+}
+
+/* Desktop responsive */
+@media (min-width: 1025px) {
+  .ql-editor {
+    padding: 2rem;
   }
 }
 
@@ -185,32 +98,41 @@
   background: rgba(59, 130, 246, 0.1);
   border-bottom: 2px dotted #3b82f6;
   cursor: pointer;
-  transition: background-color 0.2s;
+  transition: background-color 0.2s ease;
 }
 
 .ql-editor .story-bible-highlight:hover {
   background: rgba(59, 130, 246, 0.2);
 }
 
-/* Placeholder text */
+/* Placeholder text styling */
 .ql-editor.ql-blank::before {
   color: #9ca3af;
   font-style: italic;
+  opacity: 0.7;
 }
 
 /* Selection highlighting */
 .ql-editor ::selection {
   background: #dbeafe;
+  color: #1e40af;
 }
 
 .dark .ql-editor ::selection {
   background: #1e3a8a;
+  color: #93c5fd;
 }
 
-/* Prevent text overflow in all directions */
+/* Text content overflow prevention */
 .ql-editor p,
 .ql-editor div,
-.ql-editor span {
+.ql-editor span,
+.ql-editor h1,
+.ql-editor h2,
+.ql-editor h3,
+.ql-editor h4,
+.ql-editor h5,
+.ql-editor h6 {
   max-width: 100%;
   overflow-wrap: break-word;
   word-wrap: break-word;
@@ -223,26 +145,91 @@
   overflow-wrap: break-word;
 }
 
+/* List styling */
+.ql-editor ol,
+.ql-editor ul {
+  max-width: 100%;
+  overflow-wrap: break-word;
+}
+
+/* Blockquote styling */
+.ql-editor blockquote {
+  border-left: 4px solid #e5e7eb;
+  margin: 1rem 0;
+  padding-left: 1rem;
+  color: #6b7280;
+  font-style: italic;
+  max-width: 100%;
+  overflow-wrap: break-word;
+}
+
+.dark .ql-editor blockquote {
+  border-left-color: #4b5563;
+  color: #9ca3af;
+}
+
+/* Code block styling */
+.ql-editor .ql-code-block {
+  background: #f3f4f6;
+  border-radius: 6px;
+  padding: 1rem;
+  margin: 1rem 0;
+  font-family: 'Courier New', monospace;
+  font-size: 14px;
+  overflow-x: auto;
+  max-width: 100%;
+}
+
+.dark .ql-editor .ql-code-block {
+  background: #374151;
+  color: #f9fafb;
+}
+
 /* Print styles */
 @media print {
-  .ql-toolbar {
-    display: none !important;
-  }
-  
   .ql-container {
     border: none;
+    height: auto;
   }
   
   .ql-editor {
     padding: 0;
-    background: white;
-    color: black;
+    background: white !important;
+    color: black !important;
     width: 100%;
     max-width: none;
+    height: auto;
+    overflow: visible;
   }
   
   .ql-editor .story-bible-highlight {
     background: none;
     border-bottom: 1px solid black;
+  }
+}
+
+/* Accessibility improvements */
+.ql-editor:focus {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .ql-editor {
+    border: 2px solid currentColor;
+  }
+  
+  .ql-editor .story-bible-highlight {
+    background: yellow;
+    color: black;
+    border-bottom: 2px solid black;
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .ql-editor .story-bible-highlight {
+    transition: none;
   }
 }

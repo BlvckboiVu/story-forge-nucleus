@@ -132,17 +132,16 @@ export const EnhancedToolbar = ({
 
   if (isFocusMode && !isMobile) {
     return (
-      <div className="flex items-center justify-between p-3 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 w-full max-w-full overflow-hidden">
-        <div className="flex items-center gap-2">
+      <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 w-full">
+        <div className="flex items-center gap-3">
           <Button
             variant="ghost"
             size="sm"
             onClick={onSave}
             disabled={!hasUnsavedChanges}
-            className={`h-8 text-sm ${hasUnsavedChanges ? 'text-blue-600' : ''}`}
-            title="save"
+            className={`h-9 px-4 text-sm font-medium ${hasUnsavedChanges ? 'text-blue-600 bg-blue-50 hover:bg-blue-100' : 'text-gray-500'}`}
           >
-            <Save className="h-4 w-4 mr-1" />
+            <Save className="h-4 w-4 mr-2" />
             Save
           </Button>
         </div>
@@ -151,10 +150,10 @@ export const EnhancedToolbar = ({
           variant="ghost"
           size="sm"
           onClick={onToggleFocus}
-          className="h-8 w-8 p-0"
-          title="exitFocusMode"
+          className="h-9 px-4 text-sm font-medium text-gray-600 hover:text-gray-800 hover:bg-gray-100"
         >
-          <Minimize2 className="h-4 w-4" />
+          <Minimize2 className="h-4 w-4 mr-2" />
+          Exit Focus
         </Button>
       </div>
     );
@@ -162,15 +161,14 @@ export const EnhancedToolbar = ({
 
   if (isMobile) {
     return (
-      <div className="flex items-center justify-between p-3 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 w-full max-w-full overflow-hidden">
-        <div className="flex items-center gap-1 flex-1 min-w-0 overflow-hidden">
-          {/* Essential formatting for mobile */}
+      <div className="flex items-center justify-between p-3 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 w-full">
+        <div className="flex items-center gap-2 flex-1 min-w-0">
+          {/* Essential mobile formatting */}
           <Button
             variant="ghost"
             size="sm"
             onClick={() => onFormatClick('bold')}
-            className={`h-8 w-8 p-0 flex-shrink-0 ${activeFormats.bold ? 'bg-blue-100 text-blue-700' : ''}`}
-            title="bold"
+            className={`h-9 w-9 p-0 ${activeFormats.bold ? 'bg-blue-100 text-blue-700' : 'text-gray-600 hover:text-gray-800 hover:bg-gray-100'}`}
           >
             <Bold className="h-4 w-4" />
           </Button>
@@ -178,8 +176,7 @@ export const EnhancedToolbar = ({
             variant="ghost"
             size="sm"
             onClick={() => onFormatClick('italic')}
-            className={`h-8 w-8 p-0 flex-shrink-0 ${activeFormats.italic ? 'bg-blue-100 text-blue-700' : ''}`}
-            title="italic"
+            className={`h-9 w-9 p-0 ${activeFormats.italic ? 'bg-blue-100 text-blue-700' : 'text-gray-600 hover:text-gray-800 hover:bg-gray-100'}`}
           >
             <Italic className="h-4 w-4" />
           </Button>
@@ -187,29 +184,32 @@ export const EnhancedToolbar = ({
             variant="ghost"
             size="sm"
             onClick={() => onFormatClick('list', 'bullet')}
-            className={`h-8 w-8 p-0 flex-shrink-0 ${activeFormats['list-bullet'] ? 'bg-blue-100 text-blue-700' : ''}`}
-            title="bulletList"
+            className={`h-9 w-9 p-0 ${activeFormats['list-bullet'] ? 'bg-blue-100 text-blue-700' : 'text-gray-600 hover:text-gray-800 hover:bg-gray-100'}`}
           >
             <List className="h-4 w-4" />
           </Button>
           
           <Popover>
             <PopoverTrigger asChild>
-              <Button variant="ghost" size="sm" className="h-8 w-8 p-0 flex-shrink-0" title="moreOptions">
+              <Button variant="ghost" size="sm" className="h-9 w-9 p-0 text-gray-600 hover:text-gray-800 hover:bg-gray-100">
                 <Type className="h-4 w-4" />
               </Button>
             </PopoverTrigger>
             <PopoverContent className="w-64" align="start">
-              <div className="space-y-3">
+              <div className="space-y-4">
                 <div>
-                  <label className="text-sm font-medium">Font</label>
+                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block">Font</label>
                   <Select value={selectedFont} onValueChange={onFontChange}>
-                    <SelectTrigger className="w-full h-8">
+                    <SelectTrigger className="w-full h-9 text-gray-900 dark:text-gray-100">
                       <SelectValue />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
                       {fonts.map((font) => (
-                        <SelectItem key={font.value} value={font.value}>
+                        <SelectItem 
+                          key={font.value} 
+                          value={font.value}
+                          className="text-gray-900 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700"
+                        >
                           {font.label}
                         </SelectItem>
                       ))}
@@ -217,14 +217,18 @@ export const EnhancedToolbar = ({
                   </Select>
                 </div>
                 <div>
-                  <label className="text-sm font-medium">Theme</label>
+                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block">Theme</label>
                   <Select value={selectedTheme} onValueChange={onThemeChange}>
-                    <SelectTrigger className="w-full h-8">
+                    <SelectTrigger className="w-full h-9 text-gray-900 dark:text-gray-100">
                       <SelectValue />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
                       {themes.map((theme) => (
-                        <SelectItem key={theme.value} value={theme.value}>
+                        <SelectItem 
+                          key={theme.value} 
+                          value={theme.value}
+                          className="text-gray-900 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700"
+                        >
                           {theme.label}
                         </SelectItem>
                       ))}
@@ -236,36 +240,34 @@ export const EnhancedToolbar = ({
           </Popover>
         </div>
 
-        <div className="flex items-center gap-2 ml-2 flex-shrink-0">
+        <div className="flex items-center gap-2 ml-2">
           <Button
             variant="ghost"
             size="sm"
             onClick={onToggleFocus}
-            className="h-8 w-8 p-0"
-            title="focusMode"
+            className="h-9 px-3 text-sm font-medium text-gray-600 hover:text-gray-800 hover:bg-gray-100"
           >
-            <Maximize2 className="h-4 w-4" />
+            <Maximize2 className="h-4 w-4 mr-1" />
+            Focus
           </Button>
         </div>
       </div>
     );
   }
 
-  // Desktop toolbar with improved responsive design
+  // Professional desktop toolbar
   return (
-    <div className="flex flex-col border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 w-full max-w-full overflow-hidden">
-      {/* Main toolbar row */}
-      <div className="flex items-center justify-between p-3 min-w-0">
-        <div className="flex items-center gap-3 flex-1 min-w-0 overflow-hidden">
-          {/* Undo/Redo */}
-          <div className="flex items-center gap-1 flex-shrink-0">
+    <div className="border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 w-full">
+      <div className="flex items-center justify-between p-4 min-w-0">
+        <div className="flex items-center gap-4 flex-1 min-w-0 overflow-hidden">
+          {/* History controls */}
+          <div className="flex items-center gap-1">
             <Button
               variant="ghost"
               size="sm"
               onClick={onUndo}
               disabled={!canUndo}
-              className="h-8 w-8 p-0"
-              title="undo"
+              className="h-9 w-9 p-0 text-gray-600 hover:text-gray-800 hover:bg-gray-100 disabled:opacity-50"
             >
               <Undo className="h-4 w-4" />
             </Button>
@@ -274,24 +276,28 @@ export const EnhancedToolbar = ({
               size="sm"
               onClick={onRedo}
               disabled={!canRedo}
-              className="h-8 w-8 p-0"
-              title="redo"
+              className="h-9 w-9 p-0 text-gray-600 hover:text-gray-800 hover:bg-gray-100 disabled:opacity-50"
             >
               <Redo className="h-4 w-4" />
             </Button>
           </div>
 
-          <Separator orientation="vertical" className="h-6 flex-shrink-0" />
+          <Separator orientation="vertical" className="h-6" />
 
-          {/* Font and Theme with responsive sizing */}
-          <div className="flex items-center gap-2 min-w-0">
+          {/* Font and Theme selectors with proper contrast */}
+          <div className="flex items-center gap-3 min-w-0">
             <Select value={selectedFont} onValueChange={onFontChange}>
-              <SelectTrigger className="w-32 lg:w-40 h-8 text-sm">
+              <SelectTrigger className="w-40 h-9 text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600">
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-lg">
                 {fonts.map((font) => (
-                  <SelectItem key={font.value} value={font.value} style={{ fontFamily: font.value }}>
+                  <SelectItem 
+                    key={font.value} 
+                    value={font.value} 
+                    style={{ fontFamily: font.value }}
+                    className="text-gray-900 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer"
+                  >
                     {font.label}
                   </SelectItem>
                 ))}
@@ -299,18 +305,22 @@ export const EnhancedToolbar = ({
             </Select>
 
             <Select value={selectedTheme} onValueChange={onThemeChange}>
-              <SelectTrigger className="w-24 lg:w-32 h-8 text-sm">
-                <SelectValue placeholder="Theme">
+              <SelectTrigger className="w-32 h-9 text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600">
+                <SelectValue>
                   {currentTheme.label}
                 </SelectValue>
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-lg">
                 {themes.map((theme) => (
-                  <SelectItem key={theme.value} value={theme.value}>
+                  <SelectItem 
+                    key={theme.value} 
+                    value={theme.value}
+                    className="text-gray-900 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer"
+                  >
                     <div className="flex items-center gap-2">
                       <div 
-                        className="w-4 h-4 rounded border" 
-                        style={{ backgroundColor: theme.colors.bg, borderColor: theme.colors.text }}
+                        className="w-4 h-4 rounded border border-gray-300" 
+                        style={{ backgroundColor: theme.colors.bg }}
                       />
                       {theme.label}
                     </div>
@@ -320,35 +330,38 @@ export const EnhancedToolbar = ({
             </Select>
           </div>
 
-          <Separator orientation="vertical" className="h-6 flex-shrink-0" />
+          <Separator orientation="vertical" className="h-6" />
 
-          {/* Heading with responsive sizing */}
+          {/* Heading selector */}
           <Select 
             value={typeof activeFormats.header === 'string' ? activeFormats.header : 'paragraph'} 
             onValueChange={(value) => onFormatClick('header', value === 'paragraph' ? false : value)}
           >
-            <SelectTrigger className="w-24 lg:w-32 h-8 text-sm">
+            <SelectTrigger className="w-32 h-9 text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600">
               <SelectValue />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-lg">
               {headings.map((heading) => (
-                <SelectItem key={heading.value} value={heading.value}>
+                <SelectItem 
+                  key={heading.value} 
+                  value={heading.value}
+                  className="text-gray-900 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer"
+                >
                   {heading.label}
                 </SelectItem>
               ))}
             </SelectContent>
           </Select>
 
-          <Separator orientation="vertical" className="h-6 flex-shrink-0" />
+          <Separator orientation="vertical" className="h-6" />
 
-          {/* Text formatting with responsive visibility */}
-          <div className="flex items-center gap-1 flex-shrink-0">
+          {/* Text formatting */}
+          <div className="flex items-center gap-1">
             <Button
               variant="ghost"
               size="sm"
               onClick={() => onFormatClick('bold')}
-              className={`h-8 w-8 p-0 ${activeFormats.bold ? 'bg-blue-100 text-blue-700' : ''}`}
-              title="bold"
+              className={`h-9 w-9 p-0 font-semibold ${activeFormats.bold ? 'bg-blue-100 text-blue-700' : 'text-gray-600 hover:text-gray-800 hover:bg-gray-100'}`}
             >
               <Bold className="h-4 w-4" />
             </Button>
@@ -356,8 +369,7 @@ export const EnhancedToolbar = ({
               variant="ghost"
               size="sm"
               onClick={() => onFormatClick('italic')}
-              className={`h-8 w-8 p-0 ${activeFormats.italic ? 'bg-blue-100 text-blue-700' : ''}`}
-              title="italic"
+              className={`h-9 w-9 p-0 ${activeFormats.italic ? 'bg-blue-100 text-blue-700' : 'text-gray-600 hover:text-gray-800 hover:bg-gray-100'}`}
             >
               <Italic className="h-4 w-4" />
             </Button>
@@ -365,43 +377,29 @@ export const EnhancedToolbar = ({
               variant="ghost"
               size="sm"
               onClick={() => onFormatClick('underline')}
-              className={`h-8 w-8 p-0 ${activeFormats.underline ? 'bg-blue-100 text-blue-700' : ''}`}
-              title="underline"
+              className={`h-9 w-9 p-0 ${activeFormats.underline ? 'bg-blue-100 text-blue-700' : 'text-gray-600 hover:text-gray-800 hover:bg-gray-100'}`}
             >
               <Underline className="h-4 w-4" />
             </Button>
-            <div className="hidden lg:contents">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => onFormatClick('strike')}
-                className={`h-8 w-8 p-0 ${activeFormats.strike ? 'bg-blue-100 text-blue-700' : ''}`}
-                title="strikethrough"
-              >
-                <Strikethrough className="h-4 w-4" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => onFormatClick('code')}
-                className={`h-8 w-8 p-0 ${activeFormats.code ? 'bg-blue-100 text-blue-700' : ''}`}
-                title="code"
-              >
-                <Code className="h-4 w-4" />
-              </Button>
-            </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => onFormatClick('strike')}
+              className={`h-9 w-9 p-0 ${activeFormats.strike ? 'bg-blue-100 text-blue-700' : 'text-gray-600 hover:text-gray-800 hover:bg-gray-100'}`}
+            >
+              <Strikethrough className="h-4 w-4" />
+            </Button>
           </div>
 
-          <Separator orientation="vertical" className="h-6 flex-shrink-0 hidden md:block" />
+          <Separator orientation="vertical" className="h-6" />
 
-          {/* Alignment - hidden on smaller screens */}
-          <div className="hidden md:flex items-center gap-1 flex-shrink-0">
+          {/* Alignment */}
+          <div className="flex items-center gap-1">
             <Button
               variant="ghost"
               size="sm"
               onClick={() => onFormatClick('align', 'left')}
-              className={`h-8 w-8 p-0 ${activeFormats['align-left'] ? 'bg-blue-100 text-blue-700' : ''}`}
-              title="alignLeft"
+              className={`h-9 w-9 p-0 ${activeFormats['align-left'] ? 'bg-blue-100 text-blue-700' : 'text-gray-600 hover:text-gray-800 hover:bg-gray-100'}`}
             >
               <AlignLeft className="h-4 w-4" />
             </Button>
@@ -409,43 +407,29 @@ export const EnhancedToolbar = ({
               variant="ghost"
               size="sm"
               onClick={() => onFormatClick('align', 'center')}
-              className={`h-8 w-8 p-0 ${activeFormats['align-center'] ? 'bg-blue-100 text-blue-700' : ''}`}
-              title="alignCenter"
+              className={`h-9 w-9 p-0 ${activeFormats['align-center'] ? 'bg-blue-100 text-blue-700' : 'text-gray-600 hover:text-gray-800 hover:bg-gray-100'}`}
             >
               <AlignCenter className="h-4 w-4" />
             </Button>
-            <div className="hidden lg:contents">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => onFormatClick('align', 'right')}
-                className={`h-8 w-8 p-0 ${activeFormats['align-right'] ? 'bg-blue-100 text-blue-700' : ''}`}
-                title="alignRight"
-              >
-                <AlignRight className="h-4 w-4" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => onFormatClick('align', 'justify')}
-                className={`h-8 w-8 p-0 ${activeFormats['align-justify'] ? 'bg-blue-100 text-blue-700' : ''}`}
-                title="alignJustify"
-              >
-                <AlignJustify className="h-4 w-4" />
-              </Button>
-            </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => onFormatClick('align', 'right')}
+              className={`h-9 w-9 p-0 ${activeFormats['align-right'] ? 'bg-blue-100 text-blue-700' : 'text-gray-600 hover:text-gray-800 hover:bg-gray-100'}`}
+            >
+              <AlignRight className="h-4 w-4" />
+            </Button>
           </div>
 
-          <Separator orientation="vertical" className="h-6 flex-shrink-0 hidden lg:block" />
+          <Separator orientation="vertical" className="h-6" />
 
-          {/* Lists and blocks - responsive visibility */}
-          <div className="hidden lg:flex items-center gap-1 flex-shrink-0">
+          {/* Lists and blocks */}
+          <div className="flex items-center gap-1">
             <Button
               variant="ghost"
               size="sm"
               onClick={() => onFormatClick('list', 'bullet')}
-              className={`h-8 w-8 p-0 ${activeFormats['list-bullet'] ? 'bg-blue-100 text-blue-700' : ''}`}
-              title="bulletList"
+              className={`h-9 w-9 p-0 ${activeFormats['list-bullet'] ? 'bg-blue-100 text-blue-700' : 'text-gray-600 hover:text-gray-800 hover:bg-gray-100'}`}
             >
               <List className="h-4 w-4" />
             </Button>
@@ -453,8 +437,7 @@ export const EnhancedToolbar = ({
               variant="ghost"
               size="sm"
               onClick={() => onFormatClick('list', 'ordered')}
-              className={`h-8 w-8 p-0 ${activeFormats['list-ordered'] ? 'bg-blue-100 text-blue-700' : ''}`}
-              title="numberedList"
+              className={`h-9 w-9 p-0 ${activeFormats['list-ordered'] ? 'bg-blue-100 text-blue-700' : 'text-gray-600 hover:text-gray-800 hover:bg-gray-100'}`}
             >
               <ListOrdered className="h-4 w-4" />
             </Button>
@@ -462,29 +445,16 @@ export const EnhancedToolbar = ({
               variant="ghost"
               size="sm"
               onClick={() => onFormatClick('blockquote')}
-              className={`h-8 w-8 p-0 ${activeFormats.blockquote ? 'bg-blue-100 text-blue-700' : ''}`}
-              title="quote"
+              className={`h-9 w-9 p-0 ${activeFormats.blockquote ? 'bg-blue-100 text-blue-700' : 'text-gray-600 hover:text-gray-800 hover:bg-gray-100'}`}
             >
               <Quote className="h-4 w-4" />
             </Button>
           </div>
 
-          {/* More options toggle - responsive */}
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setShowMoreOptions(!showMoreOptions)}
-            className="h-8 px-2 text-sm flex-shrink-0"
-            title="moreOptions"
-          >
-            <span className="hidden sm:inline">More</span>
-            <span className="sm:hidden">+</span>
-          </Button>
-
           {/* Extra actions */}
           {extraActions && (
             <>
-              <Separator orientation="vertical" className="h-6 flex-shrink-0" />
+              <Separator orientation="vertical" className="h-6" />
               <div className="flex-shrink-0">
                 {extraActions}
               </div>
@@ -492,52 +462,18 @@ export const EnhancedToolbar = ({
           )}
         </div>
 
-        <div className="flex items-center gap-2 ml-4 flex-shrink-0">
+        <div className="flex items-center gap-3 ml-4 flex-shrink-0">
           <Button
             variant="ghost"
             size="sm"
             onClick={onToggleFocus}
-            className="h-8 text-sm"
-            title="focusMode"
+            className="h-9 px-4 text-sm font-medium text-gray-600 hover:text-gray-800 hover:bg-gray-100"
           >
-            <Maximize2 className="h-4 w-4 mr-1" />
-            <span className="hidden sm:inline">Focus</span>
+            <Maximize2 className="h-4 w-4 mr-2" />
+            Focus Mode
           </Button>
         </div>
       </div>
-
-      {/* Extended options row - responsive */}
-      {showMoreOptions && (
-        <div className="flex items-center gap-2 px-3 pb-3 border-t border-gray-100 dark:border-gray-800 overflow-x-auto">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => onFormatClick('link')}
-            className="h-8 w-8 p-0 flex-shrink-0"
-            title="insertLink"
-          >
-            <Link className="h-4 w-4" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => onFormatClick('image')}
-            className="h-8 w-8 p-0 flex-shrink-0"
-            title="insertImage"
-          >
-            <Image className="h-4 w-4" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => onFormatClick('table')}
-            className="h-8 w-8 p-0 flex-shrink-0"
-            title="insertTable"
-          >
-            <Table className="h-4 w-4" />
-          </Button>
-        </div>
-      )}
     </div>
   );
 };

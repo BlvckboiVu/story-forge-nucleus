@@ -407,9 +407,9 @@ const RichTextEditor = ({
   }
 
   return (
-    <div className="editor-responsive-wrapper">
-      {/* Enhanced toolbar with responsive design */}
-      <div className="toolbar-container">
+    <div className="w-full h-full min-h-0 min-w-0 max-w-full overflow-hidden grid grid-rows-[auto_1fr_auto]">
+      {/* Enhanced toolbar with professional design */}
+      <div className="w-full max-w-full overflow-hidden flex-shrink-0">
         <EnhancedToolbar
           selectedFont={currentTheme.font?.family || 'Inter'}
           onFontChange={handleFontChange}
@@ -438,10 +438,10 @@ const RichTextEditor = ({
         />
       </div>
 
-      {/* Editor content area with proper containment */}
+      {/* Editor content area with strict constraints */}
       <div 
         ref={containerRef}
-        className="editor-content-area"
+        className="w-full h-full min-h-0 min-w-0 max-w-full overflow-hidden flex-1"
         style={{ 
           backgroundColor: currentTheme.colors.background,
           contain: 'layout style'
@@ -454,10 +454,13 @@ const RichTextEditor = ({
           onChange={handleChange}
           modules={modules}
           formats={formats}
-          className={`rich-text-editor ${isFocusMode ? 'focus-mode' : ''} ${viewMode === 'page' ? 'page-view' : 'scroll-view'}`}
+          className={`h-full w-full max-w-full ${isFocusMode ? 'focus-mode' : ''} ${viewMode === 'page' ? 'page-view' : 'scroll-view'}`}
           placeholder="Start writing your masterpiece..."
           readOnly={loading}
           style={{
+            height: '100%',
+            width: '100%',
+            maxWidth: '100%',
             fontFamily: currentTheme.font?.family || 'Inter, sans-serif',
             backgroundColor: currentTheme.colors.background,
             color: currentTheme.colors.text,
@@ -468,34 +471,34 @@ const RichTextEditor = ({
         />
       </div>
       
-      {/* Status bar with proper responsive design */}
+      {/* Status bar with professional design */}
       {!isFocusMode && (
-        <div className="status-bar-container">
-          <div className="flex items-center justify-between px-4 py-3 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700">
-            <div className="flex items-center gap-4 text-sm text-muted-foreground overflow-hidden">
-              <span className={`flex-shrink-0 ${stats.words > 50000 ? 'text-red-600' : stats.words > 45000 ? 'text-yellow-600' : ''}`}>
+        <div className="w-full max-w-full overflow-hidden flex-shrink-0">
+          <div className="flex items-center justify-between px-4 py-3 bg-gray-50 dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700">
+            <div className="flex items-center gap-4 text-sm text-gray-600 dark:text-gray-400 overflow-hidden">
+              <span className={`flex-shrink-0 font-medium ${stats.words > 50000 ? 'text-red-600' : stats.words > 45000 ? 'text-yellow-600' : 'text-gray-700 dark:text-gray-300'}`}>
                 {stats.words.toLocaleString()} words
               </span>
               {viewMode === 'page' && (
-                <span className="flex-shrink-0">Page {stats.pages}</span>
+                <span className="flex-shrink-0 text-gray-600 dark:text-gray-400">Page {stats.pages}</span>
               )}
               {highlightMatches.length > 0 && (
-                <span className="text-blue-600 flex-shrink-0 hidden sm:inline">
+                <span className="text-blue-600 dark:text-blue-400 flex-shrink-0 hidden sm:inline">
                   {highlightMatches.length} Story Bible {highlightMatches.length === 1 ? 'reference' : 'references'}
                 </span>
               )}
               {hasUnsavedChanges && (
-                <span className="flex items-center gap-1 text-amber-600 flex-shrink-0">
+                <span className="flex items-center gap-2 text-amber-600 dark:text-amber-400 flex-shrink-0">
                   <div className="w-2 h-2 bg-amber-500 rounded-full animate-pulse"></div>
-                  <span className="hidden sm:inline">Unsaved changes</span>
-                  <span className="sm:hidden">Unsaved</span>
+                  <span className="hidden sm:inline font-medium">Unsaved changes</span>
+                  <span className="sm:hidden font-medium">Unsaved</span>
                 </span>
               )}
               {isSaving && (
-                <span className="flex items-center gap-1 text-blue-600 flex-shrink-0">
+                <span className="flex items-center gap-2 text-blue-600 dark:text-blue-400 flex-shrink-0">
                   <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
-                  <span className="hidden sm:inline">Saving...</span>
-                  <span className="sm:hidden">Saving</span>
+                  <span className="hidden sm:inline font-medium">Saving...</span>
+                  <span className="sm:hidden font-medium">Saving</span>
                 </span>
               )}
             </div>
@@ -505,10 +508,10 @@ const RichTextEditor = ({
               disabled={loading || !hasUnsavedChanges || isSaving}
               size="sm"
               className={`
-                transition-all duration-200 flex-shrink-0
+                transition-all duration-200 flex-shrink-0 font-medium
                 ${hasUnsavedChanges 
                   ? 'bg-blue-600 hover:bg-blue-700 text-white shadow-md hover:shadow-lg' 
-                  : 'bg-gray-100 hover:bg-gray-200 text-gray-600 border'
+                  : 'bg-white hover:bg-gray-50 text-gray-600 border border-gray-300'
                 }
               `}
             >
