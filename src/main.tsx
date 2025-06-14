@@ -1,6 +1,8 @@
 
 import React from 'react';
 import { createRoot } from 'react-dom/client';
+import { AuthProvider } from './contexts/AuthContext';
+import { ProjectProvider } from './contexts/ProjectContext';
 import App from './App';
 import './index.css';
 
@@ -26,6 +28,10 @@ if (!rootElement) {
 const root = createRoot(rootElement);
 root.render(
   <React.StrictMode>
-    <App />
+    <AuthProvider>
+      <ProjectProvider>
+        <App />
+      </ProjectProvider>
+    </AuthProvider>
   </React.StrictMode>
 );

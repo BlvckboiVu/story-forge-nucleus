@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useAuth } from '@/contexts/AuthContext';
 import { useProjects } from '@/contexts/ProjectContext';
+import { useToast } from '@/hooks/use-toast';
 import { 
   Home, 
   FileText, 
@@ -28,7 +29,8 @@ export function Navigation({
   onInsertLLMResponse
 }: NavigationProps) {
   const { user, signOut } = useAuth();
-  const { projects, createProject } = useProjects();
+  const { createProject } = useProjects();
+  const { toast } = useToast();
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -38,20 +40,26 @@ export function Navigation({
       navigate('/login');
     } catch (error) {
       console.error('Failed to sign out:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to sign out. Please try again.',
+        variant: 'destructive',
+      });
     }
   };
 
   const handleCreateProject = async () => {
     try {
-      await createProject({
+      const newProject = await createProject({
         title: 'New Project',
         description: '',
         isPublic: false,
         status: 'planning'
       });
-      navigate('/app/editor');
+      navigate(`/app/editor/${newProject.id}`);
     } catch (error) {
       console.error('Failed to create project:', error);
+      // Error toast is already handled in the context
     }
   };
 

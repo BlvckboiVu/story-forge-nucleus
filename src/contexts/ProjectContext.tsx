@@ -1,168 +1,199 @@
 
-import React, { createContext, useContext, useState, useEffect } from 'react';
-import { Project, ProjectContextType } from '../types';
-import db, { createProject as dbCreateProject, updateProject as dbUpdateProject, deleteProject as dbDeleteProject } from '../lib/db';
+import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { useAuth } from './AuthContext';
+import { useToast } from '@/hooks/use-toast';
 
-// Create context with a default value
+interface Project {
+  id: string;
+  title: string;
+  description: string;
+  isPublic: boolean;
+  status: 'planning' | 'writing' | 'editing' | 'completed';
+  createdAt: Date;
+  updatedAt: Date;
+  userId: string;
+}
+
+interface ProjectContextType {
+  projects: Project[];
+  loading: boolean;
+  error: string | null;
+  createProject: (projectData: Omit<Project, 'id' | 'createdAt' | 'updatedAt' | 'userId'>) => Promise<Project>;
+  updateProject: (id: string, updates: Partial<Project>) => Promise<void>;
+  deleteProject: (id: string) => Promise<void>;
+  getProject: (id: string) => Project | undefined;
+}
+
 const ProjectContext = createContext<ProjectContextType>({
-  currentProject: null,
   projects: [],
-  loading: true,
+  loading: false,
   error: null,
-  createProject: async () => '',
+  createProject: async () => ({ id: '', title: '', description: '', isPublic: false, status: 'planning', createdAt: new Date(), updatedAt: new Date(), userId: '' }),
   updateProject: async () => {},
   deleteProject: async () => {},
-  setCurrentProject: () => {},
+  getProject: () => undefined,
 });
 
-export const ProjectProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [currentProject, setCurrentProject] = useState<Project | null>(null);
+interface ProjectProviderProps {
+  children: ReactNode;
+}
+
+export const ProjectProvider: React.FC<ProjectProviderProps> = ({ children }) => {
   const [projects, setProjects] = useState<Project[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  
   const { user } = useAuth();
-  
-  // Load projects when user changes
+  const { toast } = useToast();
+
+  // Load projects from localStorage for now (can be upgraded to Supabase later)
   useEffect(() => {
-    const loadProjects = async () => {
-      if (!user) {
-        setProjects([]);
-        setCurrentProject(null);
-        setLoading(false);
-        return;
-      }
-      
-      try {
-        setLoading(true);
-        // Fetch projects for the current user from IndexedDB
-        const userProjects = await db.projects
-          .where('userId')
-          .equals(user.id)
-          .toArray();
-        
-        setProjects(userProjects);
-        
-        // Set the last active project as current if available
-        const lastProjectId = localStorage.getItem('storyforge_last_project');
-        if (lastProjectId) {
-          const lastProject = userProjects.find(p => p.id === lastProjectId);
-          if (lastProject) {
-            setCurrentProject(lastProject);
-          }
+    if (user) {
+      const savedProjects = localStorage.getItem(`projects_${user.id}`);
+      if (savedProjects) {
+        try {
+          const parsedProjects = JSON.parse(savedProjects).map((p: any) => ({
+            ...p,
+            createdAt: new Date(p.createdAt),
+            updatedAt: new Date(p.updatedAt),
+          }));
+          setProjects(parsedProjects);
+        } catch (err) {
+          console.error('Failed to load projects:', err);
+          setError('Failed to load projects');
         }
-      } catch (e) {
-        console.error('Error loading projects:', e);
-        setError(e instanceof Error ? e.message : 'Failed to load projects');
-      } finally {
-        setLoading(false);
       }
-    };
-    
-    loadProjects();
-  }, [user]);
-  
-  // Create new project
-  const createProject = async (projectData: Omit<Project, 'id' | 'createdAt' | 'updatedAt' | 'userId'>) => {
-    if (!user) {
-      throw new Error('User must be logged in to create a project');
+    } else {
+      setProjects([]);
     }
+  }, [user]);
+
+  const saveProjects = (updatedProjects: Project[]) => {
+    if (user) {
+      localStorage.setItem(`projects_${user.id}`, JSON.stringify(updatedProjects));
+    }
+  };
+
+  const createProject = async (projectData: Omit<Project, 'id' | 'createdAt' | 'updatedAt' | 'userId'>): Promise<Project> => {
+    if (!user) throw new Error('User must be logged in to create projects');
+    
+    setLoading(true);
+    setError(null);
     
     try {
-      setError(null);
-      
-      const newProject: Omit<Project, 'id'> = {
+      const newProject: Project = {
         ...projectData,
-        userId: user.id,
+        id: crypto.randomUUID(),
         createdAt: new Date(),
         updatedAt: new Date(),
+        userId: user.id,
       };
       
-      const projectId = await dbCreateProject(newProject);
+      const updatedProjects = [...projects, newProject];
+      setProjects(updatedProjects);
+      saveProjects(updatedProjects);
       
-      // Refresh projects list
-      const createdProject = await db.projects.get(projectId as string);
-      if (createdProject) {
-        setProjects(prev => [...prev, createdProject]);
-        setCurrentProject(createdProject);
-        localStorage.setItem('storyforge_last_project', createdProject.id);
-      }
+      toast({
+        title: 'Project created',
+        description: `"${newProject.title}" has been created successfully.`,
+      });
       
-      return projectId as string;
-    } catch (e) {
-      console.error('Error creating project:', e);
-      setError(e instanceof Error ? e.message : 'Failed to create project');
-      throw e;
+      return newProject;
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to create project';
+      setError(errorMessage);
+      toast({
+        title: 'Error',
+        description: errorMessage,
+        variant: 'destructive',
+      });
+      throw err;
+    } finally {
+      setLoading(false);
     }
   };
-  
-  // Update project
-  const updateProject = async (id: string, updates: Partial<Project>) => {
-    if (!user) {
-      throw new Error('User must be logged in to update a project');
-    }
+
+  const updateProject = async (id: string, updates: Partial<Project>): Promise<void> => {
+    setLoading(true);
+    setError(null);
     
     try {
-      setError(null);
+      const updatedProjects = projects.map(project =>
+        project.id === id
+          ? { ...project, ...updates, updatedAt: new Date() }
+          : project
+      );
       
-      await dbUpdateProject(id, updates);
+      setProjects(updatedProjects);
+      saveProjects(updatedProjects);
       
-      // Update projects list and current project if needed
-      setProjects(prev => prev.map(p => 
-        p.id === id ? { ...p, ...updates, updatedAt: new Date() } : p
-      ));
-      
-      if (currentProject?.id === id) {
-        setCurrentProject(prev => prev ? { ...prev, ...updates, updatedAt: new Date() } : null);
-      }
-    } catch (e) {
-      console.error('Error updating project:', e);
-      setError(e instanceof Error ? e.message : 'Failed to update project');
-      throw e;
+      toast({
+        title: 'Project updated',
+        description: 'Project has been updated successfully.',
+      });
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to update project';
+      setError(errorMessage);
+      toast({
+        title: 'Error',
+        description: errorMessage,
+        variant: 'destructive',
+      });
+      throw err;
+    } finally {
+      setLoading(false);
     }
   };
-  
-  // Delete project
-  const deleteProject = async (id: string) => {
-    if (!user) {
-      throw new Error('User must be logged in to delete a project');
-    }
+
+  const deleteProject = async (id: string): Promise<void> => {
+    setLoading(true);
+    setError(null);
     
     try {
-      setError(null);
+      const updatedProjects = projects.filter(project => project.id !== id);
+      setProjects(updatedProjects);
+      saveProjects(updatedProjects);
       
-      await dbDeleteProject(id);
-      
-      // Update projects list
-      setProjects(prev => prev.filter(p => p.id !== id));
-      
-      // If the deleted project was the current one, set current to null
-      if (currentProject?.id === id) {
-        setCurrentProject(null);
-        localStorage.removeItem('storyforge_last_project');
-      }
-    } catch (e) {
-      console.error('Error deleting project:', e);
-      setError(e instanceof Error ? e.message : 'Failed to delete project');
-      throw e;
+      toast({
+        title: 'Project deleted',
+        description: 'Project has been deleted successfully.',
+      });
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to delete project';
+      setError(errorMessage);
+      toast({
+        title: 'Error',
+        description: errorMessage,
+        variant: 'destructive',
+      });
+      throw err;
+    } finally {
+      setLoading(false);
     }
   };
-  
+
+  const getProject = (id: string): Project | undefined => {
+    return projects.find(project => project.id === id);
+  };
+
   const value = {
-    currentProject,
     projects,
     loading,
     error,
     createProject,
     updateProject,
     deleteProject,
-    setCurrentProject,
+    getProject,
   };
 
   return <ProjectContext.Provider value={value}>{children}</ProjectContext.Provider>;
 };
 
-export const useProjects = () => useContext(ProjectContext);
+export const useProjects = () => {
+  const context = useContext(ProjectContext);
+  if (context === undefined) {
+    throw new Error('useProjects must be used within a ProjectProvider');
+  }
+  return context;
+};
 
 export default ProjectContext;

@@ -10,7 +10,7 @@ import { useToast } from '@/hooks/use-toast';
 
 export default function Login() {
   const navigate = useNavigate();
-  const { signIn } = useAuth();
+  const { signIn, guestLogin } = useAuth();
   const { toast } = useToast();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -37,6 +37,30 @@ export default function Login() {
       });
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Invalid email or password';
+      setError(errorMessage);
+      toast({
+        title: 'Error',
+        description: errorMessage,
+        variant: 'destructive',
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleGuestLogin = async () => {
+    setError('');
+    setLoading(true);
+
+    try {
+      await guestLogin();
+      navigate('/app/dashboard');
+      toast({
+        title: 'Welcome!',
+        description: 'You are now logged in as a guest.',
+      });
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to login as guest';
       setError(errorMessage);
       toast({
         title: 'Error',
@@ -94,6 +118,26 @@ export default function Login() {
               {loading ? 'Signing in...' : 'Sign In'}
             </Button>
           </form>
+
+          <div className="relative">
+            <div className="absolute inset-0 flex items-center">
+              <span className="w-full border-t" />
+            </div>
+            <div className="relative flex justify-center text-xs uppercase">
+              <span className="bg-background px-2 text-muted-foreground">
+                Or continue with
+              </span>
+            </div>
+          </div>
+
+          <Button
+            variant="outline"
+            className="w-full"
+            onClick={handleGuestLogin}
+            disabled={loading}
+          >
+            Continue as Guest
+          </Button>
 
           <div className="text-center text-sm">
             <p className="text-muted-foreground">
