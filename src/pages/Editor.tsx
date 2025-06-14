@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Layout } from '@/components/layout/Layout';
@@ -212,7 +213,7 @@ export default function Editor() {
 
   if (!currentProject) {
     return (
-      <Layout mode="editor">
+      <Layout mode="editor" showNavigation={true}>
         <div className="flex items-center justify-center h-full">
           <div className="text-center">
             <h2 className="text-xl font-semibold mb-2">No Project Selected</h2>
@@ -231,7 +232,7 @@ export default function Editor() {
 
   if (loading && !currentDraft) {
     return (
-      <Layout mode="editor">
+      <Layout mode="editor" showNavigation={true}>
         <div className="flex items-center justify-center h-full">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
         </div>
@@ -262,6 +263,7 @@ export default function Editor() {
           onPageHeightChange={setPageHeight}
           isFocusMode={isFocusMode}
           onToggleFocus={toggleFocusMode}
+          showNavigation={true}
         />
 
         {/* Main Editor Area */}

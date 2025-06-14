@@ -25,6 +25,7 @@ interface EditorHeaderProps {
   onPageHeightChange?: (height: number) => void;
   isFocusMode?: boolean;
   onToggleFocus?: () => void;
+  showNavigation?: boolean;
 }
 
 export const EditorHeader = ({
@@ -41,7 +42,8 @@ export const EditorHeader = ({
   pageHeight = 800,
   onPageHeightChange = () => {},
   isFocusMode = false,
-  onToggleFocus = () => {}
+  onToggleFocus = () => {},
+  showNavigation = true
 }: EditorHeaderProps) => {
   const { currentProject } = useProjects();
   const isMobile = useIsMobile();
@@ -53,8 +55,12 @@ export const EditorHeader = ({
         <div className="flex items-center gap-2 sm:gap-4 min-w-0 flex-1">
           {isMobile ? (
             <MobileNav />
-          ) : (
+          ) : showNavigation ? (
             <SidebarTrigger className="h-8 w-8 lg:h-9 lg:w-9" />
+          ) : (
+            <Button variant="ghost" size="icon" className="h-8 w-8 lg:h-9 lg:w-9">
+              <Menu className="h-4 w-4" />
+            </Button>
           )}
           
           <div className="flex items-center gap-2 lg:gap-3 min-w-0">

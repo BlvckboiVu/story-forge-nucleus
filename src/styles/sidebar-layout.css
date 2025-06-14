@@ -27,11 +27,15 @@
   grid-template-columns: 60px 1fr;
 }
 
-/* Mobile Responsive (425px and below) */
+/* Ensure sidebar doesn't collapse on mobile - hide it completely */
 @media (max-width: 425px) {
   .sidebar-layout {
     grid-template-columns: 1fr;
-    grid-template-rows: auto 1fr;
+    grid-template-rows: 1fr;
+  }
+  
+  .sidebar-layout[data-sidebar-collapsed="true"] {
+    grid-template-columns: 1fr;
   }
   
   .main-content {
@@ -39,15 +43,19 @@
   }
 }
 
-/* Tablet Portrait (426px - 768px) */
+/* Tablet Portrait (426px - 768px) - Hide sidebar completely */
 @media (min-width: 426px) and (max-width: 768px) {
   .sidebar-layout {
     grid-template-columns: 1fr;
-    grid-template-rows: auto 1fr;
+    grid-template-rows: 1fr;
+  }
+  
+  .sidebar-layout[data-sidebar-collapsed="true"] {
+    grid-template-columns: 1fr;
   }
 }
 
-/* Tablet Landscape (769px - 1024px) */
+/* Tablet Landscape (769px - 1024px) - Show sidebar */
 @media (min-width: 769px) and (max-width: 1024px) {
   .sidebar-layout {
     grid-template-columns: 220px 1fr;
@@ -83,11 +91,13 @@
 /* Fix overlap issues - ensure content doesn't overlap sidebar */
 .sidebar-layout .main-content {
   z-index: 1;
+  background: var(--background);
 }
 
 /* Ensure sidebar has proper layering */
 .sidebar-layout > :first-child {
   z-index: 10;
+  position: relative;
 }
 
 /* Print Optimizations */
