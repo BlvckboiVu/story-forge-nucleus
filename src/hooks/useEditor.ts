@@ -1,9 +1,11 @@
-
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useEffect, useState } from 'react';
 import { Draft } from '@/lib/db';
-import { createVersion, DocumentVersion } from '@/lib/versioning';
 import { useToast } from '@/hooks/use-toast';
 import { useDebounce } from '@/hooks/useDebounce';
+import { useEditorState } from './editor/useEditorState';
+import { useEditorSave } from './editor/useEditorSave';
+import { useEditorEvents } from './editor/useEditorEvents';
+import { useWordCount } from './editor/useWordCount';
 
 interface UseEditorProps {
   initialContent?: string;

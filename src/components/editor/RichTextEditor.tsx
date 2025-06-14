@@ -1,4 +1,3 @@
-
 import { useEffect, useRef, useState, useCallback } from 'react';
 import ReactQuill, { Quill } from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
@@ -13,11 +12,12 @@ import { useEditorScroll } from '@/hooks/useEditorScroll';
 import { usePerformanceMonitoring } from '@/hooks/usePerformanceMonitoring';
 import { useAccessibility } from '@/hooks/useAccessibility';
 import { useAnalytics } from '@/hooks/useAnalytics';
-import { Button } from '@/components/ui/button';
-import { AlertTriangle, RefreshCw } from 'lucide-react';
 import { useProjects } from '@/contexts/ProjectContext';
 import { StoryBibleEntry, getStoryBibleEntriesByProject } from '@/lib/storyBibleDb';
 import { debouncedHighlight, registerStoryBibleFormat, HighlightMatch } from '@/utils/highlighting';
+import { EditorErrorDisplay } from './EditorErrorDisplay';
+import { EditorValidationDisplay } from './EditorValidationDisplay';
+import { EditorStatusBar } from './EditorStatusBar';
 
 interface RichTextEditorProps {
   initialContent?: string;
@@ -426,42 +426,16 @@ const RichTextEditor = ({
   // Error display component
   if (editorError && !isValid) {
     return (
-      <div className="flex flex-col items-center justify-center h-full p-6 text-center">
-        <div className="text-red-500 mb-4">
-          <AlertTriangle className="h-12 w-12 mx-auto mb-2" />
-          <h3 className="text-lg font-semibold">Editor Error</h3>
-          <p className="text-sm mb-4">{editorError}</p>
-          {validationErrors.length > 0 && (
-            <div className="text-xs text-left bg-red-50 p-2 rounded mb-4">
-              <strong>Validation Errors:</strong>
-              <ul className="list-disc list-inside mt-1">
-                {validationErrors.map((error, index) => (
-                  <li key={index}>{error}</li>
-                ))}
-              </ul>
-            </div>
-          )}
-        </div>
-        <div className="flex gap-2">
-          <Button
-            onClick={handleRecovery}
-            disabled={isRecovering}
-            variant="outline"
-          >
-            <RefreshCw className={`h-4 w-4 mr-2 ${isRecovering ? 'animate-spin' : ''}`} />
-            Recover Content
-          </Button>
-          <Button
-            onClick={() => {
-              setEditorError(null);
-              window.location.reload();
-            }}
-            variant="outline"
-          >
-            Reload Editor
-          </Button>
-        </div>
-      </div>
+      <EditorErrorDisplay
+        editorError={editorError}
+        validationErrors={validationErrors}
+        isRecovering={isRecovering}
+        onRecovery={handleRecovery}
+        onReload={() => {
+          setEditorError(null);
+          window.location.reload();
+        }}
+      />
     );
   }
 
@@ -490,16 +464,10 @@ const RichTextEditor = ({
       </div>
 
       {/* Validation warnings */}
-      {validationWarnings.length > 0 && (
-        <div className="flex-shrink-0 bg-yellow-50 border-l-4 border-yellow-400 p-2">
-          <div className="flex">
-            <AlertTriangle className="h-4 w-4 text-yellow-400 mr-2 flex-shrink-0 mt-0.5" />
-            <div className="text-sm text-yellow-700">
-              <strong>Warning:</strong> {validationWarnings[0]}
-            </div>
-          </div>
-        </div>
-      )}
+      <EditorValidationDisplay
+        validationErrors={validationErrors}
+        validationWarnings={validationWarnings}
+      />
 
       {/* Editor content area */}
       <div 
@@ -529,64 +497,16 @@ const RichTextEditor = ({
       
       {/* Enhanced status bar with performance indicators */}
       {!isFocusMode && (
-        <div className="flex-shrink-0">
-          <div className="flex items-center justify-between px-4 py-3 bg-gray-50 dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700">
-            <div className="flex items-center gap-4 text-sm text-gray-600 dark:text-gray-400 overflow-hidden">
-              <span className={`flex-shrink-0 font-medium ${
-                getWarningLevel() === 'danger' ? 'text-red-600' : 
-                getWarningLevel() === 'warning' ? 'text-yellow-600' : 
-                'text-gray-700 dark:text-gray-300'
-              }`}>
-                {stats.words.toLocaleString()} words
-              </span>
-              <span className="flex-shrink-0 text-gray-600 dark:text-gray-400">Page {stats.pages}</span>
-              <span className="flex-shrink-0 text-gray-600 dark:text-gray-400">{stats.readingTime} min read</span>
-              
-              {highlightMatches.length > 0 && (
-                <span className="text-blue-600 dark:text-blue-400 flex-shrink-0 hidden sm:inline">
-                  {highlightMatches.length} Story Bible {highlightMatches.length === 1 ? 'reference' : 'references'}
-                </span>
-              )}
-              
-              {hasUnsavedChanges && (
-                <span className="flex items-center gap-2 text-amber-600 dark:text-amber-400 flex-shrink-0">
-                  <div className="w-2 h-2 bg-amber-500 rounded-full animate-pulse"></div>
-                  <span className="hidden sm:inline font-medium">Unsaved changes</span>
-                  <span className="sm:hidden font-medium">Unsaved</span>
-                </span>
-              )}
-              
-              {isSaving && (
-                <span className="flex items-center gap-2 text-blue-600 dark:text-blue-400 flex-shrink-0">
-                  <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
-                  <span className="hidden sm:inline font-medium">Saving...</span>
-                  <span className="sm:hidden font-medium">Saving</span>
-                </span>
-              )}
-
-              {saveError && (
-                <span className="flex items-center gap-2 text-red-600 dark:text-red-400 flex-shrink-0">
-                  <AlertTriangle className="h-3 w-3" />
-                  <span className="hidden sm:inline font-medium">Save failed</span>
-                  <span className="sm:hidden font-medium">Error</span>
-                </span>
-              )}
-
-              {!isValid && (
-                <span className="flex items-center gap-2 text-red-600 dark:text-red-400 flex-shrink-0">
-                  <AlertTriangle className="h-3 w-3" />
-                  <span className="hidden sm:inline font-medium">Invalid content</span>
-                  <span className="sm:hidden font-medium">Invalid</span>
-                </span>
-              )}
-
-              {/* Performance indicator */}
-              <span className="text-blue-600 dark:text-blue-400 flex-shrink-0 hidden lg:inline">
-                Perf: {getPerformanceData().trends.performanceScore}%
-              </span>
-            </div>
-          </div>
-        </div>
+        <EditorStatusBar
+          stats={stats}
+          highlightMatches={highlightMatches}
+          hasUnsavedChanges={hasUnsavedChanges}
+          isSaving={isSaving}
+          saveError={saveError}
+          isValid={isValid}
+          getPerformanceData={getPerformanceData}
+          getWarningLevel={getWarningLevel}
+        />
       )}
     </div>
   );
