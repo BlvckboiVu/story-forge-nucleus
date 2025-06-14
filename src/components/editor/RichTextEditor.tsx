@@ -1,4 +1,3 @@
-
 import { useEffect, useRef, useState, useCallback } from 'react';
 import ReactQuill, { Quill } from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
@@ -30,7 +29,7 @@ interface RichTextEditorProps {
   onCurrentPageChange?: (page: number) => void;
   onUnsavedChangesChange?: (unsaved: boolean) => void;
   onContentChange?: (content: string) => void;
-  extraActions?: React.ReactNode;
+  extraActions?: React.ReactElement;
 }
 
 const WORD_LIMIT = 50000;
@@ -328,7 +327,7 @@ const RichTextEditor = ({
           onFormatClick={handleFormatClick}
           isMobile={isMobile || deviceIsMobile}
           editorRef={editorRef}
-          extraActions={extraActions}
+          extraActions={extraActions || undefined}
         />
       </div>
 
