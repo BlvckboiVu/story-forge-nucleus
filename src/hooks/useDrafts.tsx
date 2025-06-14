@@ -22,6 +22,14 @@ interface UpdateDraftData {
   wordCount?: number;
 }
 
+// Consistent word count calculation
+const calculateWordCount = (content: string): number => {
+  if (!content?.trim()) return 0;
+  const plainText = content.replace(/<[^>]*>/g, ' ');
+  const words = plainText.trim().split(/\s+/).filter(word => word.length > 0);
+  return words.length;
+};
+
 export function useDrafts(projectId?: string) {
   const [drafts, setDrafts] = useState<Draft[]>([]);
   const [loading, setLoading] = useState(false);
@@ -61,11 +69,10 @@ export function useDrafts(projectId?: string) {
     try {
       const draftData = {
         ...data,
-        wordCount: data.wordCount || 0
+        wordCount: data.wordCount || calculateWordCount(data.content)
       };
       const newDraftId = await createDraftDb(draftData);
       
-      // Create the full draft object for state update
       const newDraft: Draft = {
         id: newDraftId,
         title: draftData.title,
@@ -101,9 +108,15 @@ export function useDrafts(projectId?: string) {
     setError(null);
     
     try {
-      await updateDraftDb(id, data);
+      // Auto-calculate word count if content is provided but word count isn't
+      const processedData = {
+        ...data,
+        wordCount: data.content ? (data.wordCount || calculateWordCount(data.content)) : data.wordCount
+      };
+      
+      await updateDraftDb(id, processedData);
       setDrafts(prev => prev.map(draft => 
-        draft.id === id ? { ...draft, ...data, updatedAt: new Date() } : draft
+        draft.id === id ? { ...draft, ...processedData, updatedAt: new Date() } : draft
       ));
       toast({
         title: 'Draft updated',
