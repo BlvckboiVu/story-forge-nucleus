@@ -53,14 +53,24 @@ export default function Login() {
     setLoading(true);
 
     try {
-      await signIn(email, password);
-      navigate('/app/dashboard');
-      toast({
-        title: 'Welcome back!',
-        description: 'You have successfully signed in.',
-      });
+      const result = await signIn(email, password);
+      
+      if (result.success) {
+        navigate('/app/dashboard');
+        toast({
+          title: 'Welcome back!',
+          description: 'You have successfully signed in.',
+        });
+      } else {
+        setErrors({ general: result.error || 'Sign in failed' });
+        toast({
+          title: 'Error',
+          description: result.error || 'Sign in failed',
+          variant: 'destructive',
+        });
+      }
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Invalid email or password';
+      const errorMessage = err instanceof Error ? err.message : 'An unexpected error occurred';
       setErrors({ general: errorMessage });
       toast({
         title: 'Error',
@@ -77,14 +87,24 @@ export default function Login() {
     setLoading(true);
 
     try {
-      await guestLogin();
-      navigate('/app/dashboard');
-      toast({
-        title: 'Welcome!',
-        description: 'You are now logged in as a guest.',
-      });
+      const result = await guestLogin();
+      
+      if (result.success) {
+        navigate('/app/dashboard');
+        toast({
+          title: 'Welcome!',
+          description: result.warning || 'You are now logged in as a guest.',
+        });
+      } else {
+        setErrors({ general: result.error || 'Guest login failed' });
+        toast({
+          title: 'Error',
+          description: result.error || 'Guest login failed',
+          variant: 'destructive',
+        });
+      }
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to login as guest';
+      const errorMessage = err instanceof Error ? err.message : 'An unexpected error occurred';
       setErrors({ general: errorMessage });
       toast({
         title: 'Error',

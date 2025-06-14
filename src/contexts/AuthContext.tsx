@@ -9,10 +9,10 @@ const AuthContext = createContext<AuthContextType>({
   user: null,
   loading: true,
   error: null,
-  signUp: async () => {},
-  signIn: async () => {},
-  signOut: async () => {},
-  guestLogin: async () => {},
+  signUp: async () => ({ success: false, error: 'Not implemented' }),
+  signIn: async () => ({ success: false, error: 'Not implemented' }),
+  signOut: async () => ({ success: false, error: 'Not implemented' }),
+  guestLogin: async () => ({ success: false, error: 'Not implemented' }),
 });
 
 interface AuthProviderProps {
@@ -94,29 +94,33 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     return () => { subscription.unsubscribe(); };
   }, []);
 
-  // Sign up function with input validation - returns Promise<void>
-  const signUp = async (email: string, password: string): Promise<void> => {
+  // Sign up function with proper result handling
+  const signUp = async (email: string, password: string) => {
     if (!email || !email.includes('@')) {
-      throw new Error('Valid email is required');
+      return { success: false, error: 'Valid email is required' };
     }
     if (!password || password.length < 6) {
-      throw new Error('Password must be at least 6 characters');
+      return { success: false, error: 'Password must be at least 6 characters' };
     }
 
     setLoading(true);
     setError(null);
+    
     try {
       const { data, error } = await supabase.auth.signUp({
         email: email.toLowerCase().trim(),
         password,
       });
       
-      if (error) throw error;
+      if (error) {
+        return { success: false, error: error.message };
+      }
       
       console.log('Supabase signUp result:', data);
       if (data.user) {
         const convertedUser = convertSupabaseUser(data.user);
         setUser(convertedUser);
+        
         try {
           const { error: profileError } = await supabase.from('profiles').insert([
             {
@@ -126,71 +130,89 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
               updated_at: new Date().toISOString(),
             },
           ]);
+          
           if (profileError) {
             console.error('Profile creation failed:', profileError);
-            setError('Account created, but failed to create user profile. Please contact support.');
-            throw profileError;
+            // Don't fail the signup if profile creation fails
+            return { 
+              success: true, 
+              user: convertedUser,
+              warning: 'Account created but profile setup incomplete' 
+            };
           }
         } catch (profileError) {
           console.error('Profile creation failed:', profileError);
-          setError('Account created, but failed to create user profile. Please contact support.');
-          throw profileError;
+          return { 
+            success: true, 
+            user: convertedUser,
+            warning: 'Account created but profile setup incomplete' 
+          };
         }
+        
+        return { success: true, user: convertedUser };
       } else if (data.session === null && data.user === null) {
-        setError('Check your email to confirm your account before logging in.');
-        throw new Error('Email confirmation required.');
+        return { 
+          success: true, 
+          requiresEmailConfirmation: true,
+          message: 'Check your email to confirm your account before logging in.' 
+        };
       } else {
-        throw new Error('Signup failed: No user returned');
+        return { success: false, error: 'Signup failed: No user returned' };
       }
     } catch (e) {
       console.error('Error signing up:', e);
-      setError(e instanceof Error ? e.message : 'Failed to sign up');
-      setUser(null);
-      throw e;
+      const errorMessage = e instanceof Error ? e.message : 'Failed to sign up';
+      setError(errorMessage);
+      return { success: false, error: errorMessage };
     } finally {
       setLoading(false);
     }
   };
 
-  // Sign in function with input validation - returns Promise<void>
-  const signIn = async (email: string, password: string): Promise<void> => {
+  // Sign in function with proper result handling
+  const signIn = async (email: string, password: string) => {
     if (!email || !email.includes('@')) {
-      throw new Error('Valid email is required');
+      return { success: false, error: 'Valid email is required' };
     }
     if (!password) {
-      throw new Error('Password is required');
+      return { success: false, error: 'Password is required' };
     }
 
     setLoading(true);
     setError(null);
+    
     try {
       const { data, error } = await supabase.auth.signInWithPassword({
         email: email.toLowerCase().trim(),
         password,
       });
       
-      if (error) throw error;
+      if (error) {
+        return { success: false, error: error.message };
+      }
       
       if (data.user) {
         const convertedUser = convertSupabaseUser(data.user);
         setUser(convertedUser);
+        return { success: true, user: convertedUser };
       } else {
-        throw new Error('Login failed: No user returned');
+        return { success: false, error: 'Login failed: No user returned' };
       }
     } catch (e) {
       console.error('Error signing in:', e);
-      setError(e instanceof Error ? e.message : 'Failed to sign in');
-      setUser(null);
-      throw e;
+      const errorMessage = e instanceof Error ? e.message : 'Failed to sign in';
+      setError(errorMessage);
+      return { success: false, error: errorMessage };
     } finally {
       setLoading(false);
     }
   };
 
-  // Guest login function with improved offline handling - returns Promise<void>
-  const guestLogin = async (): Promise<void> => {
+  // Guest login function with proper result handling
+  const guestLogin = async () => {
     setLoading(true);
     setError(null);
+    
     try {
       if (!navigator.onLine) {
         const localGuestUser = {
@@ -204,7 +226,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           isOnline: false
         };
         setUser(localGuestUser);
-        return;
+        return { success: true, user: localGuestUser, isOffline: true };
       }
 
       const guestEmail = `guest_${Date.now()}@storyforge.com`;
@@ -216,7 +238,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           password: guestPassword,
         });
         
-        if (error) throw error;
+        if (error) {
+          return { success: false, error: error.message };
+        }
         
         if (data?.user) {
           const convertedUser = convertSupabaseUser(data.user);
@@ -235,7 +259,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           if (profileError) {
             console.error('Guest profile creation failed:', profileError);
           }
+          
+          return { success: true, user: convertedUser };
         }
+        
+        return { success: false, error: 'Guest login failed: No user returned' };
       } catch (e: any) {
         if (e?.message?.toLowerCase().includes('rate limit')) {
           const localGuestUser = {
@@ -249,35 +277,44 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             isOnline: true
           };
           setUser(localGuestUser);
-          setError('Rate limit reached. Using local guest mode.');
+          return { 
+            success: true, 
+            user: localGuestUser, 
+            warning: 'Using local guest mode due to rate limits' 
+          };
         } else {
           throw e;
         }
       }
     } catch (e) {
       console.error('Error with guest login:', e);
-      setError(e instanceof Error ? e.message : 'Failed to login as guest');
-      setUser(null);
-      throw e;
+      const errorMessage = e instanceof Error ? e.message : 'Failed to login as guest';
+      setError(errorMessage);
+      return { success: false, error: errorMessage };
     } finally {
       setLoading(false);
     }
   };
 
-  // Sign out function - returns Promise<void>
-  const signOut = async (): Promise<void> => {
+  // Sign out function with proper result handling
+  const signOut = async () => {
     setLoading(true);
     setError(null);
     
     try {
       const { error } = await supabase.auth.signOut();
-      if (error) throw error;
+      if (error) {
+        return { success: false, error: error.message };
+      }
       
       localStorage.removeItem('storyforge_user');
       setUser(null);
+      return { success: true };
     } catch (e) {
       console.error('Error signing out:', e);
-      setError(e instanceof Error ? e.message : 'Failed to sign out');
+      const errorMessage = e instanceof Error ? e.message : 'Failed to sign out';
+      setError(errorMessage);
+      return { success: false, error: errorMessage };
     } finally {
       setLoading(false);
     }

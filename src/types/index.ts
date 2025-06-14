@@ -115,15 +115,35 @@ export interface Statistics {
   chaptersCompleted: number;
 }
 
-// Authentication context type
+// Authentication context type with proper result handling
 export interface AuthContextType {
   user: User | null;
   loading: boolean;
   error: string | null;
-  signUp: (email: string, password: string) => Promise<void>;
-  signIn: (email: string, password: string) => Promise<void>;
-  signOut: () => Promise<void>;
-  guestLogin: () => Promise<void>;
+  signUp: (email: string, password: string) => Promise<{
+    success: boolean;
+    error?: string;
+    user?: User;
+    warning?: string;
+    requiresEmailConfirmation?: boolean;
+    message?: string;
+  }>;
+  signIn: (email: string, password: string) => Promise<{
+    success: boolean;
+    error?: string;
+    user?: User;
+  }>;
+  signOut: () => Promise<{
+    success: boolean;
+    error?: string;
+  }>;
+  guestLogin: () => Promise<{
+    success: boolean;
+    error?: string;
+    user?: User;
+    warning?: string;
+    isOffline?: boolean;
+  }>;
 }
 
 // Project context type
