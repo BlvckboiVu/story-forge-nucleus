@@ -1,3 +1,4 @@
+
 import { useEffect, useRef, useState, useCallback } from 'react';
 import ReactQuill, { Quill } from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
@@ -137,10 +138,10 @@ const RichTextEditor = ({
 
   useEffect(() => {
     if (initialContent) {
-      setContent(initialContent);
+      handleChange(initialContent);
       updateWordCount(initialContent);
     }
-  }, [initialContent, updateWordCount]);
+  }, [initialContent, updateWordCount, handleChange]);
 
   useEffect(() => {
     if (onEditorReady) {
@@ -288,22 +289,6 @@ const RichTextEditor = ({
     } catch (error) {
       console.error('Focus toggle failed:', error);
     }
-  };
-
-  // Mobile-specific classes - simplified
-  const editorClasses = `
-    rich-text-editor h-full
-    ${isFocusMode ? 'focus-mode' : ''}
-    ${viewMode === 'page' ? 'page-view' : 'scroll-view'}
-  `.trim();
-
-  const editorStyle = {
-    fontFamily: currentTheme.font?.family || 'Inter, sans-serif',
-    backgroundColor: currentTheme.colors.background,
-    color: currentTheme.colors.text,
-    ...(viewMode === 'page' && { 
-      '--page-height': `${pageHeight}px`,
-    } as any)
   };
 
   // Notify parent of word count and page changes
