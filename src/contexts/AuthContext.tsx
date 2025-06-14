@@ -45,6 +45,31 @@ const createLocalGuestUser = (): User => {
   };
 };
 
+// Helper function to save guest user to localStorage
+const saveGuestUserToStorage = (user: User) => {
+  localStorage.setItem('storyforge_guest_user', JSON.stringify(user));
+};
+
+// Helper function to load guest user from localStorage
+const loadGuestUserFromStorage = (): User | null => {
+  try {
+    const stored = localStorage.getItem('storyforge_guest_user');
+    if (stored) {
+      const parsed = JSON.parse(stored);
+      return {
+        ...parsed,
+        createdAt: new Date(parsed.createdAt),
+        updatedAt: new Date(parsed.updatedAt),
+        isOnline: navigator.onLine
+      };
+    }
+  } catch (error) {
+    console.error('Failed to load guest user from storage:', error);
+    localStorage.removeItem('storyforge_guest_user');
+  }
+  return null;
+};
+
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
@@ -74,38 +99,80 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   }, [user]);
 
   useEffect(() => {
-    // Check for existing session
-    const checkUser = async () => {
+    let mounted = true;
+
+    // Initialize auth state
+    const initializeAuth = async () => {
       try {
-        const { data, error } = await supabase.auth.getSession();
+        // First, set up the auth state change listener
+        const { data: { subscription } } = supabase.auth.onAuthStateChange(
+          async (event, session) => {
+            console.log('Auth state change:', event, session?.user?.id);
+            
+            if (!mounted) return;
+
+            if (session?.user) {
+              // User is authenticated with Supabase
+              const convertedUser = convertSupabaseUser(session.user);
+              setUser(convertedUser);
+              // Clear any guest user data
+              localStorage.removeItem('storyforge_guest_user');
+            } else {
+              // No Supabase session, check for guest user
+              const guestUser = loadGuestUserFromStorage();
+              setUser(guestUser);
+            }
+            
+            if (mounted) {
+              setLoading(false);
+            }
+          }
+        );
+
+        // Then check for existing session
+        const { data: { session }, error } = await supabase.auth.getSession();
+        
+        if (!mounted) return;
+
         if (error) {
-          setUser(null);
-        } else if (data.session?.user) {
-          setUser(convertSupabaseUser(data.session.user));
+          console.error('Error getting session:', error);
+          // Check for guest user fallback
+          const guestUser = loadGuestUserFromStorage();
+          setUser(guestUser);
+        } else if (session?.user) {
+          // User has active Supabase session
+          const convertedUser = convertSupabaseUser(session.user);
+          setUser(convertedUser);
+          localStorage.removeItem('storyforge_guest_user');
         } else {
-          setUser(null);
+          // No active session, check for guest user
+          const guestUser = loadGuestUserFromStorage();
+          setUser(guestUser);
         }
+
+        if (mounted) {
+          setLoading(false);
+        }
+
+        // Cleanup function
+        return () => {
+          subscription.unsubscribe();
+        };
       } catch (e) {
-        console.error('Error checking authentication:', e);
-        setError('Failed to retrieve user session');
-      } finally {
-        setLoading(false);
+        console.error('Error initializing auth:', e);
+        if (mounted) {
+          setError('Failed to initialize authentication');
+          setLoading(false);
+        }
       }
     };
-    checkUser();
-    
-    // Set up auth state change listener
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (session?.user) {
-        const convertedUser = convertSupabaseUser(session.user);
-        setUser(convertedUser);
-      } else {
-        setUser(null);
-      }
-      setLoading(false);
-    });
-    
-    return () => { subscription.unsubscribe(); };
+
+    const cleanup = initializeAuth();
+
+    return () => {
+      mounted = false;
+      cleanup?.then(cleanupFn => cleanupFn?.());
+    };
   }, []);
 
   // Sign up function with proper result handling
@@ -147,7 +214,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           
           if (profileError) {
             console.error('Profile creation failed:', profileError);
-            // Don't fail the signup if profile creation fails
             return { 
               success: true, 
               user: convertedUser,
@@ -205,9 +271,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         return { success: false, error: error.message };
       }
       
-      if (data.user) {
+      if (data.user && data.session) {
         const convertedUser = convertSupabaseUser(data.user);
         setUser(convertedUser);
+        // Clear any guest user data
+        localStorage.removeItem('storyforge_guest_user');
         return { success: true, user: convertedUser };
       } else {
         return { success: false, error: 'Login failed: No user returned' };
@@ -222,14 +290,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
-  // Simplified guest login function - purely local
+  // Pure local guest login function
   const guestLogin = async () => {
     setLoading(true);
     setError(null);
     
     try {
-      // Create local guest user without any Supabase calls
       const localGuestUser = createLocalGuestUser();
+      saveGuestUserToStorage(localGuestUser);
       setUser(localGuestUser);
       return { 
         success: true, 
@@ -252,6 +320,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     setError(null);
     
     try {
+      // Always clear local storage
+      localStorage.removeItem('storyforge_guest_user');
+      
       // Only call Supabase signOut if the user is not a local guest
       if (user?.id !== 'local-guest') {
         const { error } = await supabase.auth.signOut();
@@ -260,7 +331,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         }
       }
       
-      localStorage.removeItem('storyforge_user');
       setUser(null);
       return { success: true };
     } catch (e) {
