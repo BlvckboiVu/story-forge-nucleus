@@ -1,3 +1,4 @@
+
 type KeyboardShortcut = {
   key: string;
   ctrlKey?: boolean;
@@ -7,8 +8,14 @@ type KeyboardShortcut = {
   action: () => void;
 };
 
+/**
+ * Creates a keyboard event handler that matches shortcuts and executes their actions
+ * @param shortcuts - Array of keyboard shortcut configurations
+ * @returns Event handler function for keyboard events
+ */
 export function createKeyboardShortcuts(shortcuts: KeyboardShortcut[]) {
   return (e: KeyboardEvent) => {
+    // Find matching shortcut based on key combination
     const shortcut = shortcuts.find(
       (s) =>
         s.key === e.key &&
@@ -18,6 +25,7 @@ export function createKeyboardShortcuts(shortcuts: KeyboardShortcut[]) {
         s.metaKey === e.metaKey
     );
     
+    // Execute action if shortcut matches
     if (shortcut) {
       e.preventDefault();
       shortcut.action();
@@ -25,6 +33,10 @@ export function createKeyboardShortcuts(shortcuts: KeyboardShortcut[]) {
   };
 }
 
+/**
+ * Predefined keyboard shortcuts for text editor functionality
+ * Includes common shortcuts like save, bold, italic, undo, etc.
+ */
 export const EDITOR_SHORTCUTS: KeyboardShortcut[] = [
   {
     key: 's',

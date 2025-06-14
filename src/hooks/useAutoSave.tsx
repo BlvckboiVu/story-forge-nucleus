@@ -10,6 +10,12 @@ interface UseAutoSaveOptions {
   debounceMs?: number;
 }
 
+/**
+ * Custom hook for automatic saving functionality with debouncing
+ * Provides both interval-based and debounced auto-save mechanisms
+ * @param options - Configuration object for auto-save behavior
+ * @returns Object with save control functions
+ */
 export const useAutoSave = ({ 
   content, 
   hasUnsavedChanges, 
@@ -23,6 +29,10 @@ export const useAutoSave = ({
   const lastSavedContentRef = useRef<string>(content);
   const isSavingRef = useRef<boolean>(false);
 
+  /**
+   * Performs automatic save operation with error handling
+   * Prevents duplicate saves and validates content changes
+   */
   const autoSave = useCallback(async () => {
     if (isSavingRef.current || !hasUnsavedChanges || !content.trim()) {
       return;
@@ -89,6 +99,9 @@ export const useAutoSave = ({
     };
   }, [hasUnsavedChanges, autoSave, interval]);
 
+  /**
+   * Clears all pending auto-save timers
+   */
   const clearAutoSave = useCallback(() => {
     if (autoSaveTimeoutRef.current) {
       clearTimeout(autoSaveTimeoutRef.current);
@@ -98,6 +111,9 @@ export const useAutoSave = ({
     }
   }, []);
 
+  /**
+   * Forces an immediate save operation bypassing timers
+   */
   const forceSave = useCallback(async () => {
     clearAutoSave();
     await autoSave();

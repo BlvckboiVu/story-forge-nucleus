@@ -1,3 +1,4 @@
+
 import DOMPurify from 'dompurify';
 
 const ALLOWED_TAGS = [
@@ -11,6 +12,11 @@ const ALLOWED_ATTRS = [
   'target', 'rel', 'data-*'
 ];
 
+/**
+ * Sanitizes HTML content to prevent XSS attacks while preserving safe formatting
+ * @param html - The HTML string to sanitize
+ * @returns Sanitized HTML string safe for rendering
+ */
 export function sanitizeHtml(html: string): string {
   return DOMPurify.sanitize(html, {
     ALLOWED_TAGS,

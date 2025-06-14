@@ -8,6 +8,13 @@ interface UseDocumentOptions {
   autoSaveInterval?: number; // in milliseconds
 }
 
+/**
+ * Custom hook for managing document state with auto-save functionality
+ * Provides CRUD operations for documents with automatic persistence
+ * @param documentId - ID of the document to manage
+ * @param options - Configuration options for auto-save behavior
+ * @returns Object with document state and management functions
+ */
 export function useDocument(documentId: string | null, options: UseDocumentOptions = {}) {
   const [document, setDocument] = useState<Draft | null>(null);
   const [loading, setLoading] = useState(false);
@@ -16,7 +23,10 @@ export function useDocument(documentId: string | null, options: UseDocumentOptio
   
   const { autoSave = true, autoSaveInterval = 5000 } = options;
 
-  // Load document
+  /**
+   * Loads document from IndexedDB by ID
+   * Sets loading and error states appropriately
+   */
   useEffect(() => {
     const loadDocument = async () => {
       if (!documentId) {
@@ -45,7 +55,10 @@ export function useDocument(documentId: string | null, options: UseDocumentOptio
     loadDocument();
   }, [documentId]);
 
-  // Auto-save effect
+  /**
+   * Auto-save effect that periodically saves document changes
+   * Only saves when document exists, has changes, and is not loading
+   */
   useEffect(() => {
     if (!autoSave || !document || loading) return;
     
@@ -72,7 +85,11 @@ export function useDocument(documentId: string | null, options: UseDocumentOptio
     };
   }, [document, autoSave, autoSaveInterval, loading]);
 
-  // Save document manually
+  /**
+   * Manually saves document with optional updates
+   * @param updates - Partial document updates to apply before saving
+   * @throws Error if save operation fails
+   */
   const saveDocument = async (updates?: Partial<Draft>) => {
     if (!document) return;
     
@@ -96,7 +113,11 @@ export function useDocument(documentId: string | null, options: UseDocumentOptio
     }
   };
 
-  // Update document content in local state
+  /**
+   * Updates document content in local state
+   * Automatically recalculates word count
+   * @param newContent - New content to set for the document
+   */
   const updateContent = (newContent: string) => {
     if (!document) return;
     
