@@ -1,0 +1,184 @@
+/* Editor Core Styles */
+.editor-core {
+  min-height: 100%;
+  padding: 2rem;
+  outline: none;
+  line-height: 1.6;
+  font-size: 1.1rem;
+  color: var(--foreground);
+  background: var(--background);
+}
+
+/* Focus Mode */
+.editor-core.focus-mode {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 3rem 2rem;
+}
+
+/* Page View */
+.editor-core.page-view {
+  max-width: 800px;
+  margin: 0 auto;
+  min-height: var(--page-height, 800px);
+  padding: 2rem;
+  background: white;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+}
+
+/* Typography */
+.editor-core .heading-1 {
+  font-size: 2.5rem;
+  font-weight: 700;
+  margin: 2rem 0 1rem;
+  line-height: 1.2;
+}
+
+.editor-core .heading-2 {
+  font-size: 2rem;
+  font-weight: 600;
+  margin: 1.5rem 0 1rem;
+  line-height: 1.3;
+}
+
+.editor-core .heading-3 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin: 1.25rem 0 0.75rem;
+  line-height: 1.4;
+}
+
+.editor-core .quote {
+  border-left: 4px solid var(--primary);
+  padding-left: 1rem;
+  margin: 1rem 0;
+  font-style: italic;
+  color: var(--muted-foreground);
+}
+
+.editor-core .code {
+  font-family: monospace;
+  background: var(--muted);
+  padding: 1rem;
+  border-radius: 4px;
+  margin: 1rem 0;
+  white-space: pre-wrap;
+}
+
+/* Lists */
+.editor-core .list {
+  margin: 1rem 0;
+  padding-left: 1.5rem;
+}
+
+.editor-core .list.ordered {
+  list-style-type: decimal;
+}
+
+.editor-core .list-item {
+  margin: 0.5rem 0;
+}
+
+/* Selection */
+.editor-core ::selection {
+  background: var(--primary);
+  color: white;
+}
+
+/* Story Bible Highlights */
+.editor-core .story-bible-highlight {
+  background: rgba(var(--primary-rgb), 0.1);
+  border-bottom: 2px solid var(--primary);
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.editor-core .story-bible-highlight:hover {
+  background: rgba(var(--primary-rgb), 0.2);
+}
+
+/* Mobile Styles */
+.editor-core.mobile-editor {
+  padding: 1rem;
+  font-size: 1rem;
+}
+
+.editor-core.mobile-editor .heading-1 {
+  font-size: 2rem;
+}
+
+.editor-core.mobile-editor .heading-2 {
+  font-size: 1.75rem;
+}
+
+.editor-core.mobile-editor .heading-3 {
+  font-size: 1.25rem;
+}
+
+/* Dark Mode */
+.dark .editor-core {
+  color: var(--foreground);
+  background: var(--background);
+}
+
+.dark .editor-core.page-view {
+  background: var(--card);
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+}
+
+.dark .editor-core .code {
+  background: var(--muted);
+}
+
+/* Placeholder */
+.editor-core:empty:before {
+  content: attr(data-placeholder);
+  color: var(--muted-foreground);
+  pointer-events: none;
+}
+
+/* Cursor */
+.editor-core:focus {
+  caret-color: var(--primary);
+}
+
+/* Drag and Drop */
+.editor-core.drag-over {
+  background: var(--muted);
+}
+
+/* Loading State */
+.editor-core.loading {
+  opacity: 0.7;
+  pointer-events: none;
+}
+
+/* Error State */
+.editor-core.error {
+  border: 2px solid var(--destructive);
+}
+
+/* Read Only */
+.editor-core[contenteditable="false"] {
+  cursor: default;
+  user-select: text;
+}
+
+/* Print Styles */
+@media print {
+  .editor-core {
+    padding: 0;
+    background: white;
+    color: black;
+  }
+  
+  .editor-core.page-view {
+    box-shadow: none;
+    min-height: auto;
+  }
+  
+  .editor-core .story-bible-highlight {
+    background: none;
+    border-bottom: 1px solid black;
+  }
+} 
