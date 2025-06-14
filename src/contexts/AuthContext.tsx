@@ -32,7 +32,6 @@ const convertSupabaseUser = (supabaseUser: SupabaseUser): User => ({
 });
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
-  // All hooks must be at the top level
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -95,8 +94,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     return () => { subscription.unsubscribe(); };
   }, []);
 
-  // Sign up function with input validation
-  const signUp = async (email: string, password: string) => {
+  // Sign up function with input validation - returns Promise<void>
+  const signUp = async (email: string, password: string): Promise<void> => {
     if (!email || !email.includes('@')) {
       throw new Error('Valid email is required');
     }
@@ -143,7 +142,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       } else {
         throw new Error('Signup failed: No user returned');
       }
-      return data;
     } catch (e) {
       console.error('Error signing up:', e);
       setError(e instanceof Error ? e.message : 'Failed to sign up');
@@ -154,8 +152,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
-  // Sign in function with input validation
-  const signIn = async (email: string, password: string) => {
+  // Sign in function with input validation - returns Promise<void>
+  const signIn = async (email: string, password: string): Promise<void> => {
     if (!email || !email.includes('@')) {
       throw new Error('Valid email is required');
     }
@@ -179,7 +177,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       } else {
         throw new Error('Login failed: No user returned');
       }
-      return data;
     } catch (e) {
       console.error('Error signing in:', e);
       setError(e instanceof Error ? e.message : 'Failed to sign in');
@@ -190,8 +187,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
-  // Guest login function with improved offline handling
-  const guestLogin = async () => {
+  // Guest login function with improved offline handling - returns Promise<void>
+  const guestLogin = async (): Promise<void> => {
     setLoading(true);
     setError(null);
     try {
@@ -267,8 +264,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
-  // Sign out function
-  const signOut = async () => {
+  // Sign out function - returns Promise<void>
+  const signOut = async (): Promise<void> => {
     setLoading(true);
     setError(null);
     
