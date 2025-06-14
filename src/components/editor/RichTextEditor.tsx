@@ -3,10 +3,10 @@ import ReactQuill, { Quill } from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
 import { useToast } from '@/hooks/use-toast';
 import { Draft } from '@/lib/db';
-import { IntegratedToolbar } from './IntegratedToolbar';
+import { EnhancedToolbar } from './EnhancedToolbar';
 import { WritingViewOptions } from './WritingViewOptions';
-import { useAutoSave } from '@/hooks/useAutoSave';
-import { useWordCount } from '@/hooks/useWordCount';
+import { useEnhancedAutoSave } from '@/hooks/useEnhancedAutoSave';
+import { useEnhancedWordCount } from '@/hooks/useEnhancedWordCount';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Button } from '@/components/ui/button';
 import { Save } from 'lucide-react';
@@ -70,12 +70,18 @@ const RichTextEditor = ({
   const [storyBibleEntries, setStoryBibleEntries] = useState<StoryBibleEntry[]>([]);
   const [highlightMatches, setHighlightMatches] = useState<HighlightMatch[]>([]);
   const [editorError, setEditorError] = useState<string | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
   const { toast } = useToast();
   const editorRef = useRef<ReactQuill>(null);
   const containerRef = useRef<HTMLDivElement>(null);
-  const { wordCount, currentPage, calculateWordCount } = useWordCount();
   const { currentProject } = useProjects();
   const deviceIsMobile = useIsMobile();
+
+  // Enhanced word count hook
+  const { stats, updateWordCount } = useEnhancedWordCount({
+    warningThreshold: 45000,
+    limitThreshold: WORD_LIMIT,
+  });
 
   // Register custom Quill format for Story Bible highlighting
   useEffect(() => {
@@ -110,9 +116,9 @@ const RichTextEditor = ({
   useEffect(() => {
     if (initialContent) {
       setContent(initialContent);
-      calculateWordCount(initialContent);
+      updateWordCount(initialContent);
     }
-  }, [initialContent, calculateWordCount]);
+  }, [initialContent, updateWordCount]);
 
   useEffect(() => {
     if (onEditorReady) {
@@ -225,10 +231,11 @@ const RichTextEditor = ({
     }
   };
 
-  const { clearAutoSave } = useAutoSave({
+  const { clearAutoSave } = useEnhancedAutoSave({
     content,
     hasUnsavedChanges,
     onSave: handleSaveContent,
+    onSaveStateChange: setIsSaving,
   });
 
   const handleFontChange = (fontFamily: string) => {
@@ -291,23 +298,8 @@ const RichTextEditor = ({
 
   const handleChange = (value: string) => {
     try {
-      const newWordCount = calculateWordCount(value);
+      const newStats = updateWordCount(value);
       
-      if (newWordCount > WORD_LIMIT) {
-        toast({
-          title: "Word limit exceeded",
-          description: `Your draft has exceeded the ${WORD_LIMIT.toLocaleString()} word limit. Consider splitting into multiple drafts.`,
-          variant: "destructive",
-          duration: 5000,
-        });
-      } else if (newWordCount > WORD_LIMIT * 0.9) {
-        toast({
-          title: "Approaching word limit",
-          description: `You're approaching the ${WORD_LIMIT.toLocaleString()} word limit (${newWordCount.toLocaleString()} words).`,
-          duration: 4000,
-        });
-      }
-
       setContent(value);
       setHasUnsavedChanges(true);
       setEditorError(null);
@@ -372,11 +364,11 @@ const RichTextEditor = ({
 
   // Notify parent of word count and page changes
   useEffect(() => {
-    if (onWordCountChange) onWordCountChange(wordCount);
-  }, [wordCount, onWordCountChange]);
+    if (onWordCountChange) onWordCountChange(stats.words);
+  }, [stats.words, onWordCountChange]);
   useEffect(() => {
-    if (onCurrentPageChange) onCurrentPageChange(currentPage);
-  }, [currentPage, onCurrentPageChange]);
+    if (onCurrentPageChange) onCurrentPageChange(stats.pages);
+  }, [stats.pages, onCurrentPageChange]);
   useEffect(() => {
     if (onUnsavedChangesChange) onUnsavedChangesChange(hasUnsavedChanges);
   }, [hasUnsavedChanges, onUnsavedChangesChange]);
@@ -404,7 +396,7 @@ const RichTextEditor = ({
   return (
     <div className={`flex flex-col h-full relative ${isFocusMode ? 'focus-mode' : ''}`}>
       {/* Move toolbar to top */}
-      <IntegratedToolbar
+      <EnhancedToolbar
         selectedFont={selectedFont}
         onFontChange={handleFontChange}
         isFocusMode={isFocusMode}
@@ -450,11 +442,11 @@ const RichTextEditor = ({
         <div className="bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700 px-6 py-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-6 text-sm text-muted-foreground">
-              <span className={wordCount > 50000 ? 'text-red-600' : wordCount > 45000 ? 'text-yellow-600' : ''}>
-                {wordCount.toLocaleString()} words
+              <span className={stats.words > 50000 ? 'text-red-600' : stats.words > 45000 ? 'text-yellow-600' : ''}>
+                {stats.words.toLocaleString()} words
               </span>
               {viewMode === 'page' && (
-                <span>Page {currentPage}</span>
+                <span>Page {stats.pages}</span>
               )}
               {highlightMatches.length > 0 && (
                 <span className="text-blue-600">
@@ -467,11 +459,17 @@ const RichTextEditor = ({
                   Unsaved changes
                 </span>
               )}
+              {isSaving && (
+                <span className="flex items-center gap-1 text-blue-600">
+                  <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
+                  Saving...
+                </span>
+              )}
             </div>
             
             <Button
               onClick={handleSave}
-              disabled={loading || !hasUnsavedChanges}
+              disabled={loading || !hasUnsavedChanges || isSaving}
               size="sm"
               className={`
                 transition-all duration-200 
@@ -482,7 +480,7 @@ const RichTextEditor = ({
               `}
             >
               <Save className="h-4 w-4 mr-2" />
-              {loading ? 'Saving...' : 'Save Draft'}
+              {isSaving ? 'Saving...' : loading ? 'Loading...' : 'Save Draft'}
             </Button>
           </div>
         </div>
