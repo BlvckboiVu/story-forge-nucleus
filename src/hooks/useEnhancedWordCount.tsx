@@ -3,7 +3,7 @@ import { useState, useCallback, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { useTranslation } from 'react-i18next';
 
-interface WordCountStats {
+export interface WordCountStats {
   words: number;
   characters: number;
   charactersNoSpaces: number;
@@ -99,8 +99,8 @@ export const useEnhancedWordCount = ({
       toast({
         title: t('approachingWordLimit'),
         description: t('approachingWordLimitDescription', { 
-          count: newStats.words.toLocaleString(),
-          limit: limitThreshold.toLocaleString()
+          count: newStats.words,
+          limit: limitThreshold
         }),
         duration: 4000,
       });
@@ -113,8 +113,8 @@ export const useEnhancedWordCount = ({
       toast({
         title: t('wordLimitExceeded'),
         description: t('wordLimitExceededDescription', { 
-          count: newStats.words.toLocaleString(),
-          limit: limitThreshold.toLocaleString()
+          count: newStats.words,
+          limit: limitThreshold
         }),
         variant: "destructive",
         duration: 5000,

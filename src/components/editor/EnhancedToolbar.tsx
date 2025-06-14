@@ -317,7 +317,7 @@ export const EnhancedToolbar = ({
 
           {/* Heading */}
           <Select 
-            value={activeFormats.header || 'paragraph'} 
+            value={typeof activeFormats.header === 'string' ? activeFormats.header : 'paragraph'} 
             onValueChange={(value) => onFormatClick('header', value === 'paragraph' ? false : value)}
           >
             <SelectTrigger className="w-32 h-8">
