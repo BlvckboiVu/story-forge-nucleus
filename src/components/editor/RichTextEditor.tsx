@@ -9,6 +9,8 @@ import { useEnhancedAutoSave } from '@/hooks/useEnhancedAutoSave';
 import { useEnhancedWordCount } from '@/hooks/useEnhancedWordCount';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useEditorTheme } from '@/hooks/useEditorTheme';
+import { useEditorContent } from '@/hooks/useEditorContent';
+import { useEditorScroll } from '@/hooks/useEditorScroll';
 import { Button } from '@/components/ui/button';
 import { Save } from 'lucide-react';
 import { useProjects } from '@/contexts/ProjectContext';
@@ -67,8 +69,6 @@ const RichTextEditor = ({
   onContentChange, // New prop
   extraActions,
 }: RichTextEditorProps) => {
-  const [content, setContent] = useState(initialContent);
-  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [viewMode, setViewMode] = useState<'scroll' | 'page'>('scroll');
   const [pageHeight, setPageHeight] = useState(800);
   const [storyBibleEntries, setStoryBibleEntries] = useState<StoryBibleEntry[]>([]);
@@ -92,6 +92,18 @@ const RichTextEditor = ({
     warningThreshold: 45000,
     limitThreshold: WORD_LIMIT,
   });
+
+  // Use extracted hooks
+  const { content, hasUnsavedChanges, setHasUnsavedChanges, handleChange } = useEditorContent({
+    initialContent,
+    onContentChange,
+    onWordCountChange: (count) => {
+      updateWordCount(initialContent);
+      if (onWordCountChange) onWordCountChange(count);
+    },
+  });
+
+  const { handleCursorScroll } = useEditorScroll({ editorRef, containerRef });
 
   // Register custom Quill format for Story Bible highlighting
   useEffect(() => {
@@ -152,70 +164,6 @@ const RichTextEditor = ({
       console.error('Failed to apply theme:', error);
     }
   }, [currentTheme]);
-
-  // Auto-scroll to keep cursor in view with early trigger
-  const handleCursorScroll = useCallback(() => {
-    const quill = editorRef.current?.getEditor();
-    const container = containerRef.current;
-    if (!quill || !container) return;
-
-    const selection = quill.getSelection();
-    if (!selection) return;
-
-    try {
-      const bounds = quill.getBounds(selection.index);
-      const containerRect = container.getBoundingClientRect();
-      const editorRect = quill.root.getBoundingClientRect();
-      
-      const cursorTop = editorRect.top + bounds.top - containerRect.top;
-      const cursorBottom = cursorTop + bounds.height;
-      
-      const scrollThreshold = containerRect.height - 100;
-      const topThreshold = 50;
-      
-      if (cursorBottom > scrollThreshold) {
-        const targetScrollTop = container.scrollTop + (cursorBottom - scrollThreshold) + 50;
-        container.scrollTo({
-          top: targetScrollTop,
-          behavior: 'smooth'
-        });
-      } else if (cursorTop < topThreshold) {
-        const targetScrollTop = Math.max(0, container.scrollTop - (topThreshold - cursorTop) - 50);
-        container.scrollTo({
-          top: targetScrollTop,
-          behavior: 'smooth'
-        });
-      }
-    } catch (error) {
-      console.error('Error handling cursor scroll:', error);
-    }
-  }, []);
-
-  // Set up cursor position tracking
-  useEffect(() => {
-    const quill = editorRef.current?.getEditor();
-    if (!quill) return;
-
-    const handleSelectionChange = () => {
-      handleCursorScroll();
-      handleHighlighting();
-    };
-
-    const handleTextChange = () => {
-      setTimeout(() => {
-        handleHighlighting();
-        handleCursorScroll();
-      }, 50);
-    };
-
-    quill.on('selection-change', handleSelectionChange);
-    quill.on('text-change', handleTextChange);
-
-    return () => {
-      quill.off('selection-change', handleSelectionChange);
-      quill.off('text-change', handleTextChange);
-    };
-  }, [handleCursorScroll]);
 
   // Handle highlighting when content or selection changes
   const handleHighlighting = useCallback(() => {
@@ -303,23 +251,6 @@ const RichTextEditor = ({
     } catch (error) {
       console.error('Format failed:', error);
       setEditorError('Formatting operation failed');
-    }
-  };
-
-  const handleChange = (value: string) => {
-    try {
-      updateWordCount(value);
-      setContent(value);
-      setHasUnsavedChanges(true);
-      setEditorError(null);
-      
-      // Notify parent of content changes for offline persistence
-      if (onContentChange) {
-        onContentChange(value);
-      }
-    } catch (error) {
-      console.error('Content change failed:', error);
-      setEditorError('Failed to update content');
     }
   };
 

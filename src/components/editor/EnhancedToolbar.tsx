@@ -1,16 +1,14 @@
 import { Button } from '@/components/ui/button';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { 
-  Bold, Italic, Underline, Strikethrough, Code,
-  AlignLeft, AlignCenter, AlignRight, AlignJustify,
-  List, ListOrdered, Quote, Minus,
-  Type, Palette, Save, Maximize2, Minimize2,
-  Undo, Redo, Link, Image, Table
+  Save, Maximize2, Minimize2,
+  Undo, Redo, Type
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
+import { ToolbarFormattingButtons } from './toolbar/ToolbarFormattingButtons';
+import { ToolbarSelectors } from './toolbar/ToolbarSelectors';
 
 interface EnhancedToolbarProps {
   selectedFont: string;
@@ -81,7 +79,6 @@ export const EnhancedToolbar = ({
 }: EnhancedToolbarProps) => {
   const { t } = useTranslation();
   const [activeFormats, setActiveFormats] = useState<Record<string, boolean>>({});
-  const [showMoreOptions, setShowMoreOptions] = useState(false);
 
   // Check active formats from editor
   useEffect(() => {
@@ -163,31 +160,11 @@ export const EnhancedToolbar = ({
     return (
       <div className="flex items-center justify-between p-3 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 w-full">
         <div className="flex items-center gap-2 flex-1 min-w-0">
-          {/* Essential mobile formatting */}
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => onFormatClick('bold')}
-            className={`h-9 w-9 p-0 ${activeFormats.bold ? 'bg-blue-100 text-blue-700' : 'text-gray-600 hover:text-gray-800 hover:bg-gray-100'}`}
-          >
-            <Bold className="h-4 w-4" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => onFormatClick('italic')}
-            className={`h-9 w-9 p-0 ${activeFormats.italic ? 'bg-blue-100 text-blue-700' : 'text-gray-600 hover:text-gray-800 hover:bg-gray-100'}`}
-          >
-            <Italic className="h-4 w-4" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => onFormatClick('list', 'bullet')}
-            className={`h-9 w-9 p-0 ${activeFormats['list-bullet'] ? 'bg-blue-100 text-blue-700' : 'text-gray-600 hover:text-gray-800 hover:bg-gray-100'}`}
-          >
-            <List className="h-4 w-4" />
-          </Button>
+          <ToolbarFormattingButtons
+            activeFormats={activeFormats}
+            onFormatClick={onFormatClick}
+            isMobile={true}
+          />
           
           <Popover>
             <PopoverTrigger asChild>
@@ -197,44 +174,14 @@ export const EnhancedToolbar = ({
             </PopoverTrigger>
             <PopoverContent className="w-64" align="start">
               <div className="space-y-4">
-                <div>
-                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block">Font</label>
-                  <Select value={selectedFont} onValueChange={onFontChange}>
-                    <SelectTrigger className="w-full h-9 text-gray-900 dark:text-gray-100">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
-                      {fonts.map((font) => (
-                        <SelectItem 
-                          key={font.value} 
-                          value={font.value}
-                          className="text-gray-900 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700"
-                        >
-                          {font.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block">Theme</label>
-                  <Select value={selectedTheme} onValueChange={onThemeChange}>
-                    <SelectTrigger className="w-full h-9 text-gray-900 dark:text-gray-100">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
-                      {themes.map((theme) => (
-                        <SelectItem 
-                          key={theme.value} 
-                          value={theme.value}
-                          className="text-gray-900 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700"
-                        >
-                          {theme.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+                <ToolbarSelectors
+                  selectedFont={selectedFont}
+                  onFontChange={onFontChange}
+                  selectedTheme={selectedTheme}
+                  onThemeChange={onThemeChange}
+                  activeFormats={activeFormats}
+                  onFormatClick={onFormatClick}
+                />
               </div>
             </PopoverContent>
           </Popover>
@@ -284,172 +231,22 @@ export const EnhancedToolbar = ({
 
           <Separator orientation="vertical" className="h-6" />
 
-          {/* Font and Theme selectors with proper contrast */}
-          <div className="flex items-center gap-3 min-w-0">
-            <Select value={selectedFont} onValueChange={onFontChange}>
-              <SelectTrigger className="w-40 h-9 text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-lg">
-                {fonts.map((font) => (
-                  <SelectItem 
-                    key={font.value} 
-                    value={font.value} 
-                    style={{ fontFamily: font.value }}
-                    className="text-gray-900 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer"
-                  >
-                    {font.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-
-            <Select value={selectedTheme} onValueChange={onThemeChange}>
-              <SelectTrigger className="w-32 h-9 text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600">
-                <SelectValue>
-                  {currentTheme.label}
-                </SelectValue>
-              </SelectTrigger>
-              <SelectContent className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-lg">
-                {themes.map((theme) => (
-                  <SelectItem 
-                    key={theme.value} 
-                    value={theme.value}
-                    className="text-gray-900 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer"
-                  >
-                    <div className="flex items-center gap-2">
-                      <div 
-                        className="w-4 h-4 rounded border border-gray-300" 
-                        style={{ backgroundColor: theme.colors.bg }}
-                      />
-                      {theme.label}
-                    </div>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+          <ToolbarSelectors
+            selectedFont={selectedFont}
+            onFontChange={onFontChange}
+            selectedTheme={selectedTheme}
+            onThemeChange={onThemeChange}
+            activeFormats={activeFormats}
+            onFormatClick={onFormatClick}
+          />
 
           <Separator orientation="vertical" className="h-6" />
 
-          {/* Heading selector */}
-          <Select 
-            value={typeof activeFormats.header === 'string' ? activeFormats.header : 'paragraph'} 
-            onValueChange={(value) => onFormatClick('header', value === 'paragraph' ? false : value)}
-          >
-            <SelectTrigger className="w-32 h-9 text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-lg">
-              {headings.map((heading) => (
-                <SelectItem 
-                  key={heading.value} 
-                  value={heading.value}
-                  className="text-gray-900 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer"
-                >
-                  {heading.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
-          <Separator orientation="vertical" className="h-6" />
-
-          {/* Text formatting */}
-          <div className="flex items-center gap-1">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => onFormatClick('bold')}
-              className={`h-9 w-9 p-0 font-semibold ${activeFormats.bold ? 'bg-blue-100 text-blue-700' : 'text-gray-600 hover:text-gray-800 hover:bg-gray-100'}`}
-            >
-              <Bold className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => onFormatClick('italic')}
-              className={`h-9 w-9 p-0 ${activeFormats.italic ? 'bg-blue-100 text-blue-700' : 'text-gray-600 hover:text-gray-800 hover:bg-gray-100'}`}
-            >
-              <Italic className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => onFormatClick('underline')}
-              className={`h-9 w-9 p-0 ${activeFormats.underline ? 'bg-blue-100 text-blue-700' : 'text-gray-600 hover:text-gray-800 hover:bg-gray-100'}`}
-            >
-              <Underline className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => onFormatClick('strike')}
-              className={`h-9 w-9 p-0 ${activeFormats.strike ? 'bg-blue-100 text-blue-700' : 'text-gray-600 hover:text-gray-800 hover:bg-gray-100'}`}
-            >
-              <Strikethrough className="h-4 w-4" />
-            </Button>
-          </div>
-
-          <Separator orientation="vertical" className="h-6" />
-
-          {/* Alignment */}
-          <div className="flex items-center gap-1">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => onFormatClick('align', 'left')}
-              className={`h-9 w-9 p-0 ${activeFormats['align-left'] ? 'bg-blue-100 text-blue-700' : 'text-gray-600 hover:text-gray-800 hover:bg-gray-100'}`}
-            >
-              <AlignLeft className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => onFormatClick('align', 'center')}
-              className={`h-9 w-9 p-0 ${activeFormats['align-center'] ? 'bg-blue-100 text-blue-700' : 'text-gray-600 hover:text-gray-800 hover:bg-gray-100'}`}
-            >
-              <AlignCenter className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => onFormatClick('align', 'right')}
-              className={`h-9 w-9 p-0 ${activeFormats['align-right'] ? 'bg-blue-100 text-blue-700' : 'text-gray-600 hover:text-gray-800 hover:bg-gray-100'}`}
-            >
-              <AlignRight className="h-4 w-4" />
-            </Button>
-          </div>
-
-          <Separator orientation="vertical" className="h-6" />
-
-          {/* Lists and blocks */}
-          <div className="flex items-center gap-1">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => onFormatClick('list', 'bullet')}
-              className={`h-9 w-9 p-0 ${activeFormats['list-bullet'] ? 'bg-blue-100 text-blue-700' : 'text-gray-600 hover:text-gray-800 hover:bg-gray-100'}`}
-            >
-              <List className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => onFormatClick('list', 'ordered')}
-              className={`h-9 w-9 p-0 ${activeFormats['list-ordered'] ? 'bg-blue-100 text-blue-700' : 'text-gray-600 hover:text-gray-800 hover:bg-gray-100'}`}
-            >
-              <ListOrdered className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => onFormatClick('blockquote')}
-              className={`h-9 w-9 p-0 ${activeFormats.blockquote ? 'bg-blue-100 text-blue-700' : 'text-gray-600 hover:text-gray-800 hover:bg-gray-100'}`}
-            >
-              <Quote className="h-4 w-4" />
-            </Button>
-          </div>
+          <ToolbarFormattingButtons
+            activeFormats={activeFormats}
+            onFormatClick={onFormatClick}
+            isMobile={false}
+          />
 
           {/* Extra actions */}
           {extraActions && (

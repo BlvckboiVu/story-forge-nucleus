@@ -1,0 +1,50 @@
+
+/* Sidebar and main layout styles */
+.sidebar-layout {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  min-height: 100vh;
+  width: 100vw;
+  max-width: 100vw;
+  overflow: hidden;
+  position: relative;
+}
+
+.main-content {
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  display: grid;
+  grid-template-rows: auto 1fr;
+  width: 100%;
+  max-width: 100%;
+}
+
+/* Mobile Responsive */
+@media (max-width: 768px) {
+  .sidebar-layout {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto 1fr;
+  }
+}
+
+/* Tablet Responsive */
+@media (min-width: 769px) and (max-width: 1024px) {
+  .sidebar-layout {
+    grid-template-columns: 280px 1fr;
+  }
+}
+
+/* Desktop Responsive */
+@media (min-width: 1025px) {
+  .sidebar-layout {
+    grid-template-columns: 320px 1fr;
+  }
+}
+
+/* Print Optimizations */
+@media print {
+  .sidebar-layout {
+    grid-template-columns: 1fr;
+  }
+}
