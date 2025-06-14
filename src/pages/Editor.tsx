@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Layout } from '@/components/layout/Layout';
@@ -12,7 +13,7 @@ import { Draft } from '@/types';
 import { EnhancedOutline, OutlineScene } from '@/types/outline';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { BookOpen, Timeline } from 'lucide-react';
+import { BookOpen, Clock } from 'lucide-react';
 
 export default function Editor() {
   const navigate = useNavigate();
@@ -89,7 +90,7 @@ export default function Editor() {
     if (selectedScene && outline) {
       try {
         const wordCount = content.trim().split(/\s+/).filter(w => w.length > 0).length;
-        const updatedStatus = wordCount > 100 ? 'draft' : 'planned';
+        const updatedStatus: 'planned' | 'draft' | 'complete' = wordCount > 100 ? 'draft' : 'planned';
         
         const updatedParts = outline.parts.map(part => ({
           ...part,
@@ -212,7 +213,7 @@ export default function Editor() {
                   Outline
                 </TabsTrigger>
                 <TabsTrigger value="timeline" className="flex items-center gap-2">
-                  <Timeline className="h-4 w-4" />
+                  <Clock className="h-4 w-4" />
                   Timeline
                 </TabsTrigger>
               </TabsList>
