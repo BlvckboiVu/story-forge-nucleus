@@ -24,16 +24,28 @@ export async function createDocumentVersion(
 ): Promise<DocumentVersion> {
   const sanitizedContent = sanitizeHtml(content);
   
-  return await createVersion(
+  const versionId = await createVersion(
     draft.id,
     sanitizedContent,
     metadata.wordCount,
     {
       font: metadata.font,
       viewMode: metadata.viewMode,
-      timestamp: metadata.timestamp.toISOString(),
     }
   );
+  
+  // Return the full document version object
+  return {
+    id: versionId,
+    draftId: draft.id,
+    content: sanitizedContent,
+    timestamp: metadata.timestamp,
+    wordCount: metadata.wordCount,
+    metadata: {
+      font: metadata.font,
+      viewMode: metadata.viewMode,
+    }
+  };
 }
 
 /**
@@ -54,7 +66,7 @@ export function getVersionLabel(version: DocumentVersion): string {
 export function getVersionMetadata(version: DocumentVersion): VersionMetadata {
   return {
     font: version.metadata.font || 'Inter',
-    viewMode: version.metadata.viewMode || 'normal',
+    viewMode: (version.metadata.viewMode as 'normal' | 'focus' | 'page') || 'normal',
     wordCount: version.wordCount,
     timestamp: new Date(version.timestamp),
   };
