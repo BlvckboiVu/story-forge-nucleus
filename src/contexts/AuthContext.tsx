@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { User, AuthContextType } from '../types';
 import { supabase } from '../lib/supabase';
@@ -30,62 +31,8 @@ const convertSupabaseUser = (supabaseUser: SupabaseUser): User => ({
   isOnline: navigator.onLine
 });
 
-// Sign up function with input validation
-const signUpUser = async (email: string, password: string) => {
-  if (!email || !email.includes('@')) {
-    throw new Error('Valid email is required');
-  }
-  if (!password || password.length < 6) {
-    throw new Error('Password must be at least 6 characters');
-  }
-
-  const { data, error } = await supabase.auth.signUp({
-    email: email.toLowerCase().trim(),
-    password,
-  });
-  
-  if (error) throw error;
-  return data;
-};
-
-// Sign in function with input validation
-const signInUser = async (email: string, password: string) => {
-  if (!email || !email.includes('@')) {
-    throw new Error('Valid email is required');
-  }
-  if (!password) {
-    throw new Error('Password is required');
-  }
-
-  const { data, error } = await supabase.auth.signInWithPassword({
-    email: email.toLowerCase().trim(),
-    password,
-  });
-  
-  if (error) throw error;
-  return data;
-};
-
-// Sign out function
-const signOutUser = async () => {
-  const { error } = await supabase.auth.signOut();
-  if (error) throw error;
-};
-
-// Create profile function
-const createProfile = async (id: string, email: string) => {
-  const { error } = await supabase.from('profiles').insert([
-    {
-      id,
-      email,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    },
-  ]);
-  if (error) throw error;
-};
-
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
+  // All hooks must be at the top level
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -148,18 +95,43 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     return () => { subscription.unsubscribe(); };
   }, []);
 
-  // Sign up function
+  // Sign up function with input validation
   const signUp = async (email: string, password: string) => {
+    if (!email || !email.includes('@')) {
+      throw new Error('Valid email is required');
+    }
+    if (!password || password.length < 6) {
+      throw new Error('Password must be at least 6 characters');
+    }
+
     setLoading(true);
     setError(null);
     try {
-      const data = await signUpUser(email, password);
+      const { data, error } = await supabase.auth.signUp({
+        email: email.toLowerCase().trim(),
+        password,
+      });
+      
+      if (error) throw error;
+      
       console.log('Supabase signUp result:', data);
       if (data.user) {
         const convertedUser = convertSupabaseUser(data.user);
         setUser(convertedUser);
         try {
-          await createProfile(convertedUser.id, convertedUser.email);
+          const { error: profileError } = await supabase.from('profiles').insert([
+            {
+              id: convertedUser.id,
+              email: convertedUser.email,
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString(),
+            },
+          ]);
+          if (profileError) {
+            console.error('Profile creation failed:', profileError);
+            setError('Account created, but failed to create user profile. Please contact support.');
+            throw profileError;
+          }
         } catch (profileError) {
           console.error('Profile creation failed:', profileError);
           setError('Account created, but failed to create user profile. Please contact support.');
@@ -171,6 +143,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       } else {
         throw new Error('Signup failed: No user returned');
       }
+      return data;
     } catch (e) {
       console.error('Error signing up:', e);
       setError(e instanceof Error ? e.message : 'Failed to sign up');
@@ -181,18 +154,32 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
-  // Sign in function
+  // Sign in function with input validation
   const signIn = async (email: string, password: string) => {
+    if (!email || !email.includes('@')) {
+      throw new Error('Valid email is required');
+    }
+    if (!password) {
+      throw new Error('Password is required');
+    }
+
     setLoading(true);
     setError(null);
     try {
-      const data = await signInUser(email, password);
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: email.toLowerCase().trim(),
+        password,
+      });
+      
+      if (error) throw error;
+      
       if (data.user) {
         const convertedUser = convertSupabaseUser(data.user);
         setUser(convertedUser);
       } else {
         throw new Error('Login failed: No user returned');
       }
+      return data;
     } catch (e) {
       console.error('Error signing in:', e);
       setError(e instanceof Error ? e.message : 'Failed to sign in');
@@ -227,12 +214,30 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const guestPassword = crypto.randomUUID().slice(0, 16);
       
       try {
-        const result = await signUpUser(guestEmail, guestPassword);
-        if (result?.user) {
-          const convertedUser = convertSupabaseUser(result.user);
+        const { data, error } = await supabase.auth.signUp({
+          email: guestEmail,
+          password: guestPassword,
+        });
+        
+        if (error) throw error;
+        
+        if (data?.user) {
+          const convertedUser = convertSupabaseUser(data.user);
           convertedUser.role = 'guest';
           setUser(convertedUser);
-          await createProfile(convertedUser.id, convertedUser.email);
+          
+          const { error: profileError } = await supabase.from('profiles').insert([
+            {
+              id: convertedUser.id,
+              email: convertedUser.email,
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString(),
+            },
+          ]);
+          
+          if (profileError) {
+            console.error('Guest profile creation failed:', profileError);
+          }
         }
       } catch (e: any) {
         if (e?.message?.toLowerCase().includes('rate limit')) {
@@ -268,7 +273,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     setError(null);
     
     try {
-      await signOutUser();
+      const { error } = await supabase.auth.signOut();
+      if (error) throw error;
+      
       localStorage.removeItem('storyforge_user');
       setUser(null);
     } catch (e) {
