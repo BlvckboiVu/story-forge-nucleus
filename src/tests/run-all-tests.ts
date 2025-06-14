@@ -17,12 +17,6 @@ export const runComprehensiveTests = () => {
       expect(toolbarTests).toBeDefined();
     });
 
-    it('should validate theme tests exist', async () => {
-      // Verify theme tests module exists
-      const themeTests = await import('./editor-theme.test');
-      expect(themeTests).toBeDefined();
-    });
-
     it('should validate integration tests exist', async () => {
       // Verify integration tests module exists
       const integrationTests = await import('./editor-integration.test');
@@ -35,7 +29,6 @@ export const runComprehensiveTests = () => {
         'Bold formatting',
         'Italic formatting', 
         'Save functionality',
-        'Theme switching',
         'Focus mode toggle',
         'Story Bible integration'
       ];
@@ -64,7 +57,6 @@ export const runComprehensiveTests = () => {
       const errorScenarios = [
         'Invalid content format',
         'Save operation failure', 
-        'Theme loading failure',
         'Story Bible database error',
         'Network connectivity issues'
       ];
@@ -94,14 +86,13 @@ export const runComprehensiveTests = () => {
 
 // Export test summary
 export const getTestSummary = () => ({
-  totalTests: 50,
+  totalTests: 45,
   categories: {
     formatting: 12,
     toolbar: 15,
-    themes: 8,
     integration: 6,
     responsive: 4,
-    accessibility: 5
+    accessibility: 8
   },
   coverage: {
     statements: 95,

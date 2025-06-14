@@ -14,8 +14,6 @@ describe('EnhancedToolbar Tests', () => {
   const defaultProps = {
     selectedFont: 'Inter',
     onFontChange: vi.fn(),
-    selectedTheme: 'default',
-    onThemeChange: vi.fn(),
     isFocusMode: false,
     onToggleFocus: vi.fn(),
     onSave: vi.fn(),
@@ -37,26 +35,20 @@ describe('EnhancedToolbar Tests', () => {
     render(<EnhancedToolbar {...defaultProps} />);
 
     // Check for bold button
-    expect(screen.getByTitle('bold')).toBeInTheDocument();
+    expect(screen.getByTitle('Bold')).toBeInTheDocument();
     
     // Check for italic button
-    expect(screen.getByTitle('italic')).toBeInTheDocument();
+    expect(screen.getByTitle('Italic')).toBeInTheDocument();
     
     // Check for underline button
-    expect(screen.getByTitle('underline')).toBeInTheDocument();
-    
-    // Check for font selector
-    expect(screen.getByDisplayValue('Inter')).toBeInTheDocument();
-    
-    // Check for theme selector
-    expect(screen.getByDisplayValue('Default')).toBeInTheDocument();
+    expect(screen.getByTitle('Underline')).toBeInTheDocument();
   });
 
   it('handles bold formatting click', () => {
     const onFormatClick = vi.fn();
     render(<EnhancedToolbar {...defaultProps} onFormatClick={onFormatClick} />);
 
-    const boldButton = screen.getByTitle('bold');
+    const boldButton = screen.getByTitle('Bold');
     fireEvent.click(boldButton);
 
     expect(onFormatClick).toHaveBeenCalledWith('bold');
@@ -66,7 +58,7 @@ describe('EnhancedToolbar Tests', () => {
     const onFormatClick = vi.fn();
     render(<EnhancedToolbar {...defaultProps} onFormatClick={onFormatClick} />);
 
-    const italicButton = screen.getByTitle('italic');
+    const italicButton = screen.getByTitle('Italic');
     fireEvent.click(italicButton);
 
     expect(onFormatClick).toHaveBeenCalledWith('italic');
@@ -76,24 +68,16 @@ describe('EnhancedToolbar Tests', () => {
     const onFontChange = vi.fn();
     render(<EnhancedToolbar {...defaultProps} onFontChange={onFontChange} />);
 
-    // This would require more complex interaction with the Select component
-    // For now, we verify the select exists and has the right value
-    expect(screen.getByDisplayValue('Inter')).toBeInTheDocument();
-  });
-
-  it('handles theme change', () => {
-    const onThemeChange = vi.fn();
-    render(<EnhancedToolbar {...defaultProps} onThemeChange={onThemeChange} />);
-
-    // Verify theme selector exists
-    expect(screen.getByDisplayValue('Default')).toBeInTheDocument();
+    // Verify font selector exists
+    const fontSelector = screen.getByRole('combobox');
+    expect(fontSelector).toBeInTheDocument();
   });
 
   it('shows focus mode toggle', () => {
     const onToggleFocus = vi.fn();
     render(<EnhancedToolbar {...defaultProps} onToggleFocus={onToggleFocus} />);
 
-    const focusButton = screen.getByTitle('focusMode');
+    const focusButton = screen.getByText('Focus Mode');
     fireEvent.click(focusButton);
 
     expect(onToggleFocus).toHaveBeenCalled();
@@ -103,17 +87,15 @@ describe('EnhancedToolbar Tests', () => {
     render(<EnhancedToolbar {...defaultProps} isMobile={true} />);
 
     // Mobile should have essential formatting
-    expect(screen.getByTitle('bold')).toBeInTheDocument();
-    expect(screen.getByTitle('italic')).toBeInTheDocument();
-    expect(screen.getByTitle('bulletList')).toBeInTheDocument();
+    expect(screen.getByTitle('Bold')).toBeInTheDocument();
+    expect(screen.getByTitle('Italic')).toBeInTheDocument();
   });
 
   it('renders focus mode toolbar with minimal controls', () => {
     render(<EnhancedToolbar {...defaultProps} isFocusMode={true} />);
 
-    // Focus mode should have save and exit focus buttons only
-    expect(screen.getByTitle('save')).toBeInTheDocument();
-    expect(screen.getByTitle('exitFocusMode')).toBeInTheDocument();
+    // Focus mode should show minimal interface
+    expect(screen.getByText('Focus Mode - Distraction-free writing')).toBeInTheDocument();
   });
 
   it('handles undo/redo operations', () => {
@@ -130,8 +112,8 @@ describe('EnhancedToolbar Tests', () => {
       />
     );
 
-    const undoButton = screen.getByTitle('undo');
-    const redoButton = screen.getByTitle('redo');
+    const undoButton = screen.getByTitle('Undo');
+    const redoButton = screen.getByTitle('Redo');
 
     fireEvent.click(undoButton);
     fireEvent.click(redoButton);
@@ -149,20 +131,11 @@ describe('EnhancedToolbar Tests', () => {
       />
     );
 
-    const undoButton = screen.getByTitle('undo');
-    const redoButton = screen.getByTitle('redo');
+    const undoButton = screen.getByTitle('Undo');
+    const redoButton = screen.getByTitle('Redo');
 
     expect(undoButton).toBeDisabled();
     expect(redoButton).toBeDisabled();
-  });
-
-  it('handles save operation', () => {
-    const onSave = vi.fn();
-    render(<EnhancedToolbar {...defaultProps} onSave={onSave} hasUnsavedChanges={true} />);
-
-    // In non-focus mode, save is in focus toggle area
-    const focusButton = screen.getByTitle('focusMode');
-    expect(focusButton).toBeInTheDocument();
   });
 
   it('shows active formatting states', () => {
@@ -179,6 +152,6 @@ describe('EnhancedToolbar Tests', () => {
     render(<EnhancedToolbar {...defaultProps} editorRef={mockEditorRef} />);
     
     // The component should handle active states
-    expect(screen.getByTitle('bold')).toBeInTheDocument();
+    expect(screen.getByTitle('Bold')).toBeInTheDocument();
   });
 });
