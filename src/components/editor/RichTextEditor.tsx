@@ -498,14 +498,21 @@ const RichTextEditor = ({
       {/* Enhanced status bar with performance indicators */}
       {!isFocusMode && (
         <EditorStatusBar
-          stats={stats}
+          stats={{
+            words: stats.words,
+            pages: stats.pages,
+            readingTime: `${stats.readingTime} min`
+          }}
           highlightMatches={highlightMatches}
           hasUnsavedChanges={hasUnsavedChanges}
           isSaving={isSaving}
           saveError={saveError}
           isValid={isValid}
           getPerformanceData={getPerformanceData}
-          getWarningLevel={getWarningLevel}
+          getWarningLevel={() => {
+            const level = getWarningLevel();
+            return level === 'none' ? 'safe' : level as 'danger' | 'warning';
+          }}
         />
       )}
     </div>
