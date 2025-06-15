@@ -35,8 +35,8 @@
   height: 100%;
 }
 
-/* Responsive breakpoints */
-@media (max-width: 425px) {
+/* Mobile First: 320px - 767px */
+@media (max-width: 767px) {
   .editor-container {
     height: 100dvh;
     padding: 0;
@@ -46,17 +46,19 @@
     font-size: 14px;
   }
   
-  /* Compact mobile layout */
   .ql-editor {
     padding: 0.75rem !important;
     font-size: 14px;
     line-height: 1.5;
+    max-width: 100% !important;
+    margin: 0 !important;
   }
 }
 
-@media (min-width: 426px) and (max-width: 768px) {
+/* Tablet Portrait: 768px - 1023px */
+@media (min-width: 768px) and (max-width: 1023px) {
   .editor-container {
-    height: 100dvh;
+    height: 100vh;
   }
   
   .rich-text-editor {
@@ -64,13 +66,16 @@
   }
   
   .ql-editor {
-    padding: 1rem !important;
+    padding: 1.25rem 2rem !important;
     font-size: 15px;
     line-height: 1.6;
+    max-width: 95% !important;
+    margin: 0 auto !important;
   }
 }
 
-@media (min-width: 769px) and (max-width: 1024px) {
+/* Tablet Landscape / Small Desktop: 1024px - 1279px */
+@media (min-width: 1024px) and (max-width: 1279px) {
   .editor-container {
     height: 100vh;
   }
@@ -80,60 +85,67 @@
   }
   
   .ql-editor {
-    padding: 1.5rem !important;
+    padding: 1.5rem 2.5rem !important;
     font-size: 16px;
     line-height: 1.7;
-    max-width: 90%;
-    margin: 0 auto;
+    max-width: 90% !important;
+    margin: 0 auto !important;
   }
 }
 
-@media (min-width: 1025px) {
+/* Desktop: 1280px - 1439px */
+@media (min-width: 1280px) and (max-width: 1439px) {
   .ql-editor {
-    padding: 2rem !important;
+    padding: 2rem 3rem !important;
     font-size: 16px;
     line-height: 1.7;
-    max-width: 85%;
-    margin: 0 auto;
+    max-width: 85% !important;
+    margin: 0 auto !important;
   }
 }
 
-@media (min-width: 1441px) {
+/* Large Desktop: 1440px+ */
+@media (min-width: 1440px) {
   .ql-editor {
-    padding: 2.5rem !important;
-    max-width: 80%;
-    margin: 0 auto;
+    padding: 2.5rem 4rem !important;
+    max-width: 80% !important;
+    margin: 0 auto !important;
   }
 }
 
-/* Container Queries for Responsive Design */
-@container (max-width: 425px) {
+/* Container Queries for Modern Responsive Design */
+@container (max-width: 767px) {
   .editor-container {
     height: 100dvh;
   }
 }
 
-@container (min-width: 426px) and (max-width: 768px) {
+@container (min-width: 768px) and (max-width: 1023px) {
   .editor-container {
-    height: 100dvh;
+    height: 100vh;
   }
 }
 
-/* Focus Mode */
+/* Focus Mode - Optimized for all screen sizes */
 .focus-mode .rich-text-editor {
   width: 100%;
   max-width: 100%;
 }
 
 .focus-mode .ql-editor {
-  max-width: min(100%, 65ch);
-  margin: 0 auto;
-  padding: clamp(1rem, 4vw, 4rem);
+  max-width: min(90%, 75ch) !important;
+  margin: 0 auto !important;
+  padding: clamp(1rem, 4vw, 3rem) !important;
 }
 
 /* Print Optimizations */
 @media print {
   .editor-container {
     height: auto;
+  }
+  
+  .ql-editor {
+    max-width: 100% !important;
+    padding: 1rem !important;
   }
 }

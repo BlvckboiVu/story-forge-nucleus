@@ -36,10 +36,70 @@
   background: white;
 }
 
+/* Responsive spacing utilities */
+.responsive-padding {
+  padding: clamp(0.75rem, 2vw, 2rem);
+}
+
+.responsive-margin {
+  margin: clamp(0.5rem, 1vw, 1.5rem);
+}
+
+/* Gap utilities for responsive design */
+.responsive-gap {
+  gap: clamp(0.5rem, 1vw, 1rem);
+}
+
+.responsive-gap-lg {
+  gap: clamp(1rem, 2vw, 2rem);
+}
+
 /* Mobile responsive adjustments */
-@media (max-width: 768px) {
+@media (max-width: 767px) {
   .editor-wrapper {
     height: 100dvh;
+  }
+  
+  .responsive-padding {
+    padding: 0.75rem;
+  }
+  
+  .responsive-margin {
+    margin: 0.5rem;
+  }
+  
+  .responsive-gap {
+    gap: 0.5rem;
+  }
+}
+
+/* Tablet adjustments */
+@media (min-width: 768px) and (max-width: 1023px) {
+  .responsive-padding {
+    padding: 1.25rem;
+  }
+  
+  .responsive-margin {
+    margin: 1rem;
+  }
+  
+  .responsive-gap {
+    gap: 0.75rem;
+  }
+}
+
+/* Desktop adjustments */
+@media (min-width: 1024px) {
+  .responsive-padding {
+    padding: 1.5rem;
+  }
+  
+  .responsive-margin {
+    margin: 1.25rem;
+  }
+  
+  .responsive-gap {
+    gap: 1rem;
   }
 }
 
@@ -49,5 +109,11 @@
   .editor-container {
     height: auto;
     overflow: visible;
+  }
+  
+  .responsive-padding,
+  .responsive-margin {
+    padding: 1rem;
+    margin: 0.5rem;
   }
 }
