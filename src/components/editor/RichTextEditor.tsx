@@ -1,9 +1,14 @@
+
 import { useEffect, useRef, useState, useCallback } from 'react';
 import ReactQuill, { Quill } from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
 import { useToast } from '@/hooks/use-toast';
 import { Draft } from '@/lib/db';
 import { ModernToolbar } from './toolbar/ModernToolbar';
+import { ImprovedMobileToolbar } from './toolbar/ImprovedMobileToolbar';
+import { FloatingToolbar } from './FloatingToolbar';
+import { SlashCommands } from './SlashCommands';
+import { MarkdownShortcuts } from './MarkdownShortcuts';
 import { ModernStatusBar } from './ModernStatusBar';
 import { EditorLoading } from './EditorLoading';
 import { FocusMode } from './FocusMode';
@@ -81,6 +86,7 @@ const RichTextEditor = ({
   const [isRecovering, setIsRecovering] = useState(false);
   const [selectedFont, setSelectedFont] = useState('Inter');
   const [isOnline, setIsOnline] = useState(navigator.onLine);
+  const [quillEditor, setQuillEditor] = useState<any>(null);
   const { toast } = useToast();
   const editorRef = useRef<ReactQuill>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -344,6 +350,7 @@ const RichTextEditor = ({
 
     const quill = editorRef?.current?.getEditor();
     if (quill) {
+      setQuillEditor(quill);
       quill.on('selection-change', checkFormats);
       quill.on('text-change', checkFormats);
       checkFormats();
@@ -364,7 +371,6 @@ const RichTextEditor = ({
 
       const range = quill.getSelection();
       if (!range) {
-        // Create a selection if none exists
         quill.setSelection(0, 0);
       }
 
@@ -482,7 +488,7 @@ const RichTextEditor = ({
   }
 
   const editorContent = (
-    <div className="flex-1 w-full overflow-hidden">
+    <div className="flex-1 w-full overflow-hidden relative">
       <ReactQuill
         ref={editorRef}
         theme="snow"
@@ -491,7 +497,7 @@ const RichTextEditor = ({
         modules={modules}
         formats={formats}
         className="h-full w-full editor-modern"
-        placeholder="Start writing your story..."
+        placeholder="Start writing your story... Try typing '/' for quick formatting or use **bold** and *italic* markdown shortcuts."
         readOnly={loading}
         style={{
           height: '100%',
@@ -499,6 +505,31 @@ const RichTextEditor = ({
           fontFamily: selectedFont,
         }}
       />
+      
+      {/* Floating toolbar for text selection */}
+      {!isFocusMode && quillEditor && (
+        <FloatingToolbar
+          editor={quillEditor}
+          onFormatClick={handleFormatClick}
+          activeFormats={activeFormats}
+        />
+      )}
+      
+      {/* Slash commands */}
+      {!isFocusMode && quillEditor && (
+        <SlashCommands
+          editor={quillEditor}
+          onFormatClick={handleFormatClick}
+        />
+      )}
+      
+      {/* Markdown shortcuts */}
+      {quillEditor && (
+        <MarkdownShortcuts
+          editor={quillEditor}
+          onFormatClick={handleFormatClick}
+        />
+      )}
     </div>
   );
 
@@ -516,21 +547,37 @@ const RichTextEditor = ({
     );
   }
 
+  const historyState = getHistoryState();
+  const performanceData = getPerformanceData();
+
   return (
     <div className="w-full h-full flex flex-col overflow-hidden bg-white dark:bg-gray-900" role="application" aria-label="Rich text editor">
-      {/* Modern toolbar */}
-      <ModernToolbar
-        selectedFont={selectedFont}
-        onFontChange={handleFontChange}
-        activeFormats={activeFormats}
-        onFormatClick={handleFormatClick}
-        onUndo={handleUndo}
-        onRedo={handleRedo}
-        canUndo={historyState.canUndo}
-        canRedo={historyState.canRedo}
-        isMobile={isMobile || deviceIsMobile}
-        isFocusMode={isFocusMode}
-      />
+      {/* Choose toolbar based on device */}
+      {isMobile || deviceIsMobile ? (
+        <ImprovedMobileToolbar
+          selectedFont={selectedFont}
+          onFontChange={handleFontChange}
+          activeFormats={activeFormats}
+          onFormatClick={handleFormatClick}
+          onUndo={handleUndo}
+          onRedo={handleRedo}
+          canUndo={historyState.canUndo}
+          canRedo={historyState.canRedo}
+        />
+      ) : (
+        <ModernToolbar
+          selectedFont={selectedFont}
+          onFontChange={handleFontChange}
+          activeFormats={activeFormats}
+          onFormatClick={handleFormatClick}
+          onUndo={handleUndo}
+          onRedo={handleRedo}
+          canUndo={historyState.canUndo}
+          canRedo={historyState.canRedo}
+          isMobile={false}
+          isFocusMode={isFocusMode}
+        />
+      )}
 
       {/* Validation warnings */}
       <EditorValidationDisplay

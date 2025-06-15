@@ -1,0 +1,239 @@
+
+/* Enhanced Editor Styles - Industry Standard Improvements */
+
+/* Floating toolbar animations */
+@keyframes fade-in {
+  0% {
+    opacity: 0;
+    transform: translateY(-10px) scale(0.95);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes fade-out {
+  0% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-10px) scale(0.95);
+  }
+}
+
+.animate-fade-in {
+  animation: fade-in 0.2s ease-out;
+}
+
+.animate-fade-out {
+  animation: fade-out 0.2s ease-out;
+}
+
+/* Better button active states */
+[data-active="true"] {
+  background-color: rgb(219 234 254) !important;
+  color: rgb(30 64 175) !important;
+}
+
+.dark [data-active="true"] {
+  background-color: rgb(30 58 138) !important;
+  color: rgb(219 234 254) !important;
+}
+
+/* Touch-friendly mobile improvements */
+.touch-manipulation {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Enhanced editor content area */
+.editor-modern .ql-editor {
+  font-size: clamp(16px, 4vw, 18px);
+  line-height: 1.7;
+  padding: clamp(1rem, 4vw, 3rem) clamp(1rem, 4vw, 4rem) !important;
+}
+
+/* Responsive editor improvements */
+@media (max-width: 768px) {
+  .editor-modern .ql-editor {
+    padding: 1rem 1rem 2rem 1rem !important;
+    font-size: 16px !important;
+    line-height: 1.6;
+  }
+}
+
+@media (min-width: 769px) and (max-width: 1024px) {
+  .editor-modern .ql-editor {
+    padding: 2rem 2rem 3rem 2rem !important;
+    max-width: 90%;
+    margin: 0 auto;
+  }
+}
+
+@media (min-width: 1025px) and (max-width: 1440px) {
+  .editor-modern .ql-editor {
+    padding: 2.5rem 3rem 4rem 3rem !important;
+    max-width: 80%;
+    margin: 0 auto;
+  }
+}
+
+@media (min-width: 1441px) {
+  .editor-modern .ql-editor {
+    padding: 3rem 4rem 5rem 4rem !important;
+    max-width: 75%;
+    margin: 0 auto;
+  }
+}
+
+@media (min-width: 1920px) {
+  .editor-modern .ql-editor {
+    padding: 4rem 6rem 6rem 6rem !important;
+    max-width: 70%;
+    margin: 0 auto;
+  }
+}
+
+/* Enhanced focus states for accessibility */
+.editor-modern .ql-editor:focus {
+  outline: 2px solid rgb(59 130 246);
+  outline-offset: -2px;
+  box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
+}
+
+/* Better selection styling */
+.editor-modern .ql-editor ::selection {
+  background: rgba(59, 130, 246, 0.25);
+  color: inherit;
+}
+
+/* Improved placeholder styling */
+.editor-modern .ql-editor.ql-blank::before {
+  color: rgb(156 163 175);
+  font-style: italic;
+  opacity: 0.8;
+  font-size: inherit;
+  line-height: inherit;
+}
+
+/* Slash command menu enhancements */
+.slash-command-menu {
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+/* Floating toolbar enhancements */
+.floating-toolbar {
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow: 
+    0 10px 25px -5px rgba(0, 0, 0, 0.1),
+    0 10px 10px -5px rgba(0, 0, 0, 0.04),
+    0 0 0 1px rgba(255, 255, 255, 0.1);
+}
+
+/* Better hover effects */
+.toolbar-button {
+  transition: all 0.15s ease-in-out;
+  position: relative;
+  overflow: hidden;
+}
+
+.toolbar-button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.toolbar-button:active {
+  transform: translateY(0);
+}
+
+/* Status bar improvements */
+.status-bar {
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border-top: 1px solid rgba(229, 231, 235, 0.8);
+}
+
+.dark .status-bar {
+  border-top-color: rgba(75, 85, 99, 0.8);
+}
+
+/* Loading state improvements */
+.editor-loading {
+  position: relative;
+}
+
+.editor-loading::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 32px;
+  height: 32px;
+  border: 3px solid rgb(229 231 235);
+  border-top: 3px solid rgb(59 130 246);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  transform: translate(-50%, -50%);
+}
+
+@keyframes spin {
+  0% { transform: translate(-50%, -50%) rotate(0deg); }
+  100% { transform: translate(-50%, -50%) rotate(360deg); }
+}
+
+/* Dark mode enhancements */
+.dark .editor-modern {
+  background: rgb(17 24 39);
+}
+
+.dark .editor-modern .ql-editor {
+  background: rgb(17 24 39) !important;
+  color: rgb(243 244 246);
+}
+
+/* Print optimizations */
+@media print {
+  .floating-toolbar,
+  .slash-command-menu,
+  .status-bar {
+    display: none !important;
+  }
+  
+  .editor-modern .ql-editor {
+    background: white !important;
+    color: black !important;
+    max-width: none !important;
+    padding: 1rem !important;
+    font-size: 12pt !important;
+    line-height: 1.5 !important;
+  }
+}
+
+/* High contrast mode */
+@media (prefers-contrast: high) {
+  .editor-modern .ql-editor {
+    border: 2px solid currentColor;
+  }
+  
+  .floating-toolbar,
+  .slash-command-menu {
+    border: 2px solid currentColor;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
