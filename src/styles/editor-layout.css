@@ -66,15 +66,15 @@
   }
   
   .ql-editor {
-    padding: 1.25rem 2rem !important;
+    padding: 1.25rem 1.5rem !important;
     font-size: 15px;
     line-height: 1.6;
-    max-width: 95% !important;
+    max-width: 90% !important;
     margin: 0 auto !important;
   }
 }
 
-/* Tablet Landscape / Small Desktop: 1024px - 1279px */
+/* Small Laptop: 1024px - 1279px - Key improvement here */
 @media (min-width: 1024px) and (max-width: 1279px) {
   .editor-container {
     height: 100vh;
@@ -85,10 +85,10 @@
   }
   
   .ql-editor {
-    padding: 1.5rem 2.5rem !important;
+    padding: 1.5rem 2rem !important;
     font-size: 16px;
     line-height: 1.7;
-    max-width: 90% !important;
+    max-width: 75% !important; /* Increased from 90% to 75% for better laptop experience */
     margin: 0 auto !important;
   }
 }
@@ -96,10 +96,10 @@
 /* Desktop: 1280px - 1439px */
 @media (min-width: 1280px) and (max-width: 1439px) {
   .ql-editor {
-    padding: 2rem 3rem !important;
+    padding: 2rem 2.5rem !important;
     font-size: 16px;
     line-height: 1.7;
-    max-width: 85% !important;
+    max-width: 80% !important;
     margin: 0 auto !important;
   }
 }
@@ -107,8 +107,8 @@
 /* Large Desktop: 1440px+ */
 @media (min-width: 1440px) {
   .ql-editor {
-    padding: 2.5rem 4rem !important;
-    max-width: 80% !important;
+    padding: 2.5rem 3rem !important;
+    max-width: 85% !important;
     margin: 0 auto !important;
   }
 }
@@ -133,7 +133,7 @@
 }
 
 .focus-mode .ql-editor {
-  max-width: min(90%, 75ch) !important;
+  max-width: min(85%, 75ch) !important;
   margin: 0 auto !important;
   padding: clamp(1rem, 4vw, 3rem) !important;
 }

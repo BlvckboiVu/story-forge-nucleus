@@ -1,28 +1,26 @@
 
 import { useEffect, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { Layout } from '@/components/layout/Layout';
 import RichTextEditor from '@/components/editor/RichTextEditor';
 import { EditorHeader } from '@/components/editor/EditorHeader';
 import { StoryBibleDrawer } from '@/components/StoryBibleDrawer';
 import OutlineIntegration from '@/components/editor/OutlineIntegration';
 import { useProjects } from '@/contexts/ProjectContext';
-import { useOptimizedDrafts } from '@/utils/optimizedDb';
+import { useUnifiedDraftManager } from '@/hooks/useUnifiedDraftManager';
 import { EnhancedOutlineService } from '@/utils/outlineDb';
-import { useOfflineState } from '@/hooks/useOfflineState';
 import { useFocusMode } from '@/hooks/use-focus-mode';
 import { ConnectivityIndicator } from '@/components/ConnectivityIndicator';
-import { Draft } from '@/types';
 import { EnhancedOutline, OutlineScene } from '@/types/outline';
 import { useIsMobile } from '@/hooks/use-mobile';
 
 export default function Editor() {
   const navigate = useNavigate();
   const { projectId } = useParams();
-  const { projects, currentProject } = useProjects();
-  const { drafts, loading, error } = useOptimizedDrafts(projectId || '');
+  const [searchParams] = useSearchParams();
+  const draftParam = searchParams.get('draft');
   
-  const [currentDraft, setCurrentDraft] = useState<Draft | null>(null);
+  const { projects, currentProject, setCurrentProject } = useProjects();
   const [outline, setOutline] = useState<EnhancedOutline | null>(null);
   const [showOutline, setShowOutline] = useState(false);
   const [selectedScene, setSelectedScene] = useState<{
@@ -34,21 +32,24 @@ export default function Editor() {
   const [pageHeight, setPageHeight] = useState(800);
   const [wordCount, setWordCount] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
-  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const isMobile = useIsMobile();
 
-  // Enhanced offline state management
+  // Use unified draft manager
   const {
-    currentProject: offlineCurrentProject,
-    currentDraft: offlineCurrentDraft,
-    editorState,
-    updateProject,
-    updateDraft,
-    updateEditor,
-    addToSyncQueue,
-    isOffline,
-    updateUrlState,
-  } = useOfflineState();
+    currentDraft,
+    loading,
+    saving,
+    error,
+    hasUnsavedChanges,
+    lastSaved,
+    loadDraft,
+    createDraft,
+    updateContent,
+    saveContent,
+  } = useUnifiedDraftManager({
+    projectId: projectId || '',
+    enableAutoSave: true,
+  });
 
   // Focus mode management
   const { 
@@ -58,12 +59,15 @@ export default function Editor() {
     togglePanel 
   } = useFocusMode();
 
-  // Sync URL params with offline state
+  // Set current project if different from URL
   useEffect(() => {
-    if (projectId && projectId !== offlineCurrentProject) {
-      updateProject(projectId);
+    if (projectId && currentProject?.id !== projectId) {
+      const project = projects.find(p => p.id === projectId);
+      if (project) {
+        setCurrentProject(project);
+      }
     }
-  }, [projectId, offlineCurrentProject, updateProject]);
+  }, [projectId, currentProject, projects, setCurrentProject]);
 
   // If no projectId in URL but we have a current project, redirect
   useEffect(() => {
@@ -71,6 +75,13 @@ export default function Editor() {
       navigate(`/app/editor/${currentProject.id}`, { replace: true });
     }
   }, [projectId, currentProject, navigate]);
+
+  // Load specific draft if draftParam exists
+  useEffect(() => {
+    if (draftParam && draftParam !== currentDraft?.id) {
+      loadDraft(draftParam);
+    }
+  }, [draftParam, currentDraft?.id, loadDraft]);
 
   // Load outline for current project
   useEffect(() => {
@@ -90,57 +101,27 @@ export default function Editor() {
     loadOutline();
   }, [currentProject]);
 
-  // Load or create draft for current project
+  // Auto-create draft if none exists and no specific draft requested
   useEffect(() => {
-    if (!currentProject) return;
-    
-    if (drafts.length > 0) {
-      const draftToLoad = drafts[0];
-      setCurrentDraft(draftToLoad);
-      updateDraft(draftToLoad.id);
-      
-      // Restore editor state if available
-      if (editorState && editorState.unsavedContent && offlineCurrentDraft === draftToLoad.id) {
-        // Will be handled by RichTextEditor when it receives the editorState
+    const autoCreateDraft = async () => {
+      if (!currentProject || currentDraft || draftParam || loading) return;
+
+      try {
+        await createDraft(`${currentProject.title} - Draft 1`, '');
+      } catch (error) {
+        console.error('Failed to create initial draft:', error);
       }
-    } else {
-      // Auto-create first draft using optimized service
-      import('@/utils/optimizedDb').then(({ OptimizedDraftService }) => {
-        OptimizedDraftService.createDraft({
-          title: `${currentProject.title} - Draft 1`,
-          content: editorState?.unsavedContent || '',
-          projectId: currentProject.id,
-          wordCount: 0
-        }).then(id => {
-          OptimizedDraftService.getDraft(id).then(draft => {
-            if (draft) {
-              setCurrentDraft(draft);
-              updateDraft(draft.id);
-            }
-          });
-        });
-      });
-    }
-  }, [drafts, currentProject, editorState, offlineCurrentDraft, updateDraft]);
+    };
+
+    autoCreateDraft();
+  }, [currentProject, currentDraft, draftParam, loading, createDraft]);
 
   const handleSave = async (content: string) => {
-    if (!currentDraft || !currentProject) return;
+    if (!currentProject) return;
     
     try {
-      const { OptimizedDraftService } = await import('@/utils/optimizedDb');
-      await OptimizedDraftService.updateDraft(currentDraft.id, {
-        content,
-      });
-
-      // Add to sync queue for online sync
-      addToSyncQueue('update', 'draft', {
-        id: currentDraft.id,
-        content,
-        updatedAt: new Date(),
-      });
-
-      // Clear unsaved content from editor state
-      updateEditor({ unsavedContent: '' });
+      updateContent(content);
+      await saveContent(content);
 
       // Update scene status if a scene is selected
       if (selectedScene && outline) {
@@ -182,12 +163,8 @@ export default function Editor() {
     setSelectedScene({ scene, chapterTitle, partTitle });
     
     // Load scene content into editor
-    if (scene.content) {
-      setCurrentDraft(prev => prev ? {
-        ...prev,
-        content: scene.content || '',
-        title: `${partTitle} - ${chapterTitle} - ${scene.title}`,
-      } : null);
+    if (scene.content && currentDraft) {
+      updateContent(scene.content);
     }
     
     // Close mobile outline panel
@@ -196,19 +173,19 @@ export default function Editor() {
     }
   };
 
-  const handleContentChange = (content: string) => {
-    updateEditor({ 
-      unsavedContent: content,
-      lastSaved: Date.now(),
-    });
-  };
-
   const handleOpenDraft = () => {
     console.log('Open draft modal');
   };
 
-  const handleNewDraft = () => {
-    console.log('Create new draft');
+  const handleNewDraft = async () => {
+    if (!currentProject) return;
+    
+    try {
+      const newDraftId = await createDraft(`${currentProject.title} - Draft ${Date.now()}`, '');
+      navigate(`/app/editor/${currentProject.id}?draft=${newDraftId}`);
+    } catch (error) {
+      console.error('Failed to create new draft:', error);
+    }
   };
 
   if (!currentProject) {
@@ -240,10 +217,6 @@ export default function Editor() {
     );
   }
 
-  const initialContent = (editorState?.unsavedContent && offlineCurrentDraft === currentDraft?.id) 
-    ? editorState.unsavedContent 
-    : currentDraft?.content || '';
-
   return (
     <Layout mode="editor" showNavigation={true}>
       <div className="h-full w-full flex flex-col overflow-hidden">
@@ -255,8 +228,8 @@ export default function Editor() {
           wordCount={wordCount}
           currentPage={currentPage}
           hasUnsavedChanges={hasUnsavedChanges}
-          loading={loading}
-          onSave={() => handleSave(initialContent)}
+          loading={saving}
+          onSave={() => handleSave(currentDraft?.content || '')}
           viewMode={viewMode}
           onViewModeChange={setViewMode}
           pageHeight={pageHeight}
@@ -271,7 +244,7 @@ export default function Editor() {
           <div className={`flex-1 min-w-0 ${showOutline && !isMobile ? 'pr-4' : ''}`}>
             <div className="h-full flex flex-col">
               <RichTextEditor
-                initialContent={initialContent}
+                initialContent={currentDraft?.content || ''}
                 onSave={handleSave}
                 draft={currentDraft}
                 loading={loading}
@@ -280,16 +253,23 @@ export default function Editor() {
                 onToggleFocus={toggleFocusMode}
                 onWordCountChange={setWordCount}
                 onCurrentPageChange={setCurrentPage}
-                onUnsavedChangesChange={setHasUnsavedChanges}
-                onContentChange={handleContentChange}
+                onUnsavedChangesChange={() => {}} // Handled by unified manager
+                onContentChange={updateContent}
               />
               
               {selectedScene && (
                 <div className="mt-2 p-2 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-md">
                   <p className="text-sm text-blue-800 dark:text-blue-200">
                     Editing: {selectedScene.partTitle} → {selectedScene.chapterTitle} → {selectedScene.scene.title}
-                    {isOffline && <span className="ml-2 text-orange-600">(Offline)</span>}
+                    {saving && <span className="ml-2 text-orange-600">(Saving...)</span>}
                   </p>
+                </div>
+              )}
+              
+              {/* Save status indicator */}
+              {lastSaved && (
+                <div className="mt-1 text-xs text-muted-foreground">
+                  Last saved: {lastSaved.toLocaleTimeString()}
                 </div>
               )}
             </div>

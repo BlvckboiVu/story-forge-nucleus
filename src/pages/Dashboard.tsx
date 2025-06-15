@@ -7,8 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from '@/contexts/AuthContext';
 import { useProjects } from '@/contexts/ProjectContext';
-import { OptimizedDraftService } from '@/utils/optimizedDb';
-import { Draft } from '@/types';
+import { useUnifiedDraftManager } from '@/hooks/useUnifiedDraftManager';
 import { Layout } from '@/components/layout/Layout';
 import { formatDate } from '@/utils/dateUtils';
 import { AnalyticsDashboard } from '@/components/dashboard/AnalyticsDashboard';
@@ -16,37 +15,29 @@ import { EnhancedDraftManager } from '@/components/drafts/EnhancedDraftManager';
 import { Plus, BarChart3, FileText, Settings } from 'lucide-react';
 
 export default function Dashboard() {
-  const [recentDrafts, setRecentDrafts] = useState<Draft[]>([]);
-  const [loading, setLoading] = useState(true);
   const { user } = useAuth();
   const { projects, createProject, currentProject, setCurrentProject } = useProjects();
-  const { toast } =
-
-  useToast();
+  const { toast } = useToast();
   const navigate = useNavigate();
 
+  // Use unified draft manager for current project
+  const { 
+    getRecentDrafts, 
+    loading: draftsLoading 
+  } = useUnifiedDraftManager({ 
+    projectId: currentProject?.id || '',
+  });
+
+  const [recentDrafts, setRecentDrafts] = useState(() => getRecentDrafts(5));
+
+  // Update recent drafts when current project changes
   useEffect(() => {
-    loadRecentDrafts();
-  }, [currentProject]);
-
-  const loadRecentDrafts = async () => {
-    if (!currentProject) {
-      setLoading(false);
-      return;
+    if (currentProject) {
+      setRecentDrafts(getRecentDrafts(5));
+    } else {
+      setRecentDrafts([]);
     }
-
-    try {
-      const drafts = await OptimizedDraftService.getDraftsByProject(currentProject.id);
-      const sortedDrafts = drafts.sort((a, b) => 
-        new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
-      ).slice(0, 5);
-      setRecentDrafts(sortedDrafts);
-    } catch (error) {
-      console.error('Error loading drafts:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
+  }, [currentProject, getRecentDrafts]);
 
   const handleCreateProject = async () => {
     if (!user) return;
@@ -78,12 +69,14 @@ export default function Dashboard() {
     const project = projects.find(p => p.id === projectId);
     if (project) {
       setCurrentProject(project);
-      navigate('/app/editor');
+      navigate(`/app/editor/${projectId}`);
     }
   };
 
   const handleDraftClick = (draftId: string) => {
-    navigate(`/app/editor/${draftId}`);
+    if (currentProject) {
+      navigate(`/app/editor/${currentProject.id}?draft=${draftId}`);
+    }
   };
 
   const handleStoryBibleClick = () => {
@@ -166,7 +159,7 @@ export default function Dashboard() {
               </div>
             </div>
 
-            {/* Recent Drafts */}
+            {/* Recent Drafts - Now properly deduped */}
             {recentDrafts.length > 0 && (
               <div>
                 <h2 className="text-xl font-semibold mb-4">Recent Drafts</h2>

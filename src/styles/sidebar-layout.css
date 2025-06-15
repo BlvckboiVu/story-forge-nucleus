@@ -43,17 +43,17 @@
 /* Tablet Portrait (768px - 1023px) - Compact sidebar */
 @media (min-width: 768px) and (max-width: 1023px) {
   .sidebar-layout {
-    grid-template-columns: 200px 1fr;
+    grid-template-columns: 180px 1fr;
   }
   .sidebar-layout[data-sidebar-collapsed="true"] {
-    grid-template-columns: 60px 1fr;
+    grid-template-columns: 50px 1fr;
   }
 }
 
-/* Tablet Landscape / Small Desktop (1024px - 1279px) - Balanced sidebar */
+/* Small Laptop (1024px - 1279px) - Optimized for small laptops */
 @media (min-width: 1024px) and (max-width: 1279px) {
   .sidebar-layout {
-    grid-template-columns: 240px 1fr;
+    grid-template-columns: 220px 1fr; /* Reduced from 240px to give more space to editor */
   }
   .sidebar-layout[data-sidebar-collapsed="true"] {
     grid-template-columns: 60px 1fr;
@@ -63,7 +63,7 @@
 /* Desktop (1280px - 1439px) - Standard sidebar */
 @media (min-width: 1280px) and (max-width: 1439px) {
   .sidebar-layout {
-    grid-template-columns: 280px 1fr;
+    grid-template-columns: 260px 1fr;
   }
   .sidebar-layout[data-sidebar-collapsed="true"] {
     grid-template-columns: 60px 1fr;
@@ -73,7 +73,7 @@
 /* Large Desktop (1440px+) - Spacious sidebar */
 @media (min-width: 1440px) {
   .sidebar-layout {
-    grid-template-columns: 320px 1fr;
+    grid-template-columns: 300px 1fr;
   }
   .sidebar-layout[data-sidebar-collapsed="true"] {
     grid-template-columns: 60px 1fr;
