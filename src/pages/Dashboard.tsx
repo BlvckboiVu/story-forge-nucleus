@@ -23,7 +23,7 @@ export default function Dashboard() {
   const [recentDrafts, setRecentDrafts] = useState<Draft[]>([]);
   const [loading, setLoading] = useState(false);
 
-  // Load recent drafts for current project
+  // Load recent drafts for current project with proper deduplication
   useEffect(() => {
     const loadRecentDrafts = async () => {
       if (!currentProject) {
@@ -34,10 +34,12 @@ export default function Dashboard() {
       setLoading(true);
       try {
         const drafts = await DraftService.getDraftsByProject(currentProject.id);
+        // Use the service's deduplication method
         const recent = DraftService.getRecentDrafts(drafts, 5);
         setRecentDrafts(recent);
       } catch (error) {
         console.error('Failed to load recent drafts:', error);
+        setRecentDrafts([]);
       } finally {
         setLoading(false);
       }
@@ -166,10 +168,16 @@ export default function Dashboard() {
               </div>
             </div>
 
-            {/* Recent Drafts */}
-            {recentDrafts.length > 0 && (
+            {/* Recent Drafts - Improved Display */}
+            {currentProject && (
               <div>
-                <h2 className="text-xl font-semibold mb-4">Recent Drafts</h2>
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-xl font-semibold">Recent Drafts</h2>
+                  <p className="text-sm text-muted-foreground">
+                    Project: {currentProject.title}
+                  </p>
+                </div>
+                
                 {loading ? (
                   <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                     {[...Array(3)].map((_, i) => (
@@ -182,7 +190,7 @@ export default function Dashboard() {
                       </Card>
                     ))}
                   </div>
-                ) : (
+                ) : recentDrafts.length > 0 ? (
                   <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                     {recentDrafts.map((draft) => (
                       <Card
@@ -192,7 +200,7 @@ export default function Dashboard() {
                       >
                         <h3 className="font-semibold truncate">{draft.title}</h3>
                         <p className="text-sm text-muted-foreground mb-2">
-                          {draft.wordCount?.toLocaleString() || 0} words
+                          {(draft.wordCount || 0).toLocaleString()} words
                         </p>
                         <p className="text-xs text-muted-foreground">
                           Last edited: {formatDate(draft.updatedAt)}
@@ -200,6 +208,18 @@ export default function Dashboard() {
                       </Card>
                     ))}
                   </div>
+                ) : (
+                  <Card className="p-8 text-center">
+                    <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                    <h3 className="text-lg font-semibold mb-2">No drafts yet</h3>
+                    <p className="text-muted-foreground mb-4">
+                      Start writing in this project to see your drafts here
+                    </p>
+                    <Button onClick={() => navigate(`/app/editor/${currentProject.id}`)}>
+                      <Plus className="h-4 w-4 mr-2" />
+                      Start Writing
+                    </Button>
+                  </Card>
                 )}
               </div>
             )}

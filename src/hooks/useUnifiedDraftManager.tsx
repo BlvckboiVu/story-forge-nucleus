@@ -46,14 +46,26 @@ export function useUnifiedDraftManager({
         ...prev,
         hasUnsavedChanges: false,
         lastSaved: new Date(),
+        currentDraft: prev.currentDraft ? {
+          ...prev.currentDraft,
+          content,
+          updatedAt: new Date(),
+        } : null,
       }));
+
+      // Refresh drafts to update cache
+      if (projectId) {
+        const updatedDrafts = await DraftService.getDraftsByProject(projectId);
+        setState(prev => ({ ...prev, drafts: updatedDrafts }));
+      }
 
       return true;
     } catch (error) {
       console.error('Auto-save failed:', error);
+      setState(prev => ({ ...prev, error: 'Auto-save failed' }));
       return false;
     }
-  }, [state.currentDraft]);
+  }, [state.currentDraft, projectId]);
 
   const { scheduleAutoSave, saveNow, isSaving } = useAutoSave({
     onSave: handleAutoSave,
@@ -78,7 +90,7 @@ export function useUnifiedDraftManager({
       console.error('Failed to load drafts:', error);
       setState(prev => ({
         ...prev,
-        error: 'Failed to load drafts',
+        error: error instanceof Error ? error.message : 'Failed to load drafts',
         loading: false,
       }));
     }
@@ -87,24 +99,35 @@ export function useUnifiedDraftManager({
   // Load specific draft
   const loadDraft = useCallback(async (draftId: string) => {
     try {
+      setState(prev => ({ ...prev, loading: true }));
       const draft = await DraftService.getDraft(draftId);
+      
       if (draft) {
         setState(prev => ({
           ...prev,
           currentDraft: draft,
           hasUnsavedChanges: false,
+          loading: false,
         }));
+      } else {
+        throw new Error('Draft not found');
       }
     } catch (error) {
       console.error('Failed to load draft:', error);
-      setState(prev => ({ ...prev, error: 'Failed to load draft' }));
+      setState(prev => ({ 
+        ...prev, 
+        error: error instanceof Error ? error.message : 'Failed to load draft',
+        loading: false,
+      }));
     }
   }, []);
 
   // Create new draft
   const createDraft = useCallback(async (title: string, content: string = '') => {
+    if (!projectId) throw new Error('Project ID is required');
+
     try {
-      setState(prev => ({ ...prev, loading: true }));
+      setState(prev => ({ ...prev, loading: true, error: null }));
       
       const draftId = await DraftService.createDraft({
         title,
@@ -115,10 +138,13 @@ export function useUnifiedDraftManager({
 
       const newDraft = await DraftService.getDraft(draftId);
       if (newDraft) {
+        // Reload all drafts to ensure consistency
+        const updatedDrafts = await DraftService.getDraftsByProject(projectId);
+        
         setState(prev => ({
           ...prev,
           currentDraft: newDraft,
-          drafts: [newDraft, ...prev.drafts],
+          drafts: updatedDrafts,
           loading: false,
           hasUnsavedChanges: false,
           lastSaved: new Date(),
@@ -128,8 +154,9 @@ export function useUnifiedDraftManager({
       return draftId;
     } catch (error) {
       console.error('Failed to create draft:', error);
-      setState(prev => ({ ...prev, loading: false, error: 'Failed to create draft' }));
-      throw error;
+      const errorMessage = error instanceof Error ? error.message : 'Failed to create draft';
+      setState(prev => ({ ...prev, loading: false, error: errorMessage }));
+      throw new Error(errorMessage);
     }
   }, [projectId]);
 
@@ -148,9 +175,13 @@ export function useUnifiedDraftManager({
   const deleteDraft = useCallback(async (draftId: string) => {
     try {
       await DraftService.deleteDraft(draftId);
+      
+      // Reload drafts after deletion
+      const updatedDrafts = await DraftService.getDraftsByProject(projectId);
+      
       setState(prev => ({
         ...prev,
-        drafts: prev.drafts.filter(d => d.id !== draftId),
+        drafts: updatedDrafts,
         currentDraft: prev.currentDraft?.id === draftId ? null : prev.currentDraft,
       }));
       
@@ -166,14 +197,14 @@ export function useUnifiedDraftManager({
         variant: 'destructive',
       });
     }
-  }, [toast]);
+  }, [projectId, toast]);
 
-  // Get recent drafts (deduped and sorted)
+  // Get recent drafts (properly deduplicated)
   const getRecentDrafts = useCallback((limit: number = 5) => {
     return DraftService.getRecentDrafts(state.drafts, limit);
   }, [state.drafts]);
 
-  // Load drafts on mount
+  // Load drafts on mount and when project changes
   useEffect(() => {
     loadDrafts();
   }, [loadDrafts]);
@@ -195,6 +226,7 @@ export function useUnifiedDraftManager({
     saveContent,
     deleteDraft,
     getRecentDrafts,
+    refreshDrafts: loadDrafts,
     
     // Utilities
     isAutoSaveEnabled: enableAutoSave,
