@@ -23,32 +23,16 @@ import {
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { formatDate } from '@/utils/dateUtils';
-
-interface Draft {
-  id: string;
-  title: string;
-  content: string;
-  wordCount: number;
-  createdAt: Date;
-  updatedAt: Date;
-  status: 'draft' | 'in-progress' | 'completed' | 'archived';
-  tags: string[];
-  isFavorite: boolean;
-  folder?: string;
-  version: number;
-  collaborators?: string[];
-}
-
-interface DraftFolder {
-  id: string;
-  name: string;
-  color: string;
-  draftCount: number;
-}
+import { DraftService, EnhancedDraft, DraftFolder } from '@/services/draftService';
+import { useProjects } from '@/contexts/ProjectContext';
+import { useNavigate } from 'react-router-dom';
 
 export function EnhancedDraftManager() {
-  const [drafts, setDrafts] = useState<Draft[]>([]);
+  const { currentProject } = useProjects();
+  const navigate = useNavigate();
+  const [drafts, setDrafts] = useState<EnhancedDraft[]>([]);
   const [folders, setFolders] = useState<DraftFolder[]>([]);
+  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [sortBy, setSortBy] = useState<'updated' | 'created' | 'title' | 'wordCount'>('updated');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
@@ -61,56 +45,34 @@ export function EnhancedDraftManager() {
   useEffect(() => {
     loadDrafts();
     loadFolders();
-  }, []);
+  }, [currentProject]);
 
   const loadDrafts = async () => {
+    if (!currentProject) return;
+    
+    setLoading(true);
     try {
-      // Mock data - replace with actual API call
-      const mockDrafts: Draft[] = [
-        {
-          id: '1',
-          title: 'Chapter 1: The Beginning',
-          content: 'Lorem ipsum dolor sit amet...',
-          wordCount: 1250,
-          createdAt: new Date('2024-01-15'),
-          updatedAt: new Date('2024-01-20'),
-          status: 'in-progress',
-          tags: ['novel', 'fantasy'],
-          isFavorite: true,
-          folder: 'main-project',
-          version: 3,
-        },
-        {
-          id: '2',
-          title: 'Research Notes',
-          content: 'Research for the novel...',
-          wordCount: 750,
-          createdAt: new Date('2024-01-10'),
-          updatedAt: new Date('2024-01-18'),
-          status: 'draft',
-          tags: ['research', 'notes'],
-          isFavorite: false,
-          folder: 'research',
-          version: 1,
-        },
-      ];
-      setDrafts(mockDrafts);
+      const projectDrafts = await DraftService.getDraftsByProject(currentProject.id);
+      setDrafts(projectDrafts);
     } catch (error) {
+      console.error('Failed to load drafts:', error);
       toast({
         title: 'Error loading drafts',
         description: 'Failed to load your drafts. Please try again.',
         variant: 'destructive',
       });
+    } finally {
+      setLoading(false);
     }
   };
 
   const loadFolders = async () => {
-    const mockFolders: DraftFolder[] = [
-      { id: 'main-project', name: 'Main Project', color: 'blue', draftCount: 5 },
-      { id: 'research', name: 'Research', color: 'green', draftCount: 3 },
-      { id: 'ideas', name: 'Ideas', color: 'purple', draftCount: 8 },
-    ];
-    setFolders(mockFolders);
+    try {
+      const folderData = await DraftService.getFolders();
+      setFolders(folderData);
+    } catch (error) {
+      console.error('Failed to load folders:', error);
+    }
   };
 
   const filteredAndSortedDrafts = useCallback(() => {
@@ -163,35 +125,82 @@ export function EnhancedDraftManager() {
     ));
   };
 
-  const updateDraftStatus = (draftId: string, status: Draft['status']) => {
+  const updateDraftStatus = (draftId: string, status: EnhancedDraft['status']) => {
     setDrafts(prev => prev.map(draft => 
       draft.id === draftId ? { ...draft, status } : draft
     ));
   };
 
-  const deleteDraft = (draftId: string) => {
-    setDrafts(prev => prev.filter(draft => draft.id !== draftId));
-    toast({
-      title: 'Draft deleted',
-      description: 'The draft has been moved to trash.',
-    });
+  const deleteDraft = async (draftId: string) => {
+    try {
+      await DraftService.deleteDraft(draftId);
+      setDrafts(prev => prev.filter(draft => draft.id !== draftId));
+      toast({
+        title: 'Draft deleted',
+        description: 'The draft has been moved to trash.',
+      });
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: 'Failed to delete draft. Please try again.',
+        variant: 'destructive',
+      });
+    }
   };
 
-  const duplicateDraft = (draftId: string) => {
+  const duplicateDraft = async (draftId: string) => {
+    if (!currentProject) return;
+    
     const original = drafts.find(d => d.id === draftId);
     if (original) {
-      const duplicate: Draft = {
-        ...original,
-        id: crypto.randomUUID(),
-        title: `${original.title} (Copy)`,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-        version: 1,
-      };
-      setDrafts(prev => [duplicate, ...prev]);
+      try {
+        const newDraftId = await DraftService.createDraft({
+          title: `${original.title} (Copy)`,
+          content: original.content,
+          projectId: currentProject.id,
+          wordCount: original.wordCount,
+        });
+        
+        // Reload drafts to show the new one
+        await loadDrafts();
+        
+        toast({
+          title: 'Draft duplicated',
+          description: 'A copy of the draft has been created.',
+        });
+      } catch (error) {
+        toast({
+          title: 'Error',
+          description: 'Failed to duplicate draft. Please try again.',
+          variant: 'destructive',
+        });
+      }
+    }
+  };
+
+  const handleEditDraft = (draftId: string) => {
+    if (currentProject) {
+      navigate(`/app/editor/${currentProject.id}?draft=${draftId}`);
+    }
+  };
+
+  const handleNewDraft = async () => {
+    if (!currentProject) return;
+    
+    try {
+      const newDraftId = await DraftService.createDraft({
+        title: `New Draft ${drafts.length + 1}`,
+        content: '',
+        projectId: currentProject.id,
+        wordCount: 0,
+      });
+      
+      navigate(`/app/editor/${currentProject.id}?draft=${newDraftId}`);
+    } catch (error) {
       toast({
-        title: 'Draft duplicated',
-        description: 'A copy of the draft has been created.',
+        title: 'Error',
+        description: 'Failed to create new draft. Please try again.',
+        variant: 'destructive',
       });
     }
   };
@@ -199,7 +208,7 @@ export function EnhancedDraftManager() {
   const bulkAction = (action: 'delete' | 'archive' | 'favorite') => {
     switch (action) {
       case 'delete':
-        setDrafts(prev => prev.filter(draft => !selectedDrafts.includes(draft.id)));
+        selectedDrafts.forEach(draftId => deleteDraft(draftId));
         break;
       case 'archive':
         setDrafts(prev => prev.map(draft => 
@@ -219,7 +228,7 @@ export function EnhancedDraftManager() {
     });
   };
 
-  const getStatusColor = (status: Draft['status']) => {
+  const getStatusColor = (status: EnhancedDraft['status']) => {
     switch (status) {
       case 'draft': return 'bg-gray-100 text-gray-800';
       case 'in-progress': return 'bg-blue-100 text-blue-800';
@@ -229,6 +238,34 @@ export function EnhancedDraftManager() {
     }
   };
 
+  if (!currentProject) {
+    return (
+      <div className="text-center py-12">
+        <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+        <h3 className="text-lg font-semibold mb-2">No Project Selected</h3>
+        <p className="text-muted-foreground">
+          Please select a project to manage its drafts.
+        </p>
+      </div>
+    );
+  }
+
+  if (loading) {
+    return (
+      <div className="space-y-4">
+        {[...Array(3)].map((_, i) => (
+          <Card key={i} className="p-4">
+            <div className="animate-pulse space-y-2">
+              <div className="h-4 bg-muted rounded w-3/4"></div>
+              <div className="h-3 bg-muted rounded w-1/2"></div>
+              <div className="h-3 bg-muted rounded w-1/3"></div>
+            </div>
+          </Card>
+        ))}
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -236,7 +273,7 @@ export function EnhancedDraftManager() {
         <div>
           <h2 className="text-2xl font-bold">Draft Manager</h2>
           <p className="text-muted-foreground">
-            {filteredAndSortedDrafts().length} of {drafts.length} drafts
+            {filteredAndSortedDrafts().length} of {drafts.length} drafts in {currentProject.title}
           </p>
         </div>
         <div className="flex gap-2">
@@ -244,7 +281,7 @@ export function EnhancedDraftManager() {
             <FolderPlus className="h-4 w-4 mr-2" />
             New Folder
           </Button>
-          <Button size="sm">
+          <Button size="sm" onClick={handleNewDraft}>
             <FileText className="h-4 w-4 mr-2" />
             New Draft
           </Button>
@@ -398,7 +435,7 @@ export function EnhancedDraftManager() {
                 <Button variant="ghost" size="sm" className="p-1">
                   <Eye className="h-4 w-4" />
                 </Button>
-                <Button variant="ghost" size="sm" className="p-1">
+                <Button variant="ghost" size="sm" className="p-1" onClick={() => handleEditDraft(draft.id)}>
                   <Edit3 className="h-4 w-4" />
                 </Button>
                 <Button variant="ghost" size="sm" className="p-1" onClick={() => duplicateDraft(draft.id)}>
@@ -428,7 +465,7 @@ export function EnhancedDraftManager() {
           <p className="text-muted-foreground mb-4">
             {searchTerm ? 'Try adjusting your search criteria' : 'Create your first draft to get started'}
           </p>
-          <Button>
+          <Button onClick={handleNewDraft}>
             <FileText className="h-4 w-4 mr-2" />
             Create New Draft
           </Button>

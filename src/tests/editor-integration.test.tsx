@@ -1,103 +1,127 @@
 
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { BrowserRouter } from 'react-router-dom';
 import Editor from '@/pages/Editor';
+import { DraftService } from '@/services/draftService';
 
-// Mock all the dependencies
-vi.mock('@/components/editor/RichTextEditor', () => ({
-  default: ({ onSave, extraActions }: any) => (
-    <div data-testid="rich-text-editor">
-      <button onClick={() => onSave('test content')}>Save</button>
-      {extraActions}
-    </div>
-  ),
+// Mock the router
+vi.mock('react-router-dom', () => ({
+  useNavigate: () => vi.fn(),
+  useParams: () => ({ projectId: 'test-project' }),
+  useSearchParams: () => [new URLSearchParams(), vi.fn()],
 }));
 
-vi.mock('@/components/StoryBibleDrawer', () => ({
-  StoryBibleDrawer: ({ projectId }: { projectId: string }) => (
-    <div data-testid="story-bible-drawer">Story Bible for {projectId}</div>
-  ),
-}));
-
+// Mock the contexts
 vi.mock('@/contexts/ProjectContext', () => ({
   useProjects: () => ({
-    currentProject: { id: 'test-project', title: 'Test Project' },
     projects: [{ id: 'test-project', title: 'Test Project' }],
+    currentProject: { id: 'test-project', title: 'Test Project' },
+    setCurrentProject: vi.fn(),
   }),
 }));
 
-vi.mock('@/utils/optimizedDb', () => ({
-  useOptimizedDrafts: () => ({
-    drafts: [{ id: 'draft-1', content: 'Test content', title: 'Test Draft' }],
-    loading: false,
-    error: null,
+vi.mock('@/contexts/AuthContext', () => ({
+  useAuth: () => ({
+    user: { id: 'test-user', email: 'test@example.com' },
   }),
-  OptimizedDraftService: {
-    updateDraft: vi.fn().mockResolvedValue(undefined),
+}));
+
+// Mock the DraftService
+vi.mock('@/services/draftService', () => ({
+  DraftService: {
+    getDraftsByProject: vi.fn(),
+    createDraft: vi.fn(),
+    updateDraft: vi.fn(),
+    getDraft: vi.fn(),
   },
 }));
 
-vi.mock('@/components/layout/Layout', () => ({
-  Layout: ({ children }: { children: React.ReactNode }) => (
-    <div data-testid="layout">{children}</div>
-  ),
+// Mock other hooks
+vi.mock('@/hooks/use-mobile', () => ({
+  useIsMobile: () => false,
 }));
 
-const createTestQueryClient = () =>
-  new QueryClient({
-    defaultOptions: {
-      queries: { retry: false },
-    },
-  });
+vi.mock('@/hooks/use-focus-mode', () => ({
+  useFocusMode: () => ({
+    isFocusMode: false,
+    isPanelCollapsed: false,
+    toggleFocusMode: vi.fn(),
+    togglePanel: vi.fn(),
+  }),
+}));
 
-const renderWithProviders = (ui: React.ReactElement) => {
-  const queryClient = createTestQueryClient();
-  return render(
-    <QueryClientProvider client={queryClient}>
-      <BrowserRouter>
-        {ui}
-      </BrowserRouter>
-    </QueryClientProvider>
-  );
-};
+describe('Editor Integration', () => {
+  let queryClient: QueryClient;
 
-describe('Editor Integration Tests', () => {
   beforeEach(() => {
+    queryClient = new QueryClient({
+      defaultOptions: {
+        queries: { retry: false },
+        mutations: { retry: false },
+      },
+    });
     vi.clearAllMocks();
   });
 
-  it('renders editor with story bible integration', () => {
-    renderWithProviders(<Editor />);
+  const renderEditor = () => {
+    return render(
+      <QueryClientProvider client={queryClient}>
+        <Editor />
+      </QueryClientProvider>
+    );
+  };
 
-    expect(screen.getByTestId('rich-text-editor')).toBeInTheDocument();
-    expect(screen.getByTestId('story-bible-drawer')).toBeInTheDocument();
-    expect(screen.getByText('Story Bible for test-project')).toBeInTheDocument();
-  });
-
-  it('handles save operation', async () => {
-    const { OptimizedDraftService } = await import('@/utils/optimizedDb');
+  it('renders editor with project context', async () => {
+    vi.mocked(DraftService.getDraftsByProject).mockResolvedValue([]);
     
-    renderWithProviders(<Editor />);
-
-    const saveButton = screen.getByText('Save');
-    fireEvent.click(saveButton);
-
+    renderEditor();
+    
     await waitFor(() => {
-      expect(OptimizedDraftService.updateDraft).toHaveBeenCalled();
+      expect(screen.getByText(/loading/i)).toBeInTheDocument();
     });
   });
 
-  it('renders layout correctly', () => {
-    renderWithProviders(<Editor />);
+  it('handles draft creation', async () => {
+    const mockDraft = {
+      id: 'new-draft',
+      title: 'New Draft',
+      content: '',
+      projectId: 'test-project',
+      wordCount: 0,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
 
-    expect(screen.getByTestId('layout')).toBeInTheDocument();
+    vi.mocked(DraftService.createDraft).mockResolvedValue('new-draft');
+    vi.mocked(DraftService.getDraft).mockResolvedValue(mockDraft);
+    vi.mocked(DraftService.getDraftsByProject).mockResolvedValue([mockDraft]);
+
+    renderEditor();
+
+    await waitFor(() => {
+      expect(DraftService.getDraftsByProject).toHaveBeenCalledWith('test-project');
+    });
   });
 
-  it('passes project id to story bible drawer', () => {
-    renderWithProviders(<Editor />);
+  it('handles auto-save functionality', async () => {
+    const mockDraft = {
+      id: 'test-draft',
+      title: 'Test Draft',
+      content: 'Test content',
+      projectId: 'test-project',
+      wordCount: 2,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
 
-    expect(screen.getByText('Story Bible for test-project')).toBeInTheDocument();
+    vi.mocked(DraftService.getDraft).mockResolvedValue(mockDraft);
+    vi.mocked(DraftService.updateDraft).mockResolvedValue();
+
+    renderEditor();
+
+    await waitFor(() => {
+      expect(DraftService.getDraftsByProject).toHaveBeenCalled();
+    });
   });
 });

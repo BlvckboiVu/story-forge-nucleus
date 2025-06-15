@@ -1,13 +1,13 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { Draft } from '@/lib/db';
-import { DraftService } from '@/services/draftService';
+import { DraftService, EnhancedDraft } from '@/services/draftService';
 import { useAutoSave } from '@/hooks/useAutoSave';
 import { useToast } from '@/hooks/use-toast';
 
 interface DraftState {
-  currentDraft: Draft | null;
-  drafts: Draft[];
+  currentDraft: EnhancedDraft | null;
+  drafts: EnhancedDraft[];
   loading: boolean;
   error: string | null;
   hasUnsavedChanges: boolean;

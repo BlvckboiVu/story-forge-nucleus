@@ -1,18 +1,36 @@
+
 import { Draft } from '@/lib/db';
 import db from '@/lib/db';
 import { sanitizeHtml, sanitizeText } from '@/utils/security';
+
+// Extended Draft interface to match EnhancedDraftManager expectations
+export interface EnhancedDraft extends Draft {
+  status: 'draft' | 'in-progress' | 'completed' | 'archived';
+  tags: string[];
+  isFavorite: boolean;
+  folder?: string;
+  version: number;
+  collaborators?: string[];
+}
+
+export interface DraftFolder {
+  id: string;
+  name: string;
+  color: string;
+  draftCount: number;
+}
 
 /**
  * Unified draft service with validation, caching, and deduplication
  */
 export class DraftService {
-  private static cache = new Map<string, { data: Draft[]; timestamp: number }>();
+  private static cache = new Map<string, { data: EnhancedDraft[]; timestamp: number }>();
   private static readonly CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 
   /**
    * Validates draft input data
    */
-  private static validateDraft(data: Partial<Draft>): void {
+  private static validateDraft(data: Partial<EnhancedDraft>): void {
     if (!data.projectId?.trim()) {
       throw new Error('Project ID is required');
     }
@@ -29,12 +47,30 @@ export class DraftService {
     if (data.content && data.content.length > 1000000) {
       throw new Error('Content exceeds maximum size limit (1MB)');
     }
+
+    if (data.status && !['draft', 'in-progress', 'completed', 'archived'].includes(data.status)) {
+      throw new Error('Invalid status value');
+    }
+  }
+
+  /**
+   * Converts basic Draft to EnhancedDraft with default values
+   */
+  private static enhanceDraft(draft: Draft): EnhancedDraft {
+    return {
+      ...draft,
+      status: 'draft' as const,
+      tags: [],
+      isFavorite: false,
+      version: 1,
+      collaborators: [],
+    };
   }
 
   /**
    * Gets cached drafts or fetches from database with proper deduplication
    */
-  static async getDraftsByProject(projectId: string): Promise<Draft[]> {
+  static async getDraftsByProject(projectId: string): Promise<EnhancedDraft[]> {
     if (!projectId?.trim()) throw new Error('Project ID is required');
 
     const cacheKey = `project:${projectId}`;
@@ -51,9 +87,9 @@ export class DraftService {
         .reverse()
         .sortBy('updatedAt');
 
-      // Sanitize and deduplicate drafts
-      const sanitizedDrafts = drafts
-        .map(draft => ({
+      // Sanitize, enhance, and deduplicate drafts
+      const enhancedDrafts = drafts
+        .map(draft => this.enhanceDraft({
           ...draft,
           content: sanitizeHtml(draft.content),
           title: sanitizeText(draft.title, 200),
@@ -63,8 +99,8 @@ export class DraftService {
           arr.findIndex(d => d.id === draft.id) === index
         );
 
-      this.cache.set(cacheKey, { data: sanitizedDrafts, timestamp: Date.now() });
-      return sanitizedDrafts;
+      this.cache.set(cacheKey, { data: enhancedDrafts, timestamp: Date.now() });
+      return enhancedDrafts;
     } catch (error) {
       console.error('Failed to get drafts:', error);
       throw new Error('Failed to retrieve drafts');
@@ -111,7 +147,7 @@ export class DraftService {
   /**
    * Updates a draft with validation and auto word count
    */
-  static async updateDraft(id: string, updates: Partial<Draft>): Promise<void> {
+  static async updateDraft(id: string, updates: Partial<EnhancedDraft>): Promise<void> {
     if (!id?.trim()) throw new Error('Draft ID is required');
     this.validateDraft(updates);
 
@@ -137,7 +173,21 @@ export class DraftService {
     }
 
     try {
-      await db.drafts.update(id, sanitizedUpdates);
+      // Only update fields that exist in the basic Draft interface
+      const draftUpdates = {
+        title: sanitizedUpdates.title,
+        content: sanitizedUpdates.content,
+        wordCount: sanitizedUpdates.wordCount,
+        lastEditPosition: sanitizedUpdates.lastEditPosition,
+        updatedAt: sanitizedUpdates.updatedAt,
+      };
+
+      // Filter out undefined values
+      const filteredUpdates = Object.fromEntries(
+        Object.entries(draftUpdates).filter(([_, value]) => value !== undefined)
+      );
+
+      await db.drafts.update(id, filteredUpdates);
       this.invalidateCache(existingDraft.projectId);
     } catch (error) {
       console.error('Failed to update draft:', error);
@@ -148,16 +198,20 @@ export class DraftService {
   /**
    * Gets a single draft by ID
    */
-  static async getDraft(id: string): Promise<Draft | null> {
+  static async getDraft(id: string): Promise<EnhancedDraft | null> {
     if (!id?.trim()) throw new Error('Draft ID is required');
 
     try {
       const draft = await db.drafts.get(id);
       if (draft) {
-        draft.content = sanitizeHtml(draft.content);
-        draft.title = sanitizeText(draft.title, 200);
+        const sanitized = {
+          ...draft,
+          content: sanitizeHtml(draft.content),
+          title: sanitizeText(draft.title, 200),
+        };
+        return this.enhanceDraft(sanitized);
       }
-      return draft || null;
+      return null;
     } catch (error) {
       console.error('Failed to get draft:', error);
       throw new Error('Failed to retrieve draft');
@@ -187,9 +241,9 @@ export class DraftService {
   /**
    * Gets recent drafts with strict deduplication and proper sorting
    */
-  static getRecentDrafts(drafts: Draft[], limit: number = 5): Draft[] {
+  static getRecentDrafts(drafts: EnhancedDraft[], limit: number = 5): EnhancedDraft[] {
     // Create a Map to ensure unique drafts by ID
-    const uniqueDraftsMap = new Map<string, Draft>();
+    const uniqueDraftsMap = new Map<string, EnhancedDraft>();
     
     drafts.forEach(draft => {
       const existing = uniqueDraftsMap.get(draft.id);
@@ -203,6 +257,18 @@ export class DraftService {
     return Array.from(uniqueDraftsMap.values())
       .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
       .slice(0, limit);
+  }
+
+  /**
+   * Mock folder data for the enhanced UI
+   */
+  static async getFolders(): Promise<DraftFolder[]> {
+    // This would come from a folders table in a real implementation
+    return [
+      { id: 'main-project', name: 'Main Project', color: 'blue', draftCount: 5 },
+      { id: 'research', name: 'Research', color: 'green', draftCount: 3 },
+      { id: 'ideas', name: 'Ideas', color: 'purple', draftCount: 8 },
+    ];
   }
 
   /**
