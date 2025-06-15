@@ -1,14 +1,14 @@
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Draft } from '@/lib/db';
-import { OptimizedDraftService } from '@/utils/optimizedDb';
+import { DraftService } from '@/services/draftService';
+import { useAutoSave } from '@/hooks/useAutoSave';
 import { useToast } from '@/hooks/use-toast';
 
 interface DraftState {
   currentDraft: Draft | null;
   drafts: Draft[];
   loading: boolean;
-  saving: boolean;
   error: string | null;
   hasUnsavedChanges: boolean;
   lastSaved: Date | null;
@@ -20,10 +20,6 @@ interface UseUnifiedDraftManagerOptions {
   enableAutoSave?: boolean;
 }
 
-/**
- * Unified draft management hook that consolidates all draft operations
- * Follows industry standards for state management and auto-save
- */
 export function useUnifiedDraftManager({
   projectId,
   autoSaveInterval = 3000,
@@ -34,15 +30,36 @@ export function useUnifiedDraftManager({
     currentDraft: null,
     drafts: [],
     loading: false,
-    saving: false,
     error: null,
     hasUnsavedChanges: false,
     lastSaved: null,
   });
 
-  const autoSaveTimeoutRef = useRef<NodeJS.Timeout>();
-  const pendingContentRef = useRef<string>('');
-  const lastSaveTimeRef = useRef<number>(0);
+  // Auto-save functionality
+  const handleAutoSave = useCallback(async (content: string): Promise<boolean> => {
+    if (!state.currentDraft) return false;
+
+    try {
+      await DraftService.updateDraft(state.currentDraft.id, { content });
+      
+      setState(prev => ({
+        ...prev,
+        hasUnsavedChanges: false,
+        lastSaved: new Date(),
+      }));
+
+      return true;
+    } catch (error) {
+      console.error('Auto-save failed:', error);
+      return false;
+    }
+  }, [state.currentDraft]);
+
+  const { scheduleAutoSave, saveNow, isSaving } = useAutoSave({
+    onSave: handleAutoSave,
+    interval: autoSaveInterval,
+    enabled: enableAutoSave,
+  });
 
   // Load drafts for project
   const loadDrafts = useCallback(async () => {
@@ -51,7 +68,7 @@ export function useUnifiedDraftManager({
     setState(prev => ({ ...prev, loading: true, error: null }));
 
     try {
-      const projectDrafts = await OptimizedDraftService.getDraftsByProject(projectId);
+      const projectDrafts = await DraftService.getDraftsByProject(projectId);
       setState(prev => ({
         ...prev,
         drafts: projectDrafts,
@@ -70,14 +87,13 @@ export function useUnifiedDraftManager({
   // Load specific draft
   const loadDraft = useCallback(async (draftId: string) => {
     try {
-      const draft = await OptimizedDraftService.getDraft(draftId);
+      const draft = await DraftService.getDraft(draftId);
       if (draft) {
         setState(prev => ({
           ...prev,
           currentDraft: draft,
           hasUnsavedChanges: false,
         }));
-        pendingContentRef.current = draft.content;
       }
     } catch (error) {
       console.error('Failed to load draft:', error);
@@ -88,101 +104,50 @@ export function useUnifiedDraftManager({
   // Create new draft
   const createDraft = useCallback(async (title: string, content: string = '') => {
     try {
-      setState(prev => ({ ...prev, saving: true }));
+      setState(prev => ({ ...prev, loading: true }));
       
-      const draftId = await OptimizedDraftService.createDraft({
+      const draftId = await DraftService.createDraft({
         title,
         content,
         projectId,
         wordCount: content.trim().split(/\s+/).filter(w => w.length > 0).length,
       });
 
-      const newDraft = await OptimizedDraftService.getDraft(draftId);
+      const newDraft = await DraftService.getDraft(draftId);
       if (newDraft) {
         setState(prev => ({
           ...prev,
           currentDraft: newDraft,
           drafts: [newDraft, ...prev.drafts],
-          saving: false,
+          loading: false,
           hasUnsavedChanges: false,
           lastSaved: new Date(),
         }));
-        pendingContentRef.current = content;
       }
 
       return draftId;
     } catch (error) {
       console.error('Failed to create draft:', error);
-      setState(prev => ({ ...prev, saving: false, error: 'Failed to create draft' }));
+      setState(prev => ({ ...prev, loading: false, error: 'Failed to create draft' }));
       throw error;
     }
   }, [projectId]);
 
-  // Update content (triggers auto-save)
+  // Update content with auto-save
   const updateContent = useCallback((content: string) => {
-    pendingContentRef.current = content;
     setState(prev => ({ ...prev, hasUnsavedChanges: true }));
-
-    // Clear existing auto-save timeout
-    if (autoSaveTimeoutRef.current) {
-      clearTimeout(autoSaveTimeoutRef.current);
-    }
-
-    // Set new auto-save timeout
-    if (enableAutoSave && state.currentDraft) {
-      autoSaveTimeoutRef.current = setTimeout(() => {
-        saveContent(content);
-      }, autoSaveInterval);
-    }
-  }, [enableAutoSave, autoSaveInterval, state.currentDraft]);
+    scheduleAutoSave(content);
+  }, [scheduleAutoSave]);
 
   // Manual save
   const saveContent = useCallback(async (content?: string) => {
-    const contentToSave = content || pendingContentRef.current;
-    
-    if (!state.currentDraft || !contentToSave.trim()) return;
-
-    // Prevent concurrent saves
-    const now = Date.now();
-    if (now - lastSaveTimeRef.current < 1000) return;
-    lastSaveTimeRef.current = now;
-
-    setState(prev => ({ ...prev, saving: true, error: null }));
-
-    try {
-      await OptimizedDraftService.updateDraft(state.currentDraft.id, {
-        content: contentToSave,
-      });
-
-      const updatedDraft = await OptimizedDraftService.getDraft(state.currentDraft.id);
-      if (updatedDraft) {
-        setState(prev => ({
-          ...prev,
-          currentDraft: updatedDraft,
-          drafts: prev.drafts.map(d => d.id === updatedDraft.id ? updatedDraft : d),
-          saving: false,
-          hasUnsavedChanges: false,
-          lastSaved: new Date(),
-        }));
-      }
-
-      return true;
-    } catch (error) {
-      console.error('Failed to save draft:', error);
-      setState(prev => ({ ...prev, saving: false, error: 'Failed to save draft' }));
-      toast({
-        title: 'Save failed',
-        description: 'Your changes could not be saved. Please try again.',
-        variant: 'destructive',
-      });
-      return false;
-    }
-  }, [state.currentDraft, toast]);
+    return await saveNow(content);
+  }, [saveNow]);
 
   // Delete draft
   const deleteDraft = useCallback(async (draftId: string) => {
     try {
-      await OptimizedDraftService.deleteDraft(draftId);
+      await DraftService.deleteDraft(draftId);
       setState(prev => ({
         ...prev,
         drafts: prev.drafts.filter(d => d.id !== draftId),
@@ -205,16 +170,7 @@ export function useUnifiedDraftManager({
 
   // Get recent drafts (deduped and sorted)
   const getRecentDrafts = useCallback((limit: number = 5) => {
-    const uniqueDrafts = state.drafts.reduce((acc, draft) => {
-      if (!acc.find(d => d.id === draft.id)) {
-        acc.push(draft);
-      }
-      return acc;
-    }, [] as Draft[]);
-
-    return uniqueDrafts
-      .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
-      .slice(0, limit);
+    return DraftService.getRecentDrafts(state.drafts, limit);
   }, [state.drafts]);
 
   // Load drafts on mount
@@ -222,21 +178,12 @@ export function useUnifiedDraftManager({
     loadDrafts();
   }, [loadDrafts]);
 
-  // Cleanup auto-save timeout
-  useEffect(() => {
-    return () => {
-      if (autoSaveTimeoutRef.current) {
-        clearTimeout(autoSaveTimeoutRef.current);
-      }
-    };
-  }, []);
-
   return {
     // State
     currentDraft: state.currentDraft,
     drafts: state.drafts,
     loading: state.loading,
-    saving: state.saving,
+    saving: isSaving,
     error: state.error,
     hasUnsavedChanges: state.hasUnsavedChanges,
     lastSaved: state.lastSaved,
@@ -251,6 +198,5 @@ export function useUnifiedDraftManager({
     
     // Utilities
     isAutoSaveEnabled: enableAutoSave,
-    pendingContent: pendingContentRef.current,
   };
 }

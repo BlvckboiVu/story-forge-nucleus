@@ -69,7 +69,7 @@ export default function Editor() {
     }
   }, [projectId, currentProject, projects, setCurrentProject]);
 
-  // If no projectId in URL but we have a current project, redirect
+  // Redirect to proper URL format if needed
   useEffect(() => {
     if (!projectId && currentProject) {
       navigate(`/app/editor/${currentProject.id}`, { replace: true });

@@ -7,37 +7,44 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from '@/contexts/AuthContext';
 import { useProjects } from '@/contexts/ProjectContext';
-import { useUnifiedDraftManager } from '@/hooks/useUnifiedDraftManager';
+import { DraftService } from '@/services/draftService';
 import { Layout } from '@/components/layout/Layout';
 import { formatDate } from '@/utils/dateUtils';
 import { AnalyticsDashboard } from '@/components/dashboard/AnalyticsDashboard';
 import { EnhancedDraftManager } from '@/components/drafts/EnhancedDraftManager';
 import { Plus, BarChart3, FileText, Settings } from 'lucide-react';
+import { Draft } from '@/lib/db';
 
 export default function Dashboard() {
   const { user } = useAuth();
   const { projects, createProject, currentProject, setCurrentProject } = useProjects();
   const { toast } = useToast();
   const navigate = useNavigate();
+  const [recentDrafts, setRecentDrafts] = useState<Draft[]>([]);
+  const [loading, setLoading] = useState(false);
 
-  // Use unified draft manager for current project
-  const { 
-    getRecentDrafts, 
-    loading: draftsLoading 
-  } = useUnifiedDraftManager({ 
-    projectId: currentProject?.id || '',
-  });
-
-  const [recentDrafts, setRecentDrafts] = useState(() => getRecentDrafts(5));
-
-  // Update recent drafts when current project changes
+  // Load recent drafts for current project
   useEffect(() => {
-    if (currentProject) {
-      setRecentDrafts(getRecentDrafts(5));
-    } else {
-      setRecentDrafts([]);
-    }
-  }, [currentProject, getRecentDrafts]);
+    const loadRecentDrafts = async () => {
+      if (!currentProject) {
+        setRecentDrafts([]);
+        return;
+      }
+
+      setLoading(true);
+      try {
+        const drafts = await DraftService.getDraftsByProject(currentProject.id);
+        const recent = DraftService.getRecentDrafts(drafts, 5);
+        setRecentDrafts(recent);
+      } catch (error) {
+        console.error('Failed to load recent drafts:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadRecentDrafts();
+  }, [currentProject]);
 
   const handleCreateProject = async () => {
     if (!user) return;
@@ -159,27 +166,41 @@ export default function Dashboard() {
               </div>
             </div>
 
-            {/* Recent Drafts - Now properly deduped */}
+            {/* Recent Drafts */}
             {recentDrafts.length > 0 && (
               <div>
                 <h2 className="text-xl font-semibold mb-4">Recent Drafts</h2>
-                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                  {recentDrafts.map((draft) => (
-                    <Card
-                      key={draft.id}
-                      className="p-4 cursor-pointer hover:bg-accent/50 transition-colors"
-                      onClick={() => handleDraftClick(draft.id)}
-                    >
-                      <h3 className="font-semibold">{draft.title}</h3>
-                      <p className="text-sm text-muted-foreground mb-2">
-                        {draft.wordCount?.toLocaleString() || 0} words
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        Last edited: {formatDate(draft.updatedAt)}
-                      </p>
-                    </Card>
-                  ))}
-                </div>
+                {loading ? (
+                  <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                    {[...Array(3)].map((_, i) => (
+                      <Card key={i} className="p-4">
+                        <div className="animate-pulse space-y-2">
+                          <div className="h-4 bg-muted rounded w-3/4"></div>
+                          <div className="h-3 bg-muted rounded w-1/2"></div>
+                          <div className="h-3 bg-muted rounded w-1/3"></div>
+                        </div>
+                      </Card>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                    {recentDrafts.map((draft) => (
+                      <Card
+                        key={draft.id}
+                        className="p-4 cursor-pointer hover:bg-accent/50 transition-colors"
+                        onClick={() => handleDraftClick(draft.id)}
+                      >
+                        <h3 className="font-semibold truncate">{draft.title}</h3>
+                        <p className="text-sm text-muted-foreground mb-2">
+                          {draft.wordCount?.toLocaleString() || 0} words
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          Last edited: {formatDate(draft.updatedAt)}
+                        </p>
+                      </Card>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
 
