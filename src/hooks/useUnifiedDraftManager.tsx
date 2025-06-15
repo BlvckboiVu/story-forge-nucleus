@@ -122,15 +122,15 @@ export function useUnifiedDraftManager({
     }
   }, []);
 
-  // Create new draft
-  const createDraft = useCallback(async (title: string, content: string = '') => {
+  // Create new draft with improved naming
+  const createDraft = useCallback(async (title?: string, content: string = '') => {
     if (!projectId) throw new Error('Project ID is required');
 
     try {
       setState(prev => ({ ...prev, loading: true, error: null }));
       
       const draftId = await DraftService.createDraft({
-        title,
+        title: title || 'Untitled Draft', // Let the service handle unique naming
         content,
         projectId,
         wordCount: content.trim().split(/\s+/).filter(w => w.length > 0).length,

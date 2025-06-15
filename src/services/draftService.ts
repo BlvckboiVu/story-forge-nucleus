@@ -1,4 +1,3 @@
-
 import { Draft } from '@/lib/db';
 import db from '@/lib/db';
 import { sanitizeHtml, sanitizeText } from '@/utils/security';
@@ -68,6 +67,44 @@ export class DraftService {
   }
 
   /**
+   * Generates a unique draft title for a project
+   */
+  private static async generateUniqueDraftTitle(projectId: string, baseTitle?: string): Promise<string> {
+    const existingDrafts = await this.getDraftsByProject(projectId);
+    
+    if (!baseTitle) {
+      baseTitle = 'Untitled Draft';
+    }
+    
+    // Clean base title from any existing numbering
+    const cleanTitle = baseTitle.replace(/\s+\d+$/, '').trim();
+    
+    // Find existing drafts with similar titles
+    const similarTitles = existingDrafts
+      .map(draft => draft.title)
+      .filter(title => title.startsWith(cleanTitle));
+    
+    if (similarTitles.length === 0) {
+      return cleanTitle;
+    }
+    
+    // Find the highest number used
+    let maxNumber = 0;
+    similarTitles.forEach(title => {
+      if (title === cleanTitle) {
+        maxNumber = Math.max(maxNumber, 1);
+      } else {
+        const match = title.match(new RegExp(`^${cleanTitle}\\s+(\\d+)$`));
+        if (match) {
+          maxNumber = Math.max(maxNumber, parseInt(match[1], 10));
+        }
+      }
+    });
+    
+    return `${cleanTitle} ${maxNumber + 1}`;
+  }
+
+  /**
    * Gets cached drafts or fetches from database with proper deduplication
    */
   static async getDraftsByProject(projectId: string): Promise<EnhancedDraft[]> {
@@ -108,22 +145,17 @@ export class DraftService {
   }
 
   /**
-   * Creates a new draft with validation
+   * Creates a new draft with validation and unique naming
    */
   static async createDraft(data: Omit<Draft, 'id' | 'createdAt' | 'updatedAt'>): Promise<string> {
     this.validateDraft(data);
 
-    // Check for existing draft with same title to prevent duplicates
-    const existingDrafts = await this.getDraftsByProject(data.projectId);
-    const duplicateTitle = existingDrafts.find(d => d.title === data.title);
-    
-    if (duplicateTitle) {
-      throw new Error('A draft with this title already exists');
-    }
+    // Generate unique title if not provided or if it would create duplicates
+    const uniqueTitle = await this.generateUniqueDraftTitle(data.projectId, data.title);
 
     const sanitizedData = {
       ...data,
-      title: sanitizeText(data.title, 200),
+      title: sanitizeText(uniqueTitle, 200),
       content: sanitizeHtml(data.content),
     };
 

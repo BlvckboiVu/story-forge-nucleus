@@ -18,7 +18,9 @@ import {
   Copy,
   Download,
   Eye,
-  Edit3
+  Edit3,
+  Save,
+  X
 } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
@@ -27,7 +29,11 @@ import { DraftService, EnhancedDraft, DraftFolder } from '@/services/draftServic
 import { useProjects } from '@/contexts/ProjectContext';
 import { useNavigate } from 'react-router-dom';
 
-export function EnhancedDraftManager() {
+interface EnhancedDraftManagerProps {
+  onDraftChange?: () => void;
+}
+
+export function EnhancedDraftManager({ onDraftChange }: EnhancedDraftManagerProps) {
   const { currentProject } = useProjects();
   const navigate = useNavigate();
   const [drafts, setDrafts] = useState<EnhancedDraft[]>([]);
@@ -40,6 +46,8 @@ export function EnhancedDraftManager() {
   const [selectedFolder, setSelectedFolder] = useState<string>('all');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [selectedDrafts, setSelectedDrafts] = useState<string[]>([]);
+  const [editingTitle, setEditingTitle] = useState<string | null>(null);
+  const [editingTitleValue, setEditingTitleValue] = useState('');
   const { toast } = useToast();
 
   useEffect(() => {
@@ -74,6 +82,10 @@ export function EnhancedDraftManager() {
       console.error('Failed to load folders:', error);
     }
   };
+
+  const notifyChange = useCallback(() => {
+    onDraftChange?.();
+  }, [onDraftChange]);
 
   const filteredAndSortedDrafts = useCallback(() => {
     let filtered = drafts.filter(draft => {
@@ -119,22 +131,78 @@ export function EnhancedDraftManager() {
     return filtered;
   }, [drafts, searchTerm, sortBy, sortOrder, filterStatus, selectedFolder]);
 
-  const toggleFavorite = (draftId: string) => {
-    setDrafts(prev => prev.map(draft => 
-      draft.id === draftId ? { ...draft, isFavorite: !draft.isFavorite } : draft
-    ));
+  const startEditingTitle = (draftId: string, currentTitle: string) => {
+    setEditingTitle(draftId);
+    setEditingTitleValue(currentTitle);
+  };
+
+  const cancelEditingTitle = () => {
+    setEditingTitle(null);
+    setEditingTitleValue('');
+  };
+
+  const saveTitle = async (draftId: string) => {
+    if (!editingTitleValue.trim()) {
+      toast({
+        title: 'Invalid title',
+        description: 'Title cannot be empty.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    try {
+      await DraftService.updateDraft(draftId, { title: editingTitleValue.trim() });
+      
+      // Update local state
+      setDrafts(prev => prev.map(draft => 
+        draft.id === draftId ? { ...draft, title: editingTitleValue.trim() } : draft
+      ));
+      
+      setEditingTitle(null);
+      setEditingTitleValue('');
+      notifyChange();
+      
+      toast({
+        title: 'Title updated',
+        description: 'Draft title has been successfully updated.',
+      });
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: 'Failed to update title. Please try again.',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const toggleFavorite = async (draftId: string) => {
+    const draft = drafts.find(d => d.id === draftId);
+    if (draft) {
+      const newFavoriteState = !draft.isFavorite;
+      setDrafts(prev => prev.map(d => 
+        d.id === draftId ? { ...d, isFavorite: newFavoriteState } : d
+      ));
+      
+      toast({
+        title: newFavoriteState ? 'Added to favorites' : 'Removed from favorites',
+        description: `Draft has been ${newFavoriteState ? 'added to' : 'removed from'} your favorites.`,
+      });
+    }
   };
 
   const updateDraftStatus = (draftId: string, status: EnhancedDraft['status']) => {
     setDrafts(prev => prev.map(draft => 
       draft.id === draftId ? { ...draft, status } : draft
     ));
+    notifyChange();
   };
 
   const deleteDraft = async (draftId: string) => {
     try {
       await DraftService.deleteDraft(draftId);
       setDrafts(prev => prev.filter(draft => draft.id !== draftId));
+      notifyChange();
       toast({
         title: 'Draft deleted',
         description: 'The draft has been moved to trash.',
@@ -163,6 +231,7 @@ export function EnhancedDraftManager() {
         
         // Reload drafts to show the new one
         await loadDrafts();
+        notifyChange();
         
         toast({
           title: 'Draft duplicated',
@@ -189,11 +258,15 @@ export function EnhancedDraftManager() {
     
     try {
       const newDraftId = await DraftService.createDraft({
-        title: `New Draft ${drafts.length + 1}`,
+        title: 'Untitled Draft',
         content: '',
         projectId: currentProject.id,
         wordCount: 0,
       });
+      
+      // Reload drafts and notify parent
+      await loadDrafts();
+      notifyChange();
       
       navigate(`/app/editor/${currentProject.id}?draft=${newDraftId}`);
     } catch (error) {
@@ -222,6 +295,7 @@ export function EnhancedDraftManager() {
         break;
     }
     setSelectedDrafts([]);
+    notifyChange();
     toast({
       title: 'Bulk action completed',
       description: `${selectedDrafts.length} drafts updated.`,
@@ -409,7 +483,38 @@ export function EnhancedDraftManager() {
               </Badge>
             </div>
 
-            <h3 className="font-semibold text-lg mb-2 line-clamp-2">{draft.title}</h3>
+            {/* Editable Title */}
+            {editingTitle === draft.id ? (
+              <div className="flex items-center gap-2 mb-2">
+                <Input
+                  value={editingTitleValue}
+                  onChange={(e) => setEditingTitleValue(e.target.value)}
+                  className="flex-1"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      saveTitle(draft.id);
+                    } else if (e.key === 'Escape') {
+                      cancelEditingTitle();
+                    }
+                  }}
+                  autoFocus
+                />
+                <Button size="sm" onClick={() => saveTitle(draft.id)}>
+                  <Save className="h-4 w-4" />
+                </Button>
+                <Button size="sm" variant="outline" onClick={cancelEditingTitle}>
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+            ) : (
+              <h3 
+                className="font-semibold text-lg mb-2 line-clamp-2 cursor-pointer hover:text-primary"
+                onClick={() => startEditingTitle(draft.id, draft.title)}
+              >
+                {draft.title}
+              </h3>
+            )}
+
             <p className="text-muted-foreground text-sm mb-3 line-clamp-3">
               {draft.content.substring(0, 150)}...
             </p>

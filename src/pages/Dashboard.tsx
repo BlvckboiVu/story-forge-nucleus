@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -22,6 +22,12 @@ export default function Dashboard() {
   const navigate = useNavigate();
   const [recentDrafts, setRecentDrafts] = useState<Draft[]>([]);
   const [loading, setLoading] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  // Refresh function to trigger re-loading of recent drafts
+  const refreshRecentDrafts = useCallback(() => {
+    setRefreshKey(prev => prev + 1);
+  }, []);
 
   // Load recent drafts for current project with proper deduplication
   useEffect(() => {
@@ -46,7 +52,7 @@ export default function Dashboard() {
     };
 
     loadRecentDrafts();
-  }, [currentProject]);
+  }, [currentProject, refreshKey]); // Add refreshKey to dependencies
 
   const handleCreateProject = async () => {
     if (!user) return;
@@ -173,9 +179,19 @@ export default function Dashboard() {
               <div>
                 <div className="flex items-center justify-between mb-4">
                   <h2 className="text-xl font-semibold">Recent Drafts</h2>
-                  <p className="text-sm text-muted-foreground">
-                    Project: {currentProject.title}
-                  </p>
+                  <div className="flex items-center gap-2">
+                    <p className="text-sm text-muted-foreground">
+                      Project: {currentProject.title}
+                    </p>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={refreshRecentDrafts}
+                      disabled={loading}
+                    >
+                      Refresh
+                    </Button>
+                  </div>
                 </div>
                 
                 {loading ? (
@@ -256,7 +272,7 @@ export default function Dashboard() {
           </TabsContent>
 
           <TabsContent value="drafts">
-            <EnhancedDraftManager />
+            <EnhancedDraftManager onDraftChange={refreshRecentDrafts} />
           </TabsContent>
 
           <TabsContent value="analytics">
