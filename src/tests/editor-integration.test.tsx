@@ -1,9 +1,8 @@
-
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import Editor from '@/pages/Editor';
-import { DraftService } from '@/services/draftService';
+import { DraftService, EnhancedDraft } from '@/services/draftService';
 
 // Mock the router
 vi.mock('react-router-dom', () => ({
@@ -83,7 +82,7 @@ describe('Editor Integration', () => {
   });
 
   it('handles draft creation', async () => {
-    const mockDraft = {
+    const mockDraft: EnhancedDraft = {
       id: 'new-draft',
       title: 'New Draft',
       content: '',
@@ -91,6 +90,11 @@ describe('Editor Integration', () => {
       wordCount: 0,
       createdAt: new Date(),
       updatedAt: new Date(),
+      status: 'draft',
+      tags: [],
+      isFavorite: false,
+      version: 1,
+      collaborators: [],
     };
 
     vi.mocked(DraftService.createDraft).mockResolvedValue('new-draft');
@@ -105,7 +109,7 @@ describe('Editor Integration', () => {
   });
 
   it('handles auto-save functionality', async () => {
-    const mockDraft = {
+    const mockDraft: EnhancedDraft = {
       id: 'test-draft',
       title: 'Test Draft',
       content: 'Test content',
@@ -113,6 +117,11 @@ describe('Editor Integration', () => {
       wordCount: 2,
       createdAt: new Date(),
       updatedAt: new Date(),
+      status: 'draft',
+      tags: [],
+      isFavorite: false,
+      version: 1,
+      collaborators: [],
     };
 
     vi.mocked(DraftService.getDraft).mockResolvedValue(mockDraft);
