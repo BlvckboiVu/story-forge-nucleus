@@ -547,9 +547,6 @@ const RichTextEditor = ({
     );
   }
 
-  const historyState = getHistoryState();
-  const performanceData = getPerformanceData();
-
   return (
     <div className="w-full h-full flex flex-col overflow-hidden bg-white dark:bg-gray-900" role="application" aria-label="Rich text editor">
       {/* Choose toolbar based on device */}
