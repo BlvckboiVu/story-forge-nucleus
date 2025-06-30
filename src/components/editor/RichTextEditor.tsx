@@ -1,4 +1,3 @@
-
 import { useEffect, useRef, useState, useCallback } from 'react';
 import ReactQuill, { Quill } from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
@@ -15,7 +14,6 @@ import { FocusMode } from './FocusMode';
 import { useEnhancedAutoSave } from '@/hooks/useEnhancedAutoSave';
 import { useEnhancedWordCount } from '@/hooks/useEnhancedWordCount';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { useEditorContent } from '@/hooks/useEditorContent';
 import { useEditorScroll } from '@/hooks/useEditorScroll';
 import { usePerformanceMonitoring } from '@/hooks/usePerformanceMonitoring';
 import { useAccessibility } from '@/hooks/useAccessibility';
@@ -25,6 +23,8 @@ import { StoryBibleEntry, getStoryBibleEntriesByProject } from '@/lib/storyBible
 import { debouncedHighlight, registerStoryBibleFormat, HighlightMatch } from '@/utils/highlighting';
 import { EditorErrorDisplay } from './EditorErrorDisplay';
 import { EditorValidationDisplay } from './EditorValidationDisplay';
+import { useEditorSync } from './hooks/useEditorSync';
+import { useEditorFormatting } from './hooks/useEditorFormatting';
 
 interface RichTextEditorProps {
   initialContent?: string;
@@ -86,7 +86,6 @@ const RichTextEditor = ({
   const [isRecovering, setIsRecovering] = useState(false);
   const [selectedFont, setSelectedFont] = useState('Inter');
   const [isOnline, setIsOnline] = useState(navigator.onLine);
-  const [quillEditor, setQuillEditor] = useState<any>(null);
   const { toast } = useToast();
   const editorRef = useRef<ReactQuill>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -127,16 +126,17 @@ const RichTextEditor = ({
     trackWordCount: trackAnalyticsWordCount
   } = useAnalytics();
 
-  const { 
-    content, 
-    isValid, 
-    validationErrors, 
-    validationWarnings, 
-    hasUnsavedChanges, 
-    setHasUnsavedChanges, 
+  // Content sync (SRP)
+  const {
+    content,
+    isValid,
+    validationErrors,
+    validationWarnings,
+    hasUnsavedChanges,
+    setHasUnsavedChanges,
     handleChange,
-    resetToLastValid 
-  } = useEditorContent({
+    resetToLastValid
+  } = useEditorSync({
     initialContent,
     onContentChange: (newContent) => {
       trackContentSize(newContent);
@@ -147,10 +147,20 @@ const RichTextEditor = ({
       updateWordCount(content);
       announceWordCount(count);
       if (onWordCountChange) onWordCountChange(count);
-    },
-    validateOnChange: true,
-    maxLength: 5000000
+    }
   });
+
+  // Formatting logic (SRP)
+  const {
+    handleFormatClick,
+    activeFormats,
+    handleUndo,
+    handleRedo,
+    getHistoryState,
+    setQuillEditor,
+    checkFormats,
+    quillEditor
+  } = useEditorFormatting(editorRef, trackUserAction);
 
   const { handleCursorScroll } = useEditorScroll({ 
     editorRef, 
@@ -204,12 +214,13 @@ const RichTextEditor = ({
     loadStoryBibleEntries();
   }, [currentProject]);
 
+  // Reset editor content when a new draft is loaded
   useEffect(() => {
-    if (initialContent) {
+    if (initialContent !== content) {
       handleChange(initialContent);
-      updateWordCount(initialContent);
     }
-  }, [initialContent, updateWordCount, handleChange]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialContent]);
 
   useEffect(() => {
     if (onEditorReady) {
@@ -319,35 +330,8 @@ const RichTextEditor = ({
     }
   }, [handleEditorError]);
 
-  const [activeFormats, setActiveFormats] = useState<Record<string, any>>({});
-
   // Check active formats from editor
   useEffect(() => {
-    const checkFormats = () => {
-      if (!editorRef?.current?.getEditor) return;
-      
-      try {
-        const quill = editorRef.current.getEditor();
-        const range = quill.getSelection();
-        if (!range) return;
-
-        const format = quill.getFormat(range);
-        setActiveFormats({
-          bold: Boolean(format.bold),
-          italic: Boolean(format.italic),
-          underline: Boolean(format.underline),
-          strike: Boolean(format.strike),
-          code: Boolean(format.code),
-          align: typeof format.align === 'string' ? format.align : 'left',
-          list: typeof format.list === 'string' ? format.list : undefined,
-          blockquote: Boolean(format.blockquote),
-          header: typeof format.header === 'string' ? format.header : false,
-        });
-      } catch (error) {
-        console.error('Error checking formats:', error);
-      }
-    };
-
     const quill = editorRef?.current?.getEditor();
     if (quill) {
       setQuillEditor(quill);
@@ -361,107 +345,6 @@ const RichTextEditor = ({
       };
     }
   }, [editorRef]);
-
-  const handleFormatClick = useCallback((format: string, value?: any) => {
-    try {
-      const quill = editorRef.current?.getEditor();
-      if (!quill) {
-        throw new Error('Editor not available');
-      }
-
-      const range = quill.getSelection();
-      if (!range) {
-        quill.setSelection(0, 0);
-      }
-
-      trackUserAction('format_text', { format, value });
-
-      switch (format) {
-        case 'bold':
-        case 'italic':
-        case 'underline':
-        case 'strike':
-        case 'code':
-        case 'blockquote':
-          quill.format(format, !quill.getFormat(range || { index: 0, length: 0 })[format]);
-          break;
-        case 'header':
-          quill.format('header', value);
-          break;
-        case 'align':
-          quill.format('align', value === 'left' ? false : value);
-          break;
-        case 'list':
-          quill.format('list', value);
-          break;
-        default:
-          console.warn(`Unknown format: ${format}`);
-      }
-    } catch (error) {
-      handleEditorError(error as Error);
-    }
-  }, [handleEditorError, trackUserAction]);
-
-  // Handle undo/redo
-  const handleUndo = useCallback(() => {
-    const quill = editorRef?.current?.getEditor();
-    if (quill && quill.history) {
-      quill.history.undo();
-    }
-  }, []);
-
-  const handleRedo = useCallback(() => {
-    const quill = editorRef?.current?.getEditor();
-    if (quill && quill.history) {
-      quill.history.redo();
-    }
-  }, []);
-
-  const getHistoryState = useCallback(() => {
-    const quill = editorRef?.current?.getEditor();
-    if (quill && quill.history) {
-      return {
-        canUndo: quill.history.stack.undo.length > 0,
-        canRedo: quill.history.stack.redo.length > 0,
-      };
-    }
-    return { canUndo: false, canRedo: false };
-  }, []);
-
-  const { isSaving, saveError } = useEnhancedAutoSave({
-    content,
-    hasUnsavedChanges,
-    onSave: handleSaveContent,
-    onSaveStateChange: () => {},
-    interval: 10000,
-    retryAttempts: 3,
-    retryDelay: 1000
-  });
-
-  // Notify parent of changes with error handling
-  useEffect(() => {
-    try {
-      if (onWordCountChange) onWordCountChange(stats.words);
-    } catch (error) {
-      console.error('Word count notification failed:', error);
-    }
-  }, [stats.words, onWordCountChange]);
-
-  useEffect(() => {
-    try {
-      if (onCurrentPageChange) onCurrentPageChange(stats.pages);
-    } catch (error) {
-      console.error('Page count notification failed:', error);
-    }
-  }, [stats.pages, onCurrentPageChange]);
-
-  useEffect(() => {
-    try {
-      if (onUnsavedChangesChange) onUnsavedChangesChange(hasUnsavedChanges);
-    } catch (error) {
-      console.error('Unsaved changes notification failed:', error);
-    }
-  }, [hasUnsavedChanges, onUnsavedChangesChange]);
 
   const historyState = getHistoryState();
   const performanceData = getPerformanceData();
@@ -546,6 +429,16 @@ const RichTextEditor = ({
       </FocusMode>
     );
   }
+
+  const { isSaving, saveError } = useEnhancedAutoSave({
+    content,
+    hasUnsavedChanges,
+    onSave: handleSaveContent,
+    onSaveStateChange: () => {},
+    interval: 10000,
+    retryAttempts: 3,
+    retryDelay: 1000
+  });
 
   return (
     <div className="w-full h-full flex flex-col overflow-hidden bg-white dark:bg-gray-900" role="application" aria-label="Rich text editor">
