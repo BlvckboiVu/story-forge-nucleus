@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback } from 'react';
 import { offlineStateManager } from '@/utils/offlineStateManager';
 
@@ -116,6 +115,11 @@ export function useOfflineState(options: UseOfflineStateOptions = {}) {
     updateUrlState: (state: { projectId?: string; draftId?: string }) => 
       offlineStateManager.updateUrlState(state),
   };
+}
+
+export function useOnlineStatus() {
+  const { connectivity } = useOfflineState();
+  return connectivity === 'online';
 }
 
 export default useOfflineState;

@@ -12,7 +12,6 @@ import { ModernStatusBar } from './ModernStatusBar';
 import { EditorLoading } from './EditorLoading';
 import { FocusMode } from './FocusMode';
 import { useEnhancedAutoSave } from '@/hooks/useEnhancedAutoSave';
-import { useEnhancedWordCount } from '@/hooks/useEnhancedWordCount';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useEditorScroll } from '@/hooks/useEditorScroll';
 import { usePerformanceMonitoring } from '@/hooks/usePerformanceMonitoring';
@@ -25,6 +24,8 @@ import { EditorErrorDisplay } from './EditorErrorDisplay';
 import { EditorValidationDisplay } from './EditorValidationDisplay';
 import { useEditorSync } from './hooks/useEditorSync';
 import { useEditorFormatting } from './hooks/useEditorFormatting';
+import { useEditorHighlighting } from './hooks/useEditorHighlighting';
+import { useOnlineStatus } from '@/hooks/useOfflineState';
 
 interface RichTextEditorProps {
   initialContent?: string;
@@ -81,22 +82,14 @@ const RichTextEditor = ({
   extraActions,
 }: RichTextEditorProps) => {
   const [storyBibleEntries, setStoryBibleEntries] = useState<StoryBibleEntry[]>([]);
-  const [highlightMatches, setHighlightMatches] = useState<HighlightMatch[]>([]);
   const [editorError, setEditorError] = useState<string | null>(null);
   const [isRecovering, setIsRecovering] = useState(false);
-  const [selectedFont, setSelectedFont] = useState('Inter');
-  const [isOnline, setIsOnline] = useState(navigator.onLine);
+  const [wordCount, setWordCount] = useState(0);
   const { toast } = useToast();
   const editorRef = useRef<ReactQuill>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const { currentProject } = useProjects();
   const deviceIsMobile = useIsMobile();
-
-  // Enhanced hooks
-  const { stats, updateWordCount, getWarningLevel } = useEnhancedWordCount({
-    warningThreshold: 45000,
-    limitThreshold: WORD_LIMIT,
-  });
 
   const { 
     measureRenderTime,
@@ -126,7 +119,19 @@ const RichTextEditor = ({
     trackWordCount: trackAnalyticsWordCount
   } = useAnalytics();
 
-  // Content sync (SRP)
+  const isOnline = useOnlineStatus();
+
+  const unifiedContentChange = (newContent: string) => {
+    const plainText = newContent.replace(/<[^>]*>/g, ' ');
+    const wc = plainText.trim().split(/\s+/).filter(word => word.length > 0).length;
+    setWordCount(wc);
+    trackAnalyticsWordCount(wc);
+    trackContentSize(newContent);
+    onContentChange?.(newContent);
+    if (onWordCountChange) onWordCountChange(wc);
+    announceWordCount(wc);
+  };
+
   const {
     content,
     isValid,
@@ -138,28 +143,18 @@ const RichTextEditor = ({
     resetToLastValid
   } = useEditorSync({
     initialContent,
-    onContentChange: (newContent) => {
-      trackContentSize(newContent);
-      trackAnalyticsWordCount(stats.words);
-      onContentChange?.(newContent);
-    },
-    onWordCountChange: (count) => {
-      updateWordCount(content);
-      announceWordCount(count);
-      if (onWordCountChange) onWordCountChange(count);
-    }
+    onContentChange: unifiedContentChange,
   });
 
-  // Formatting logic (SRP)
   const {
     handleFormatClick,
     activeFormats,
     handleUndo,
     handleRedo,
     getHistoryState,
-    setQuillEditor,
     checkFormats,
-    quillEditor
+    selectedFont,
+    handleFontChange
   } = useEditorFormatting(editorRef, trackUserAction);
 
   const { handleCursorScroll } = useEditorScroll({ 
@@ -170,21 +165,12 @@ const RichTextEditor = ({
     }
   });
 
-  // Track online status
-  useEffect(() => {
-    const handleOnline = () => setIsOnline(true);
-    const handleOffline = () => setIsOnline(false);
-    
-    window.addEventListener('online', handleOnline);
-    window.addEventListener('offline', handleOffline);
-    
-    return () => {
-      window.removeEventListener('online', handleOnline);
-      window.removeEventListener('offline', handleOffline);
-    };
-  }, []);
+  const { highlightMatches } = useEditorHighlighting({
+    quill: editorRef.current?.getEditor && editorRef.current.getEditor(),
+    storyBibleEntries,
+    isFocusMode
+  });
 
-  // Register custom Quill format with error handling
   useEffect(() => {
     try {
       if (Quill) {
@@ -196,7 +182,6 @@ const RichTextEditor = ({
     }
   }, []);
 
-  // Load Story Bible entries with error handling
   useEffect(() => {
     const loadStoryBibleEntries = async () => {
       if (!currentProject) return;
@@ -214,7 +199,6 @@ const RichTextEditor = ({
     loadStoryBibleEntries();
   }, [currentProject]);
 
-  // Reset editor content when a new draft is loaded
   useEffect(() => {
     if (initialContent !== content) {
       handleChange(initialContent);
@@ -228,18 +212,6 @@ const RichTextEditor = ({
     }
   }, [onEditorReady]);
 
-  const handleHighlighting = useCallback(() => {
-    const quill = editorRef.current?.getEditor();
-    if (!quill || !storyBibleEntries.length || isFocusMode) return;
-
-    try {
-      debouncedHighlight(quill, storyBibleEntries, setHighlightMatches);
-    } catch (error) {
-      console.error('Error during highlighting:', error);
-    }
-  }, [storyBibleEntries, isFocusMode]);
-
-  // Enhanced save with performance and accessibility
   const handleSaveContent = useCallback(async (contentToSave: string) => {
     try {
       if (!isValid) {
@@ -248,7 +220,7 @@ const RichTextEditor = ({
       }
       
       announceSaveStatus('saving');
-      trackUserAction('save_document', { wordCount: stats.words, draftId: draft?.id });
+      trackUserAction('save_document', { wordCount: wordCount, draftId: draft?.id });
       
       await measureSaveTime(async () => {
         await onSave(contentToSave);
@@ -263,10 +235,10 @@ const RichTextEditor = ({
       const errorMessage = error instanceof Error ? error.message : 'Failed to save content';
       setEditorError(errorMessage);
       announceSaveStatus('error');
-      trackError(error as Error, { action: 'save', wordCount: stats.words });
+      trackError(error as Error, { action: 'save', wordCount: wordCount });
       throw error;
     }
-  }, [isValid, validationErrors, stats.words, draft?.id, onSave, setHasUnsavedChanges, 
+  }, [isValid, validationErrors, wordCount, draft?.id, onSave, setHasUnsavedChanges, 
       measureSaveTime, announceSaveStatus, announceValidationError, trackUserAction, trackError]);
 
   const handleRecovery = useCallback(async () => {
@@ -303,58 +275,13 @@ const RichTextEditor = ({
     });
   }, [toast, trackError, draft?.id]);
 
-  // Enhanced content change with performance tracking
-  const handleContentChangeWithTracking = useCallback((value: string) => {
-    measureRenderTime(() => {
-      handleChange(value);
-      trackKeystroke();
-      trackAnalyticsKeystroke();
-    });
-  }, [handleChange, measureRenderTime, trackKeystroke, trackAnalyticsKeystroke]);
-
-  const handleFontChange = useCallback((fontFamily: string) => {
-    if (!fontFamily?.trim()) {
-      handleEditorError(new Error('Invalid font family'));
-      return;
-    }
-    
-    try {
-      setSelectedFont(fontFamily);
-      const quill = editorRef.current?.getEditor();
-      if (quill) {
-        const editor = quill.root;
-        editor.style.fontFamily = fontFamily;
-      }
-    } catch (error) {
-      handleEditorError(error as Error);
-    }
-  }, [handleEditorError]);
-
-  // Check active formats from editor
-  useEffect(() => {
-    const quill = editorRef?.current?.getEditor();
-    if (quill) {
-      setQuillEditor(quill);
-      quill.on('selection-change', checkFormats);
-      quill.on('text-change', checkFormats);
-      checkFormats();
-      
-      return () => {
-        quill.off('selection-change', checkFormats);
-        quill.off('text-change', checkFormats);
-      };
-    }
-  }, [editorRef]);
-
   const historyState = getHistoryState();
   const performanceData = getPerformanceData();
 
-  // Show loading state
   if (loading) {
     return <EditorLoading />;
   }
 
-  // Error display component
   if (editorError && !isValid) {
     return (
       <EditorErrorDisplay
@@ -376,7 +303,7 @@ const RichTextEditor = ({
         ref={editorRef}
         theme="snow"
         value={content}
-        onChange={handleContentChangeWithTracking}
+        onChange={handleChange}
         modules={modules}
         formats={formats}
         className="h-full w-full editor-modern"
@@ -389,41 +316,37 @@ const RichTextEditor = ({
         }}
       />
       
-      {/* Floating toolbar for text selection */}
-      {!isFocusMode && quillEditor && (
+      {!isFocusMode && editorRef.current?.getEditor && (
         <FloatingToolbar
-          editor={quillEditor}
+          editor={editorRef.current.getEditor()}
           onFormatClick={handleFormatClick}
           activeFormats={activeFormats}
         />
       )}
       
-      {/* Slash commands */}
-      {!isFocusMode && quillEditor && (
+      {!isFocusMode && editorRef.current?.getEditor && (
         <SlashCommands
-          editor={quillEditor}
+          editor={editorRef.current.getEditor()}
           onFormatClick={handleFormatClick}
         />
       )}
       
-      {/* Markdown shortcuts */}
-      {quillEditor && (
+      {editorRef.current?.getEditor && (
         <MarkdownShortcuts
-          editor={quillEditor}
+          editor={editorRef.current.getEditor()}
           onFormatClick={handleFormatClick}
         />
       )}
     </div>
   );
 
-  // Focus mode wrapper
   if (isFocusMode) {
     return (
       <FocusMode
         onExitFocus={() => onToggleFocus?.()}
         onSave={() => handleSaveContent(content)}
         hasUnsavedChanges={hasUnsavedChanges}
-        wordCount={stats.words}
+        wordCount={wordCount}
       >
         {editorContent}
       </FocusMode>
@@ -442,7 +365,6 @@ const RichTextEditor = ({
 
   return (
     <div className="w-full h-full flex flex-col overflow-hidden bg-white dark:bg-gray-900" role="application" aria-label="Rich text editor">
-      {/* Choose toolbar based on device */}
       {isMobile || deviceIsMobile ? (
         <ImprovedMobileToolbar
           selectedFont={selectedFont}
@@ -469,13 +391,11 @@ const RichTextEditor = ({
         />
       )}
 
-      {/* Validation warnings */}
       <EditorValidationDisplay
         validationErrors={validationErrors}
         validationWarnings={validationWarnings}
       />
 
-      {/* Editor content area */}
       <div 
         ref={containerRef}
         className="flex-1 w-full overflow-hidden"
@@ -483,12 +403,11 @@ const RichTextEditor = ({
         {editorContent}
       </div>
       
-      {/* Modern status bar */}
       <ModernStatusBar
         stats={{
-          words: stats.words,
-          pages: stats.pages,
-          readingTime: `${stats.readingTime} min`
+          words: wordCount,
+          pages: 1,
+          readingTime: `${Math.ceil(wordCount / 200)} min`
         }}
         hasUnsavedChanges={hasUnsavedChanges}
         isSaving={isSaving}

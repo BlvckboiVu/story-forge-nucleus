@@ -1,8 +1,9 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 
 export function useEditorFormatting(editorRef: React.RefObject<any>, trackUserAction: (action: string, data?: any) => void) {
   const [activeFormats, setActiveFormats] = useState<Record<string, any>>({});
   const [quillEditor, setQuillEditor] = useState<any>(null);
+  const [selectedFont, setSelectedFont] = useState('Inter');
 
   // Check active formats from editor
   const checkFormats = useCallback(() => {
@@ -84,6 +85,32 @@ export function useEditorFormatting(editorRef: React.RefObject<any>, trackUserAc
     return { canUndo: false, canRedo: false };
   }, [editorRef]);
 
+  // Font change logic
+  const handleFontChange = useCallback((fontFamily: string) => {
+    if (!fontFamily?.trim()) return;
+    setSelectedFont(fontFamily);
+    const quill = editorRef.current?.getEditor();
+    if (quill) {
+      const editor = quill.root;
+      editor.style.fontFamily = fontFamily;
+    }
+  }, [editorRef]);
+
+  // Setup event listeners for selection/text change
+  useEffect(() => {
+    const quill = editorRef?.current?.getEditor();
+    if (quill) {
+      setQuillEditor(quill);
+      quill.on('selection-change', checkFormats);
+      quill.on('text-change', checkFormats);
+      checkFormats();
+      return () => {
+        quill.off('selection-change', checkFormats);
+        quill.off('text-change', checkFormats);
+      };
+    }
+  }, [editorRef, checkFormats]);
+
   return {
     handleFormatClick,
     activeFormats,
@@ -93,5 +120,7 @@ export function useEditorFormatting(editorRef: React.RefObject<any>, trackUserAc
     setQuillEditor,
     checkFormats,
     quillEditor,
+    selectedFont,
+    handleFontChange,
   };
 } 
