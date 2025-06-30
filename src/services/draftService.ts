@@ -1,6 +1,6 @@
 import { Draft } from '@/lib/db';
 import db from '@/lib/db';
-import { sanitizeHtml, sanitizeText } from '@/utils/security';
+import { sanitizeHtml, sanitizeText } from '@/utils/sanitize';
 
 // Extended Draft interface to match EnhancedDraftManager expectations
 export interface EnhancedDraft extends Draft {
@@ -192,48 +192,31 @@ export class DraftService {
     if (!id?.trim()) throw new Error('Draft ID is required');
     this.validateDraft(updates);
 
-    // Get existing draft to validate project ownership
+    // Get existing draft to validate project ownership and merge fields
     const existingDraft = await this.getDraft(id);
     if (!existingDraft) {
       throw new Error('Draft not found');
     }
-
-    const sanitizedUpdates: Partial<Draft> = {
+    // Enforce title validation at service level
+    const title = updates.title !== undefined ? sanitizeText(updates.title, 200) : existingDraft.title;
+    if (!title.trim()) throw new Error('Title cannot be empty');
+    // Use improved word count logic
+    const content = updates.content !== undefined ? sanitizeHtml(updates.content) : existingDraft.content;
+    const wordCount = content.trim() ? content.trim().replace(/<[^>]*>/g, ' ').split(/\s+/).filter(w => w.length > 0).length : 0;
+    // Ensure date fields are Date objects
+    const createdAt = existingDraft.createdAt instanceof Date ? existingDraft.createdAt : new Date(existingDraft.createdAt);
+    const updatedAt = new Date();
+    const merged = {
+      ...existingDraft,
       ...updates,
-      updatedAt: new Date(),
+      title,
+      content,
+      wordCount,
+      createdAt,
+      updatedAt,
     };
-
-    if (updates.title) {
-      sanitizedUpdates.title = sanitizeText(updates.title, 200);
-    }
-
-    if (updates.content !== undefined) {
-      sanitizedUpdates.content = sanitizeHtml(updates.content);
-      const plainText = sanitizedUpdates.content.replace(/<[^>]*>/g, ' ');
-      sanitizedUpdates.wordCount = plainText.trim().split(/\s+/).filter(w => w.length > 0).length;
-    }
-
-    try {
-      // Only update fields that exist in the basic Draft interface
-      const draftUpdates = {
-        title: sanitizedUpdates.title,
-        content: sanitizedUpdates.content,
-        wordCount: sanitizedUpdates.wordCount,
-        lastEditPosition: sanitizedUpdates.lastEditPosition,
-        updatedAt: sanitizedUpdates.updatedAt,
-      };
-
-      // Filter out undefined values
-      const filteredUpdates = Object.fromEntries(
-        Object.entries(draftUpdates).filter(([_, value]) => value !== undefined)
-      );
-
-      await db.drafts.update(id, filteredUpdates);
-      this.invalidateCache(existingDraft.projectId);
-    } catch (error) {
-      console.error('Failed to update draft:', error);
-      throw new Error('Failed to update draft');
-    }
+    await db.drafts.update(id, merged);
+    this.invalidateCache(existingDraft.projectId);
   }
 
   /**

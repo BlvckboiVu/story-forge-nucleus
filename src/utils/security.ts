@@ -4,21 +4,6 @@ import DOMPurify from 'dompurify';
  * Security utilities for input sanitization, validation, and secure storage
  */
 
-// XSS Protection
-export const sanitizeHtml = (html: string): string => {
-  if (!html || typeof html !== 'string') return '';
-  
-  return DOMPurify.sanitize(html, {
-    ALLOWED_TAGS: [
-      'p', 'br', 'strong', 'em', 'u', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
-      'ul', 'ol', 'li', 'blockquote', 'a'
-    ],
-    ALLOWED_ATTR: ['href', 'target'],
-    ALLOW_DATA_ATTR: false,
-    FORBID_TAGS: ['script', 'object', 'embed', 'form', 'input'],
-  });
-};
-
 // Input validation patterns
 export const VALIDATION_PATTERNS = {
   EMAIL: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,

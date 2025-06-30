@@ -1,4 +1,3 @@
-
 import DOMPurify from 'dompurify';
 
 const ALLOWED_TAGS = [
@@ -27,4 +26,12 @@ export function sanitizeHtml(html: string): string {
     FORBID_TAGS: ['script', 'style', 'iframe', 'object', 'embed'],
     FORBID_ATTR: ['onerror', 'onload', 'onclick', 'onmouseover'],
   });
+}
+
+export function sanitizeText(text: string, maxLength: number = 1000): string {
+  if (!text || typeof text !== 'string') return '';
+  return text
+    .slice(0, maxLength)
+    .replace(/[<>]/g, '') // Remove potential HTML tags
+    .trim();
 }

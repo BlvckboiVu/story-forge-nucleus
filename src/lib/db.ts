@@ -1,4 +1,3 @@
-
 import Dexie, { Table } from 'dexie';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -124,16 +123,21 @@ export const getDrafts = async (projectId: string) => {
 
 export const updateDraft = async (id: string, updates: Partial<Draft>) => {
   const updatedAt = new Date();
-  
-  // Calculate word count if content is updated
+  // Fetch existing draft to fill missing fields
+  const existing = await db.drafts.get(id);
+  if (!existing) throw new Error('Draft not found');
   let wordCount = updates.wordCount;
-  if (updates.content && !wordCount) {
+  let content = updates.content ?? existing.content;
+  if (updates.content) {
     wordCount = updates.content.trim().split(/\s+/).length;
+  } else {
+    wordCount = existing.wordCount;
   }
-  
   return await db.drafts.update(id, {
+    ...existing,
     ...updates,
-    ...(wordCount && { wordCount }),
+    content,
+    wordCount,
     updatedAt,
   });
 };

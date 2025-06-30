@@ -43,7 +43,7 @@ export function validateEditorContent(
   }
 
   // Word count validation
-  const wordCount = content.replace(/<[^>]*>/g, ' ').trim().split(/\s+/).filter(w => w.length > 0).length;
+  const wordCount = content.trim() ? content.replace(/<[^>]*>/g, ' ').trim().split(/\s+/).filter(w => w.length > 0).length : 0;
   if (wordCount > limits.maxWordCount) {
     errors.push(`Content exceeds maximum word count of ${limits.maxWordCount} words`);
   }

@@ -28,6 +28,7 @@ export function useEnhancedAutoSave({
   
   const saveTimeoutRef = useRef<NodeJS.Timeout>();
   const retryCountRef = useRef(0);
+  const lastErrorRef = useRef<string | null>(null);
 
   const performSave = useCallback(async (contentToSave: string) => {
     if (isSaving) return;
@@ -59,31 +60,35 @@ export function useEnhancedAutoSave({
       
       setLastSaveTime(new Date());
       retryCountRef.current = 0;
+      lastErrorRef.current = null;
       
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Save failed';
       setSaveError(errorMessage);
       
-      // Retry logic
-      if (retryCountRef.current < retryAttempts) {
-        retryCountRef.current++;
-        setTimeout(() => {
-          performSave(contentToSave);
-        }, retryDelay * retryCountRef.current);
-        
-        toast({
-          title: `Save failed (attempt ${retryCountRef.current}/${retryAttempts})`,
-          description: "Retrying automatically...",
-          variant: "destructive",
-          duration: 2000,
-        });
-      } else {
-        toast({
-          title: "Save failed",
-          description: errorMessage,
-          variant: "destructive",
-          duration: 2000,
-        });
+      // Only show toast if error message changes
+      if (lastErrorRef.current !== errorMessage) {
+        if (retryCountRef.current < retryAttempts) {
+          retryCountRef.current++;
+          setTimeout(() => {
+            performSave(contentToSave);
+          }, retryDelay * retryCountRef.current);
+          
+          toast({
+            title: `Save failed (attempt ${retryCountRef.current}/${retryAttempts})`,
+            description: "Retrying automatically...",
+            variant: "destructive",
+            duration: 2000,
+          });
+        } else {
+          toast({
+            title: "Save failed",
+            description: errorMessage,
+            variant: "destructive",
+            duration: 2000,
+          });
+        }
+        lastErrorRef.current = errorMessage;
       }
     } finally {
       setIsSaving(false);
