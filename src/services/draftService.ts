@@ -146,6 +146,7 @@ export class DraftService {
 
   /**
    * Creates a new draft with validation and unique naming
+   * Ensures the ID is unique and not duplicated in the DB
    */
   static async createDraft(data: Omit<Draft, 'id' | 'createdAt' | 'updatedAt'>): Promise<string> {
     this.validateDraft(data);
@@ -160,7 +161,15 @@ export class DraftService {
     };
 
     try {
-      const id = crypto.randomUUID();
+      let id: string;
+      let exists = true;
+      // Ensure unique ID (no duplicates)
+      do {
+        id = crypto.randomUUID();
+        // Check if ID already exists in DB
+        const existing = await db.drafts.get(id);
+        exists = !!existing;
+      } while (exists);
       await db.drafts.add({
         ...sanitizedData,
         id,

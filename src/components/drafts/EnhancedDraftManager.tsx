@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -68,6 +67,7 @@ export function EnhancedDraftManager({ onDraftChange }: EnhancedDraftManagerProp
         title: 'Error loading drafts',
         description: 'Failed to load your drafts. Please try again.',
         variant: 'destructive',
+        duration: 2000,
       });
     } finally {
       setLoading(false);
@@ -147,6 +147,7 @@ export function EnhancedDraftManager({ onDraftChange }: EnhancedDraftManagerProp
         title: 'Invalid title',
         description: 'Title cannot be empty.',
         variant: 'destructive',
+        duration: 2000,
       });
       return;
     }
@@ -166,12 +167,14 @@ export function EnhancedDraftManager({ onDraftChange }: EnhancedDraftManagerProp
       toast({
         title: 'Title updated',
         description: 'Draft title has been successfully updated.',
+        duration: 1200,
       });
     } catch (error) {
       toast({
         title: 'Error',
         description: 'Failed to update title. Please try again.',
         variant: 'destructive',
+        duration: 2000,
       });
     }
   };
@@ -187,6 +190,7 @@ export function EnhancedDraftManager({ onDraftChange }: EnhancedDraftManagerProp
       toast({
         title: newFavoriteState ? 'Added to favorites' : 'Removed from favorites',
         description: `Draft has been ${newFavoriteState ? 'added to' : 'removed from'} your favorites.`,
+        duration: 1200,
       });
     }
   };
@@ -206,12 +210,14 @@ export function EnhancedDraftManager({ onDraftChange }: EnhancedDraftManagerProp
       toast({
         title: 'Draft deleted',
         description: 'The draft has been moved to trash.',
+        duration: 1200,
       });
     } catch (error) {
       toast({
         title: 'Error',
         description: 'Failed to delete draft. Please try again.',
         variant: 'destructive',
+        duration: 2000,
       });
     }
   };
@@ -236,12 +242,14 @@ export function EnhancedDraftManager({ onDraftChange }: EnhancedDraftManagerProp
         toast({
           title: 'Draft duplicated',
           description: 'A copy of the draft has been created.',
+          duration: 1200,
         });
       } catch (error) {
         toast({
           title: 'Error',
           description: 'Failed to duplicate draft. Please try again.',
           variant: 'destructive',
+          duration: 2000,
         });
       }
     }
@@ -274,6 +282,7 @@ export function EnhancedDraftManager({ onDraftChange }: EnhancedDraftManagerProp
         title: 'Error',
         description: 'Failed to create new draft. Please try again.',
         variant: 'destructive',
+        duration: 2000,
       });
     }
   };
@@ -299,6 +308,7 @@ export function EnhancedDraftManager({ onDraftChange }: EnhancedDraftManagerProp
     toast({
       title: 'Bulk action completed',
       description: `${selectedDrafts.length} drafts updated.`,
+      duration: 1200,
     });
   };
 

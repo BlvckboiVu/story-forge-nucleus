@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback } from 'react';
 import { Draft } from '@/lib/db';
 import { DraftService, EnhancedDraft } from '@/services/draftService';
@@ -188,6 +187,7 @@ export function useUnifiedDraftManager({
       toast({
         title: 'Draft deleted',
         description: 'The draft has been successfully deleted.',
+        duration: 1200,
       });
     } catch (error) {
       console.error('Failed to delete draft:', error);
@@ -195,6 +195,7 @@ export function useUnifiedDraftManager({
         title: 'Delete failed',
         description: 'The draft could not be deleted. Please try again.',
         variant: 'destructive',
+        duration: 2000,
       });
     }
   }, [projectId, toast]);

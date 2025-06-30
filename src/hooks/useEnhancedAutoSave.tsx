@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useToast } from './use-toast';
 import { validateEditorContent } from '@/utils/editorValidation';
@@ -51,7 +50,7 @@ export function useEnhancedAutoSave({
           title: "Content Warning",
           description: validation.warnings[0],
           variant: "default",
-          duration: 3000,
+          duration: 1200,
         });
       }
 
@@ -83,7 +82,7 @@ export function useEnhancedAutoSave({
           title: "Save failed",
           description: errorMessage,
           variant: "destructive",
-          duration: 5000,
+          duration: 2000,
         });
       }
     } finally {
