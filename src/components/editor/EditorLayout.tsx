@@ -1,10 +1,9 @@
-
 // EditorLayout.tsx
 // Layout component for the main editor view, handling both desktop and mobile layouts
 
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { FilePlus, FolderOpen } from 'lucide-react';
+import { FilePlus, FolderOpen, MessageSquare } from 'lucide-react';
 import OutlinePopup from './OutlinePopup';
 import LLMPanel from '../LLMPanel';
 import RichTextEditor from './RichTextEditor';
@@ -13,6 +12,7 @@ import { Draft } from '@/lib/db';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useFocusMode } from '@/hooks/use-focus-mode';
 import { EditorHeader } from './EditorHeader';
+import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 
 /**
  * Props for the EditorLayout component
@@ -116,6 +116,27 @@ const DesktopLayout = ({
         {/* Floating action buttons for tablet screens */}
         <div className="hidden md:flex lg:hidden fixed bottom-6 right-6 flex-col gap-3 z-50">
           <OutlinePopup />
+          <Sheet>
+            <SheetTrigger asChild>
+              <Button 
+                size="icon"
+                variant="secondary"
+                className="rounded-full shadow-lg h-12 w-12"
+                title="AI Assistant"
+              >
+                <MessageSquare className="h-5 w-5" />
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="right" className="w-full sm:w-96 p-0">
+              <div className="h-full">
+                <LLMPanel
+                  isCollapsed={false}
+                  onToggle={() => {}}
+                  onInsertResponse={onInsertLLMResponse}
+                />
+              </div>
+            </SheetContent>
+          </Sheet>
           <Button 
             onClick={onOpenDraft}
             size="icon"

@@ -1,7 +1,6 @@
-
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { PenTool, FolderOpen, FilePlus, Save, Maximize2, Minimize2, Menu } from 'lucide-react';
+import { PenTool, FolderOpen, FilePlus, Save, Maximize2, Minimize2, Menu, MessageSquare } from 'lucide-react';
 import { StoryBibleDrawer } from '../StoryBibleDrawer';
 import { useProjects } from '@/contexts/ProjectContext';
 import OutlinePopup from './OutlinePopup';
@@ -80,6 +79,14 @@ export const EditorHeader = ({
         <div className="hidden lg:flex items-center gap-2">
           {currentProject && <StoryBibleDrawer projectId={currentProject.id} />}
           <OutlinePopup />
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-8 w-8 p-0 text-blue-600 hover:text-blue-700"
+            title="AI Assistant Available"
+          >
+            <MessageSquare className="h-4 w-4" />
+          </Button>
         </div>
 
         {/* Right: View Options and Actions */}

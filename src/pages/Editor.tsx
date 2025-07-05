@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { Layout } from '@/components/layout/Layout';
@@ -13,6 +12,7 @@ import { useFocusMode } from '@/hooks/use-focus-mode';
 import { ConnectivityIndicator } from '@/components/ConnectivityIndicator';
 import { EnhancedOutline, OutlineScene } from '@/types/outline';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { EditorLayout } from '@/components/editor/EditorLayout';
 
 export default function Editor() {
   const navigate = useNavigate();
@@ -219,76 +219,22 @@ export default function Editor() {
 
   return (
     <Layout mode="editor" showNavigation={true}>
-      <div className="h-full w-full flex flex-col overflow-hidden">
-        {/* Consolidated Editor Header */}
-        <EditorHeader
-          currentDraft={currentDraft}
-          onOpenDraft={handleOpenDraft}
-          onNewDraft={handleNewDraft}
-          wordCount={wordCount}
-          currentPage={currentPage}
-          hasUnsavedChanges={hasUnsavedChanges}
-          loading={saving}
-          onSave={() => handleSave(currentDraft?.content || '')}
-          viewMode={viewMode}
-          onViewModeChange={setViewMode}
-          pageHeight={pageHeight}
-          onPageHeightChange={setPageHeight}
-          isFocusMode={isFocusMode}
-          onToggleFocus={toggleFocusMode}
-          showNavigation={true}
-        />
-
-        {/* Main Editor Area */}
-        <div className="flex-1 h-full overflow-hidden flex">
-          <div className={`flex-1 min-w-0 ${showOutline && !isMobile ? 'pr-4' : ''}`}>
-            <div className="h-full flex flex-col">
-              <RichTextEditor
-                initialContent={currentDraft?.content || ''}
-                onSave={handleSave}
-                draft={currentDraft}
-                loading={loading}
-                onEditorReady={() => {}}
-                isFocusMode={isFocusMode}
-                onToggleFocus={toggleFocusMode}
-                onWordCountChange={setWordCount}
-                onCurrentPageChange={setCurrentPage}
-                onUnsavedChangesChange={() => {}} // Handled by unified manager
-                onContentChange={updateContent}
-              />
-              
-              {selectedScene && (
-                <div className="mt-2 p-2 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-md">
-                  <p className="text-sm text-blue-800 dark:text-blue-200">
-                    Editing: {selectedScene.partTitle} → {selectedScene.chapterTitle} → {selectedScene.scene.title}
-                    {saving && <span className="ml-2 text-orange-600">(Saving...)</span>}
-                  </p>
-                </div>
-              )}
-              
-              {/* Save status indicator */}
-              {lastSaved && (
-                <div className="mt-1 text-xs text-muted-foreground">
-                  Last saved: {lastSaved.toLocaleTimeString()}
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Desktop Outline Sidebar */}
-          {showOutline && !isMobile && (
-            <div className="w-96 border-l bg-card min-w-0 flex-shrink-0">
-              <OutlineIntegration
-                projectId={currentProject.id}
-                outline={outline}
-                onSceneSelect={handleSceneSelect}
-                showOutline={showOutline}
-                onToggleOutline={() => setShowOutline(!showOutline)}
-              />
-            </div>
-          )}
-        </div>
-      </div>
+      <EditorLayout
+        currentDraft={currentDraft}
+        loading={loading}
+        onSaveDraft={handleSave}
+        onOpenDraft={handleOpenDraft}
+        onNewDraft={handleNewDraft}
+        onInsertLLMResponse={(text) => {
+          // Insert LLM response into the editor
+          if (currentDraft) {
+            const newContent = currentDraft.content + '\n\n' + text;
+            updateContent(newContent);
+            handleSave(newContent);
+          }
+        }}
+        onEditorReady={() => {}}
+      />
     </Layout>
   );
 }

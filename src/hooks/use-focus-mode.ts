@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 
 interface UseFocusModeOptions {
   onFocusModeChange?: (isFocusMode: boolean) => void;
@@ -10,7 +10,16 @@ export function useFocusMode({
   onPanelCollapseChange 
 }: UseFocusModeOptions = {}) {
   const [isFocusMode, setIsFocusMode] = useState(false);
-  const [isPanelCollapsed, setIsPanelCollapsed] = useState(false);
+  const [isPanelCollapsed, setIsPanelCollapsed] = useState(() => {
+    // Load panel state from localStorage
+    const saved = localStorage.getItem('editor_panel_collapsed');
+    return saved ? JSON.parse(saved) : false;
+  });
+
+  // Save panel state to localStorage when it changes
+  useEffect(() => {
+    localStorage.setItem('editor_panel_collapsed', JSON.stringify(isPanelCollapsed));
+  }, [isPanelCollapsed]);
 
   const toggleFocusMode = useCallback(() => {
     setIsFocusMode(prev => {

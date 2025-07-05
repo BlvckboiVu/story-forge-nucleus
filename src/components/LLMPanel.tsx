@@ -374,9 +374,13 @@ const LLMPanel = React.memo(({
                 animate={{ opacity: 1, height: 'auto' }}
                 exit={{ opacity: 0, height: 0 }}
               >
+                <div className="text-xs text-muted-foreground mb-2">
+                  <p>Get your API key from <a href="https://openrouter.ai" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">OpenRouter</a></p>
+                  <p>Free tier available with 10,000 requests/month</p>
+                </div>
                 <Input
                   type="password"
-                  placeholder="Enter OpenRouter API key"
+                  placeholder="Enter OpenRouter API key (sk-or-...)"
                   value={apiKey}
                   onChange={(e) => setApiKey(e.target.value)}
                   className="h-8 text-xs"

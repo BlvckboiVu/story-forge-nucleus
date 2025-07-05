@@ -2,10 +2,12 @@
 // Header for the mobile editor view, showing draft title, navigation, and actions
 
 import { Button } from '@/components/ui/button';
-import { FilePlus, FolderOpen, Eye, EyeOff } from 'lucide-react';
+import { FilePlus, FolderOpen, Eye, EyeOff, MessageSquare } from 'lucide-react';
 import { DarkModeToggle } from '@/components/ui/DarkModeToggle';
 import { MobileNav } from '@/components/layout/MobileNav';
 import { Draft } from '@/lib/db';
+import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import LLMPanel from '../LLMPanel';
 
 /**
  * Props for the MobileEditorHeader component
@@ -60,6 +62,29 @@ export const MobileEditorHeader = ({
       </div>
       
       <div className="flex items-center gap-1">
+        {onInsertLLMResponse && (
+          <Sheet>
+            <SheetTrigger asChild>
+              <Button 
+                variant="ghost" 
+                size="icon"
+                className="h-8 w-8 sm:h-9 sm:w-9"
+                title="AI Assistant"
+              >
+                <MessageSquare className="h-4 w-4" />
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="right" className="w-full sm:w-96 p-0">
+              <div className="h-full">
+                <LLMPanel
+                  isCollapsed={false}
+                  onToggle={() => {}}
+                  onInsertResponse={onInsertLLMResponse}
+                />
+              </div>
+            </SheetContent>
+          </Sheet>
+        )}
         <Button 
           variant="ghost" 
           size="icon"
