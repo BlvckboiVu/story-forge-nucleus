@@ -10,6 +10,7 @@ import StoryBible from '@/pages/StoryBible';
 import Settings from '@/pages/Settings';
 import Login from '@/pages/Login';
 import Signup from '@/pages/Signup';
+import Index from '@/pages/Index';
 import NotFound from '@/pages/NotFound';
 import ErrorBoundary from '@/components/ErrorBoundary';
 
@@ -58,6 +59,7 @@ export default function App() {
     <ErrorBoundary>
       <Router>
         <Routes>
+          <Route path="/" element={<Index />} />
           <Route
             path="/login"
             element={
@@ -106,7 +108,6 @@ export default function App() {
               </ProtectedRoute>
             }
           />
-          <Route path="/" element={<Navigate to="/app/dashboard" replace />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
         <Toaster />

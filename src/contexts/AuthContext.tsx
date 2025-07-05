@@ -27,7 +27,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [isInitialized, setIsInitialized] = useState(false);
 
   // Handle online/offline status
   useEffect(() => {
@@ -65,52 +64,18 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     );
   }, []);
 
+  // Simplified auth initialization
   useEffect(() => {
     let mounted = true;
     
     const initializeAuth = async () => {
-      if (isInitialized) return;
-
       try {
-        // Set up auth state listener FIRST
-        const { data: { subscription } } = supabase.auth.onAuthStateChange(
-          (event, session) => {
-            console.log('Auth state change:', event, session?.user?.id);
-            
-            if (!mounted) return;
-
-            if (session?.user) {
-              const convertedUser = convertSupabaseUser(session.user);
-              setUser(convertedUser);
-              sessionManager.createSession(convertedUser);
-              clearGuestUserFromStorage();
-            } else {
-              // Only load guest user if no session exists
-              const guestUser = loadGuestUserFromStorage();
-              setUser(guestUser);
-              if (guestUser) {
-                sessionManager.createSession(guestUser);
-              }
-            }
-            
-            setLoading(false);
-          }
-        );
-
-        // THEN check for existing session
-        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+        // Check for existing session first
+        const { data: { session } } = await supabase.auth.getSession();
         
         if (!mounted) return;
 
-        if (sessionError) {
-          console.error('Error getting session:', sessionError);
-          // Only fall back to guest user if there's an error getting session
-          const guestUser = loadGuestUserFromStorage();
-          setUser(guestUser);
-          if (guestUser) {
-            sessionManager.createSession(guestUser);
-          }
-        } else if (session?.user) {
+        if (session?.user) {
           const convertedUser = convertSupabaseUser(session.user);
           setUser(convertedUser);
           sessionManager.createSession(convertedUser);
@@ -124,7 +89,28 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           }
         }
 
-        setIsInitialized(true);
+        // Set up auth state listener
+        const { data: { subscription } } = supabase.auth.onAuthStateChange(
+          (event, session) => {
+            console.log('Auth state change:', event, session?.user?.id);
+            
+            if (!mounted) return;
+
+            if (session?.user) {
+              const convertedUser = convertSupabaseUser(session.user);
+              setUser(convertedUser);
+              sessionManager.createSession(convertedUser);
+              clearGuestUserFromStorage();
+            } else if (event === 'SIGNED_OUT') {
+              const guestUser = loadGuestUserFromStorage();
+              setUser(guestUser);
+              if (guestUser) {
+                sessionManager.createSession(guestUser);
+              }
+            }
+          }
+        );
+
         setLoading(false);
 
         return () => {
@@ -145,7 +131,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       mounted = false;
       cleanup?.then(cleanupFn => cleanupFn?.());
     };
-  }, [isInitialized]);
+  }, []);
 
   const signUp = async (email: string, password: string, displayName?: string) => {
     setLoading(true);

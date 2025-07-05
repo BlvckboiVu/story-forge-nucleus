@@ -6,6 +6,7 @@ import { ProjectProvider } from './contexts/ProjectContext';
 import App from './App';
 import './index.css';
 import './i18n';
+import ErrorBoundary from './components/ErrorBoundary';
 
 // Register service worker
 if ('serviceWorker' in navigator) {
@@ -29,10 +30,12 @@ if (!rootElement) {
 const root = createRoot(rootElement);
 root.render(
   <React.StrictMode>
-    <AuthProvider>
-      <ProjectProvider>
-        <App />
-      </ProjectProvider>
-    </AuthProvider>
+    <ErrorBoundary>
+      <AuthProvider>
+        <ProjectProvider>
+          <App />
+        </ProjectProvider>
+      </AuthProvider>
+    </ErrorBoundary>
   </React.StrictMode>
 );
