@@ -27,6 +27,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isInitialized, setIsInitialized] = useState(false);
 
   // Handle online/offline status
   useEffect(() => {
@@ -66,11 +67,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   useEffect(() => {
     let mounted = true;
-
+    
     const initializeAuth = async () => {
+      if (isInitialized) return;
+
       try {
+        // Set up auth state listener FIRST
         const { data: { subscription } } = supabase.auth.onAuthStateChange(
-          async (event, session) => {
+          (event, session) => {
             console.log('Auth state change:', event, session?.user?.id);
             
             if (!mounted) return;
@@ -81,6 +85,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
               sessionManager.createSession(convertedUser);
               clearGuestUserFromStorage();
             } else {
+              // Only load guest user if no session exists
               const guestUser = loadGuestUserFromStorage();
               setUser(guestUser);
               if (guestUser) {
@@ -88,18 +93,18 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
               }
             }
             
-            if (mounted) {
-              setLoading(false);
-            }
+            setLoading(false);
           }
         );
 
-        const { data: { session }, error } = await supabase.auth.getSession();
+        // THEN check for existing session
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
         
         if (!mounted) return;
 
-        if (error) {
-          console.error('Error getting session:', error);
+        if (sessionError) {
+          console.error('Error getting session:', sessionError);
+          // Only fall back to guest user if there's an error getting session
           const guestUser = loadGuestUserFromStorage();
           setUser(guestUser);
           if (guestUser) {
@@ -111,6 +116,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           sessionManager.createSession(convertedUser);
           clearGuestUserFromStorage();
         } else {
+          // No session exists, check for guest user
           const guestUser = loadGuestUserFromStorage();
           setUser(guestUser);
           if (guestUser) {
@@ -118,9 +124,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           }
         }
 
-        if (mounted) {
-          setLoading(false);
-        }
+        setIsInitialized(true);
+        setLoading(false);
 
         return () => {
           subscription.unsubscribe();
@@ -140,7 +145,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       mounted = false;
       cleanup?.then(cleanupFn => cleanupFn?.());
     };
-  }, []);
+  }, [isInitialized]);
 
   const signUp = async (email: string, password: string, displayName?: string) => {
     setLoading(true);
