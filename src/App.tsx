@@ -11,6 +11,7 @@ import Settings from '@/pages/Settings';
 import Login from '@/pages/Login';
 import Signup from '@/pages/Signup';
 import NotFound from '@/pages/NotFound';
+import ErrorBoundary from '@/components/ErrorBoundary';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
@@ -54,61 +55,63 @@ function PublicRoute({ children }: { children: React.ReactNode }) {
 
 export default function App() {
   return (
-    <Router>
-      <Routes>
-        <Route
-          path="/login"
-          element={
-            <PublicRoute>
-              <Login />
-            </PublicRoute>
-          }
-        />
-        <Route
-          path="/signup"
-          element={
-            <PublicRoute>
-              <Signup />
-            </PublicRoute>
-          }
-        />
-        <Route
-          path="/app/dashboard"
-          element={
-            <ProtectedRoute>
-              <Dashboard />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/app/editor/:projectId?"
-          element={
-            <ProtectedRoute>
-              <Editor />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/app/story-bible"
-          element={
-            <ProtectedRoute>
-              <StoryBible />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/app/settings"
-          element={
-            <ProtectedRoute>
-              <Settings />
-            </ProtectedRoute>
-          }
-        />
-        <Route path="/" element={<Navigate to="/app/dashboard" replace />} />
-        <Route path="*" element={<NotFound />} />
-      </Routes>
-      <Toaster />
-      <SessionTimeoutWarning />
-    </Router>
+    <ErrorBoundary>
+      <Router>
+        <Routes>
+          <Route
+            path="/login"
+            element={
+              <PublicRoute>
+                <Login />
+              </PublicRoute>
+            }
+          />
+          <Route
+            path="/signup"
+            element={
+              <PublicRoute>
+                <Signup />
+              </PublicRoute>
+            }
+          />
+          <Route
+            path="/app/dashboard"
+            element={
+              <ProtectedRoute>
+                <Dashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/app/editor/:projectId?"
+            element={
+              <ProtectedRoute>
+                <Editor />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/app/story-bible"
+            element={
+              <ProtectedRoute>
+                <StoryBible />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/app/settings"
+            element={
+              <ProtectedRoute>
+                <Settings />
+              </ProtectedRoute>
+            }
+          />
+          <Route path="/" element={<Navigate to="/app/dashboard" replace />} />
+          <Route path="*" element={<NotFound />} />
+        </Routes>
+        <Toaster />
+        <SessionTimeoutWarning />
+      </Router>
+    </ErrorBoundary>
   );
 }
