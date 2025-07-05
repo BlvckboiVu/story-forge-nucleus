@@ -1,6 +1,6 @@
 import { Draft } from '@/lib/db';
 import db from '@/lib/db';
-import { sanitizeHtml, sanitizeText } from '@/utils/sanitize';
+import { sanitizeHtml, sanitizeText } from '@/utils/security';
 
 // Extended Draft interface to match EnhancedDraftManager expectations
 export interface EnhancedDraft extends Draft {

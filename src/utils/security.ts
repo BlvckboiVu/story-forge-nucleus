@@ -4,6 +4,37 @@ import DOMPurify from 'dompurify';
  * Security utilities for input sanitization, validation, and secure storage
  */
 
+// HTML sanitization configuration
+const ALLOWED_TAGS = [
+  'p', 'br', 'b', 'i', 'u', 's', 'h1', 'h2', 'h3',
+  'ul', 'ol', 'li', 'blockquote', 'code', 'pre',
+  'div', 'span', 'a', 'img'
+];
+
+const ALLOWED_ATTRS = [
+  'href', 'src', 'alt', 'title', 'class', 'style',
+  'target', 'rel', 'data-*'
+];
+
+/**
+ * Sanitizes HTML content to prevent XSS attacks while preserving safe formatting
+ * @param html - The HTML string to sanitize
+ * @returns Sanitized HTML string safe for rendering
+ */
+export const sanitizeHtml = (html: string): string => {
+  if (!html || typeof html !== 'string') return '';
+  
+  return DOMPurify.sanitize(html, {
+    ALLOWED_TAGS,
+    ALLOWED_ATTR: ALLOWED_ATTRS,
+    ALLOW_DATA_ATTR: true,
+    ALLOW_ARIA_ATTR: true,
+    ALLOW_UNKNOWN_PROTOCOLS: false,
+    FORBID_TAGS: ['script', 'style', 'iframe', 'object', 'embed'],
+    FORBID_ATTR: ['onerror', 'onload', 'onclick', 'onmouseover'],
+  });
+};
+
 // Input validation patterns
 export const VALIDATION_PATTERNS = {
   EMAIL: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,

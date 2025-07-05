@@ -1,4 +1,3 @@
-
 import Dexie, { Table } from 'dexie';
 import { v4 as uuidv4 } from 'uuid';
 import { sanitizeHtml, sanitizeText, validateInput, VALIDATION_PATTERNS } from '@/utils/security';

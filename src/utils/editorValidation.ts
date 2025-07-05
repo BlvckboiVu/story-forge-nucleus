@@ -1,4 +1,3 @@
-import { sanitizeHtml } from './sanitize';
 import DOMPurify from 'dompurify';
 
 export interface ContentValidationResult {
