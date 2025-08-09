@@ -139,7 +139,7 @@ const clearHighlights = (quill: any, start: number, length: number) => {
 };
 
 const createTooltipContent = (entry: StoryBibleEntry): string => {
-  const description = entry.description.replace(/<[^>]*>/g, ''); // Strip HTML
+  const description = entry.description;
   const shortDescription = description.length > 200 
     ? description.substring(0, 197) + '...' 
     : description;
