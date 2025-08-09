@@ -219,14 +219,8 @@ export class SecureStorage {
   }
   
   async initialize(): Promise<void> {
-    // Try to get existing password from sessionStorage (temporary session-based)
-    this.password = sessionStorage.getItem('enc_session_key');
-    
-    if (!this.password) {
-      // Generate new password for this session
-      this.password = generateEncryptionPassword();
-      sessionStorage.setItem('enc_session_key', this.password);
-    }
+    // Always generate a new password for this session and keep it only in memory
+    this.password = generateEncryptionPassword();
   }
   
   async storeApiKey(service: string, apiKey: string): Promise<void> {
