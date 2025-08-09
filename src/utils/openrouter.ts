@@ -25,6 +25,56 @@ const CACHE_KEY = 'llm_cache';
 const CACHE_MAX_SIZE = 10;
 const CACHE_EXPIRY = 24 * 60 * 60 * 1000; // 24 hours
 
+// --- Encryption utilities for API key ---
+// In a real app, use a user-supplied passphrase. Here, we use a static key for demo.
+const ENCRYPTION_KEY = 'openrouter_demo_static_key_32bytes!!'; // 32 bytes for AES-256
+const ENCRYPTION_KEY_NAME = 'openrouter_encryption_key';
+
+async function getCryptoKey(): Promise<CryptoKey> {
+  const enc = new TextEncoder();
+  return await window.crypto.subtle.importKey(
+    'raw',
+    enc.encode(ENCRYPTION_KEY),
+    { name: 'AES-GCM' },
+    false,
+    ['encrypt', 'decrypt']
+  );
+}
+
+async function encryptApiKey(apiKey: string): Promise<string> {
+  const iv = window.crypto.getRandomValues(new Uint8Array(12));
+  const key = await getCryptoKey();
+  const enc = new TextEncoder();
+  const ciphertext = await window.crypto.subtle.encrypt(
+    { name: 'AES-GCM', iv },
+    key,
+    enc.encode(apiKey)
+  );
+  // Store iv + ciphertext as base64
+  const buf = new Uint8Array(iv.length + ciphertext.byteLength);
+  buf.set(iv, 0);
+  buf.set(new Uint8Array(ciphertext), iv.length);
+  return btoa(String.fromCharCode(...buf));
+}
+
+async function decryptApiKey(data: string): Promise<string> {
+  try {
+    const raw = atob(data);
+    const buf = new Uint8Array([...raw].map(c => c.charCodeAt(0)));
+    const iv = buf.slice(0, 12);
+    const ciphertext = buf.slice(12);
+    const key = await getCryptoKey();
+    const decrypted = await window.crypto.subtle.decrypt(
+      { name: 'AES-GCM', iv },
+      key,
+      ciphertext
+    );
+    return new TextDecoder().decode(decrypted);
+  } catch (e) {
+    return '';
+  }
+}
+
 export const MODELS = {
   STANDARD: 'openai/gpt-3.5-turbo',
   LOW_TOKEN: 'meta-llama/llama-3.2-3b-instruct:free',
@@ -35,13 +85,20 @@ class OpenRouterAPI {
   private readonly apiUrl: string;
 
   constructor() {
-    this.apiKey = localStorage.getItem('openrouter_api_key') || '';
+    const stored = localStorage.getItem('openrouter_api_key');
+    if (stored) {
+      // Decrypt asynchronously, but constructor can't be async, so use a sync fallback
+      // We'll update apiKey after construction if needed
+      decryptApiKey(stored).then((decrypted) => {
+        this.apiKey = decrypted;
+      });
+    }
     this.apiUrl = environment.isProduction 
       ? 'https://openrouter.ai/api/v1/chat/completions'
       : 'https://openrouter.ai/api/v1/chat/completions';
   }
 
-  setApiKey(key: string) {
+  async setApiKey(key: string) {
     // Validate API key format
     if (!key || key.trim().length === 0) {
       throw new Error('API key cannot be empty');
@@ -53,11 +110,19 @@ class OpenRouterAPI {
     }
 
     this.apiKey = key.trim();
-    localStorage.setItem('openrouter_api_key', this.apiKey);
+    const encrypted = await encryptApiKey(this.apiKey);
+    localStorage.setItem('openrouter_api_key', encrypted);
   }
 
-  getApiKey(): string {
-    return this.apiKey;
+  async getApiKey(): Promise<string> {
+    if (this.apiKey) return this.apiKey;
+    const stored = localStorage.getItem('openrouter_api_key');
+    if (stored) {
+      const decrypted = await decryptApiKey(stored);
+      this.apiKey = decrypted;
+      return decrypted;
+    }
+    return '';
   }
 
   private validatePrompt(prompt: string): void {
