@@ -1,6 +1,7 @@
 
 // Enhanced session management with security features
 import { User } from '../../types';
+import * as crypto from 'crypto';
 
 interface SessionData {
   user: User;
@@ -93,7 +94,9 @@ class SessionManager {
   }
   
   private generateSessionId(): string {
-    return `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    // Use crypto.randomBytes for cryptographically secure session ID
+    const randomPart = crypto.randomBytes(16).toString('hex');
+    return `session_${Date.now()}_${randomPart}`;
   }
   
   private startActivityMonitoring(): void {
