@@ -136,7 +136,7 @@ function getElementDepth(html: string): number {
 
 function getFormattingRatio(html: string): number {
   const totalLength = html.length;
-  const plainText = html.replace(/<[^>]*>/g, '');
+  const plainText = DOMPurify.sanitize(html, { ALLOWED_TAGS: [] });
   const formattingLength = totalLength - plainText.length;
   return totalLength > 0 ? formattingLength / totalLength : 0;
 }
