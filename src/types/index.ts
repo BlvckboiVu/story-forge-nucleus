@@ -5,7 +5,7 @@ export interface BaseEntity {
   updatedAt: Date;
 }
 
-// User type (for Supabase authentication)
+// User type (decoupled from any specific auth provider)
 export interface User extends BaseEntity {
   email: string;
   displayName?: string;

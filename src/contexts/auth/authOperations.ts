@@ -1,12 +1,12 @@
 
-import { supabase } from '../../lib/supabase';
-import { convertSupabaseUser, createLocalGuestUser } from './userHelpers';
+import { createLocalGuestUser } from './userHelpers';
 import { saveGuestUserToStorage, clearGuestUserFromStorage } from './storageHelpers';
 import { validateEmail, validatePassword, validateSignUpPassword, sanitizeAuthInput, validateDisplayName } from './authValidation';
 import { authRateLimiter } from './rateLimiter';
 import { authLogger } from './authLogger';
 import { sessionManager } from './sessionManager';
 import { SignUpResult, SignInResult, SignOutResult, GuestLoginResult } from './types';
+import { auth } from '@/services/auth';
 
 export const performSignUp = async (email: string, password: string, displayName?: string): Promise<SignUpResult> => {
   // Sanitize inputs
@@ -65,81 +65,16 @@ export const performSignUp = async (email: string, password: string, displayName
   }
 
   try {
-    const { data, error } = await supabase.auth.signUp({
-      email: sanitizedEmail.toLowerCase().trim(),
-      password,
-      options: {
-        data: sanitizedDisplayName ? { display_name: sanitizedDisplayName } : undefined
-      }
-    });
-    
-    if (error) {
-      authRateLimiter.recordAttempt(sanitizedEmail, false);
-      authLogger.log({
-        type: 'signup_failure',
-        email: sanitizedEmail,
-        details: error.message,
-      });
-      return { success: false, error: error.message };
-    }
-    
-    console.log('Supabase signUp result:', data);
+    const { user } = await auth.signUp(sanitizedEmail, password, sanitizedDisplayName);
     authRateLimiter.recordAttempt(sanitizedEmail, true);
-    
-    if (data.user) {
-      const convertedUser = convertSupabaseUser(data.user);
-      
-      authLogger.log({
-        type: 'signup_success',
-        email: sanitizedEmail,
-        userId: convertedUser.id,
-      });
-      
-      try {
-        const { error: profileError } = await supabase.from('profiles').insert([
-          {
-            id: convertedUser.id,
-            email: convertedUser.email,
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
-          },
-        ]);
-        
-        if (profileError) {
-          console.error('Profile creation failed:', profileError);
-          return { 
-            success: true, 
-            user: convertedUser,
-            warning: 'Account created but profile setup incomplete' 
-          };
-        }
-      } catch (profileError) {
-        console.error('Profile creation failed:', profileError);
-        return { 
-          success: true, 
-          user: convertedUser,
-          warning: 'Account created but profile setup incomplete' 
-        };
-      }
-      
-      // Create session
-      sessionManager.createSession(convertedUser);
-      
-      return { success: true, user: convertedUser };
-    } else if (data.session === null && data.user === null) {
-      return { 
-        success: true, 
-        requiresEmailConfirmation: true,
-        message: 'Check your email to confirm your account before logging in.' 
-      };
-    } else {
-      authLogger.log({
-        type: 'signup_failure',
-        email: sanitizedEmail,
-        details: 'No user returned from signup',
-      });
-      return { success: false, error: 'Signup failed: No user returned' };
-    }
+    authLogger.log({
+      type: 'signup_success',
+      email: sanitizedEmail,
+      userId: user.id,
+    });
+    // Create session
+    sessionManager.createSession(user);
+    return { success: true, user };
   } catch (e) {
     console.error('Error signing up:', e);
     const errorMessage = e instanceof Error ? e.message : 'Failed to sign up';
@@ -199,44 +134,16 @@ export const performSignIn = async (email: string, password: string): Promise<Si
   }
 
   try {
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email: sanitizedEmail.toLowerCase().trim(),
-      password,
+    const { user } = await auth.signIn(sanitizedEmail, password);
+    authRateLimiter.recordAttempt(sanitizedEmail, true);
+    authLogger.log({
+      type: 'signin_success',
+      email: sanitizedEmail,
+      userId: user.id,
     });
-    
-    if (error) {
-      authRateLimiter.recordAttempt(sanitizedEmail, false);
-      authLogger.log({
-        type: 'signin_failure',
-        email: sanitizedEmail,
-        details: error.message,
-      });
-      return { success: false, error: error.message };
-    }
-    
-    if (data.user && data.session) {
-      const convertedUser = convertSupabaseUser(data.user);
-      
-      authRateLimiter.recordAttempt(sanitizedEmail, true);
-      authLogger.log({
-        type: 'signin_success',
-        email: sanitizedEmail,
-        userId: convertedUser.id,
-        sessionId: data.session.access_token.substring(0, 10) + '...',
-      });
-      
-      clearGuestUserFromStorage();
-      sessionManager.createSession(convertedUser);
-      
-      return { success: true, user: convertedUser };
-    } else {
-      authLogger.log({
-        type: 'signin_failure',
-        email: sanitizedEmail,
-        details: 'No user returned from signin',
-      });
-      return { success: false, error: 'Login failed: No user returned' };
-    }
+    clearGuestUserFromStorage();
+    sessionManager.createSession(user);
+    return { success: true, user };
   } catch (e) {
     console.error('Error signing in:', e);
     const errorMessage = e instanceof Error ? e.message : 'Failed to sign in';
@@ -257,17 +164,7 @@ export const performSignOut = async (currentUserId?: string): Promise<SignOutRes
     clearGuestUserFromStorage();
     sessionManager.clearSession();
     
-    if (currentUserId !== 'local-guest') {
-      const { error } = await supabase.auth.signOut();
-      if (error) {
-        authLogger.log({
-          type: 'signout',
-          userId: currentUserId,
-          details: `Signout failed: ${error.message}`,
-        });
-        return { success: false, error: error.message };
-      }
-    }
+    await auth.signOut();
     
     authLogger.log({
       type: 'signout',

@@ -1,5 +1,4 @@
 
-import { User as SupabaseUser } from '@supabase/supabase-js';
 import { User } from '../../types';
 
 export interface AuthResult {
@@ -29,7 +28,7 @@ export interface AuthContextType {
   user: User | null;
   loading: boolean;
   error: string | null;
-  signUp: (email: string, password: string) => Promise<SignUpResult>;
+  signUp: (email: string, password: string, displayName?: string) => Promise<SignUpResult>;
   signIn: (email: string, password: string) => Promise<SignInResult>;
   signOut: () => Promise<SignOutResult>;
   guestLogin: () => Promise<GuestLoginResult>;

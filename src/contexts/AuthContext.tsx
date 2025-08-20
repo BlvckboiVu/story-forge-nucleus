@@ -2,11 +2,10 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { User } from '../types';
 import { AuthContextType } from './auth/types';
-import { supabase } from '../lib/supabase';
-import { convertSupabaseUser } from './auth/userHelpers';
 import { loadGuestUserFromStorage, clearGuestUserFromStorage } from './auth/storageHelpers';
 import { performSignUp, performSignIn, performSignOut, performGuestLogin } from './auth/authOperations';
 import { sessionManager } from './auth/sessionManager';
+import { auth } from '@/services/auth';
 
 // Create context with a default value
 const AuthContext = createContext<AuthContextType>({
@@ -70,15 +69,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     
     const initializeAuth = async () => {
       try {
-        // Check for existing session first
-        const { data: { session } } = await supabase.auth.getSession();
+        // Check for existing session via provider
+        const existingUser = await auth.getSession();
         
         if (!mounted) return;
 
-        if (session?.user) {
-          const convertedUser = convertSupabaseUser(session.user);
-          setUser(convertedUser);
-          sessionManager.createSession(convertedUser);
+        if (existingUser) {
+          setUser(existingUser);
+          sessionManager.createSession(existingUser);
           clearGuestUserFromStorage();
         } else {
           // No session exists, check for guest user
@@ -90,26 +88,21 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         }
 
         // Set up auth state listener
-        const { data: { subscription } } = supabase.auth.onAuthStateChange(
-          (event, session) => {
-            console.log('Auth state change:', event, session?.user?.id);
-            
-            if (!mounted) return;
-
-            if (session?.user) {
-              const convertedUser = convertSupabaseUser(session.user);
-              setUser(convertedUser);
-              sessionManager.createSession(convertedUser);
-              clearGuestUserFromStorage();
-            } else if (event === 'SIGNED_OUT') {
-              const guestUser = loadGuestUserFromStorage();
-              setUser(guestUser);
-              if (guestUser) {
-                sessionManager.createSession(guestUser);
-              }
+        const subscription = auth.onAuthStateChange((event, payload) => {
+          if (!mounted) return;
+          if (event === 'SIGNED_IN' && payload.user) {
+            setUser(payload.user);
+            sessionManager.createSession(payload.user);
+            clearGuestUserFromStorage();
+          }
+          if (event === 'SIGNED_OUT') {
+            const guestUser = loadGuestUserFromStorage();
+            setUser(guestUser);
+            if (guestUser) {
+              sessionManager.createSession(guestUser);
             }
           }
-        );
+        });
 
         setLoading(false);
 

@@ -202,7 +202,7 @@ class OfflineStateManager {
 
   private async processSyncItem(item: any): Promise<void> {
     // Placeholder for actual sync implementation
-    // This would integrate with your Supabase sync logic
+    // Placeholder for future remote sync logic (e.g., your own backend)
     console.log('Processing sync item:', item);
   }
 

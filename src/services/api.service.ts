@@ -1,5 +1,4 @@
 import { QueryClient } from '@tanstack/react-query';
-import { createClient } from '@supabase/supabase-js';
 
 export class ApiService {
   private static instance: ApiService;

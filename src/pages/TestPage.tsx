@@ -1,12 +1,9 @@
 import { useState, useEffect } from 'react';
-import { ApiService } from '@/services/api.service';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { useToast } from '@/hooks/use-toast';
-import { Check, X, Loader2, Database, Zap, Shield, Globe, Wifi, WifiOff } from 'lucide-react';
+import { Check, X, Loader2, Shield, Globe, Wifi, WifiOff } from 'lucide-react';
 import { environment } from '@/config/environment';
-import { supabase } from '@/lib/supabase';
 
 interface TestResult {
   name: string;
@@ -31,8 +28,6 @@ export default function TestPage() {
   const [results, setResults] = useState<TestResult[]>([]);
   const [isRunning, setIsRunning] = useState(false);
   const [isOnline, setIsOnline] = useState(navigator.onLine);
-  const { toast } = useToast();
-  const apiService = ApiService.getInstance();
 
   useEffect(() => {
     const handleOnline = () => setIsOnline(true);
@@ -52,14 +47,7 @@ export default function TestPage() {
     {
       name: 'Database Tests',
       tests: [
-        {
-          name: 'Supabase Connection',
-          run: async () => {
-            const { data, error } = await supabase.from('profiles').select('count').limit(1);
-            if (error) throw new Error(`Database connection failed: ${error.message}`);
-          },
-          isOfflineCapable: false
-        },
+        // Removed Supabase connection test after decoupling
         {
           name: 'Local Storage',
           run: async () => {
@@ -105,14 +93,6 @@ export default function TestPage() {
     {
       name: 'API Tests',
       tests: [
-        {
-          name: 'Environment Variables',
-          run: async () => {
-            if (!environment.supabaseUrl) throw new Error('Supabase URL not configured');
-            if (!environment.supabaseKey) throw new Error('Supabase Key not configured');
-          },
-          isOfflineCapable: true
-        },
         {
           name: 'Network Connectivity',
           run: async () => {
@@ -261,18 +241,7 @@ export default function TestPage() {
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Database</CardTitle>
-            <Database className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">Supabase</div>
-            <p className="text-xs text-muted-foreground">
-              {environment.supabaseUrl ? 'Configured' : 'Not configured'}
-            </p>
-          </CardContent>
-        </Card>
+        
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
