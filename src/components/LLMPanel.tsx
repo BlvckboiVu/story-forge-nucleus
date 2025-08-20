@@ -88,9 +88,11 @@ const LLMPanel = React.memo(({
 
   // Load API key and messages from local storage on mount
   useEffect(() => {
-    const savedKey = openRouterAPI.getApiKey();
-    setApiKey(savedKey);
-    setShowApiKeyInput(!savedKey);
+    (async () => {
+      const savedKey = await openRouterAPI.getApiKey();
+      setApiKey(savedKey);
+      setShowApiKeyInput(!savedKey);
+    })();
 
     const saved = localStorage.getItem('llm_conversation');
     if (saved) {
@@ -177,7 +179,7 @@ const LLMPanel = React.memo(({
   /**
    * Save the API key to local storage and OpenRouter API utility
    */
-  const handleSaveApiKey = useCallback(() => {
+  const handleSaveApiKey = useCallback(async () => {
     if (!apiKey.trim()) {
       toast({
         title: "Invalid API key",
@@ -188,7 +190,7 @@ const LLMPanel = React.memo(({
     }
 
     try {
-      openRouterAPI.setApiKey(apiKey);
+      await openRouterAPI.setApiKey(apiKey);
       setShowApiKeyInput(false);
       toast({
         title: "API key saved",

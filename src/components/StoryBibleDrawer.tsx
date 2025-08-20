@@ -1,5 +1,6 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
+import sanitizeHtml from 'sanitize-html';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -175,7 +176,7 @@ export const StoryBibleDrawer: React.FC<StoryBibleDrawerProps> = ({ projectId })
       {entry.description && (
         <CardContent className="pt-0">
           <p className="text-xs text-muted-foreground line-clamp-2">
-            {entry.description.replace(/<[^>]*>/g, '').substring(0, 80)}
+            {sanitizeHtml(entry.description, { allowedTags: [], allowedAttributes: {} }).substring(0, 80)}
             {entry.description.length > 80 && '...'}
           </p>
         </CardContent>

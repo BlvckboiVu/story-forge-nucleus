@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-const { execSync } = require('child_process');
+const { execFileSync } = require('child_process');
 const readline = require('readline');
 const path = require('path');
 
@@ -26,11 +26,14 @@ async function main() {
 
     // Build and run the TypeScript file
     const scriptPath = path.join(__dirname, '..', 'src', 'scripts', 'createAdmin.ts');
-    const command = `
-      ts-node -r tsconfig-paths/register "${scriptPath}" "${email}" "${password}"
-    `;
+    const args = [
+      '-r', 'tsconfig-paths/register',
+      scriptPath,
+      email,
+      password
+    ];
 
-    execSync(command, { stdio: 'inherit' });
+    execFileSync('ts-node', args, { stdio: 'inherit' });
     
     console.log('\nAdmin user created successfully!');
     console.log('You can now log in with these credentials at /login');
